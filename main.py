@@ -16,7 +16,6 @@ async def get_user_info():
     """Getting user details"""
     return {}
 
-#checking if each 
 @app.get("/api/data-availability/")
 async def check_data_availability():
     """Getting status of hardware"""

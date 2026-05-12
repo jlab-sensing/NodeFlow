@@ -6,11 +6,11 @@ Here is a document outlining the details of how to get my specific setup up and 
 2. For my setup, I did it inside of a virtual enviroment as that is what FastAPI reccomends.
 ```bash
 # Create a virtual environment
-python -m venv venv
+python -m venv .venv
 ```
 ```bash
 #Activate the enviroment (windows)
-venv\Scripts\activate
+.venv\Scripts\activate
 ```
 3. Next, install the FastAPI using the requirement.txt file provided to get the same setup I currently have running
 ```bash

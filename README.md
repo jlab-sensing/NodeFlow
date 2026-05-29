@@ -21,7 +21,7 @@ pip install -r requirements.txt
 4. Once you have all of this installed, you are ready to run it. FastAPI can be run in developer mode to view documents and calls.
 ```bash
 #Runs FastAPI in developer mode
-fastapi dev main.py
+fastapi dev app/main.py
 ```
 
 5. To check if it is running, you can view at:

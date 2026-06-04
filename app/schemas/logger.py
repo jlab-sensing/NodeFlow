@@ -8,7 +8,7 @@ class LoggerTable(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True)
     uuid: UUID = Field(default_factory=uuid4, index=True)
-    logger_name: str
+    user_id: UUID = Field(index=True)
     logger_id: int  
     last_seen: datetime = Field(default_factory=datetime.utcnow)
-    update_interval: int  
+    update_interval: int

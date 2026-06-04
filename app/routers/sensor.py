@@ -10,12 +10,11 @@ router = APIRouter(prefix="/api/sensor", tags=["Sensors"])
 
 @router.get("/", response_model=List[SensorRead])
 def list_sensors(available: bool = Query(None), session: Session = Depends(get_session)):
-    """Gets list of all sensors or available sensors"""
+    # Basic select all; logic for 'available' filter can be added here
     return session.exec(select(SensorTable)).all()
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def add_new_sensor(sensor: SensorCreate, session: Session = Depends(get_session)):
-    """Adding new sensor"""
     db_sensor = SensorTable.model_validate(sensor)
     session.add(db_sensor)
     session.commit()
@@ -24,8 +23,8 @@ def add_new_sensor(sensor: SensorCreate, session: Session = Depends(get_session)
 
 @router.put("/{sensor_id}")
 async def update_sensor(sensor_id: int, sensor_update: SensorCreate, session: Session = Depends(get_session)):
-    """Updating sensor"""
-    db_sensor = session.get(SensorTable, sensor_id)
+    statement = select(SensorTable).where(SensorTable.sensor_id == sensor_id)
+    db_sensor = session.exec(statement).first()
     if not db_sensor:
         raise HTTPException(status_code=404, detail="Sensor not found")
     
@@ -40,15 +39,15 @@ async def update_sensor(sensor_id: int, sensor_update: SensorCreate, session: Se
 
 @router.get("/data/")
 async def get_sensor_plot_data(sensor_id: int, start: Optional[datetime] = Query(None), end: Optional[datetime] = Query(None)):
-    """Graphing sensor data"""
+    """Graphing sensor data (Placeholder for DirtViz dynamic integration)."""
     return {"sensor_id": sensor_id, "timestamps": [], "values": []}
 
 @router.delete("/{sensor_id}")
 async def delete_sensor(sensor_id: int, session: Session = Depends(get_session)):
-    """Deleting sensor"""
-    db_sensor = session.get(SensorTable, sensor_id)
-    if not db_sensor:
+    statement = select(SensorTable).where(SensorTable.sensor_id == sensor_id)
+    sensor = session.exec(statement).first()
+    if not sensor:
         raise HTTPException(status_code=404, detail="Sensor not found")
-    session.delete(db_sensor)
+    session.delete(sensor)
     session.commit()
-    return {"message": "Sensor deleted successfully"}
+    return {"ok": True}

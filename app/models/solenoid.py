@@ -1,19 +1,19 @@
 from sqlmodel import SQLModel
-from typing import Optional
 from uuid import UUID
 from datetime import datetime
+from typing import Optional
 
-class SolenoidCreate(SQLModel):
+class SolenoidBase(SQLModel):
+    user_id: UUID
     name: str
     active_state: str
     logger_id: int
     group_id: Optional[UUID] = None
 
-class SolenoidRead(SQLModel):
+class SolenoidCreate(SolenoidBase):
+    pass
+
+class SolenoidRead(SolenoidBase):
     id: int
     uuid: UUID
-    name: str
-    active_state: str
-    logger_id: int  # Added
-    group_id: Optional[UUID] = None
-    date_created: datetime 
+    date_created: datetime

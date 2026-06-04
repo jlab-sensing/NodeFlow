@@ -7,9 +7,8 @@ class SensorTable(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True)
     uuid: UUID = Field(default_factory=uuid4, index=True)
-    sensor_name: str
+    user_id: UUID = Field(index=True)
+    sensor_type: str 
     sensor_id: int
-    measurement: float
-    unit: str
     logger_id: int
     group_id: Optional[UUID] = None

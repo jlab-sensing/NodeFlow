@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.database import create_db_and_tables
-from app.routers import solenoid_router, sensor_router, logger_router, groups_router
+from app.routers.solenoid import router as solenoid_router
+from app.routers.sensor import router as sensor_router
+from app.routers.logger import router as logger_router
+from app.routers.groups import router as groups_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

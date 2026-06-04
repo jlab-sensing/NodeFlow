@@ -8,6 +8,7 @@ class SolenoidTable(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True)
     uuid: UUID = Field(default_factory=uuid4, index=True)
+    user_id: UUID = Field(index=True)
     name: str
     active_state: str
     logger_id: int

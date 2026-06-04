@@ -7,7 +7,7 @@ class ActivationPrefTable(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True)
     uuid: UUID = Field(default_factory=uuid4)
-    user_id: UUID = Field(index=True) # Added ownership
+    user_id: UUID = Field(index=True)
     tag_id: int
     sensor: str
     condition_operator: str  
@@ -18,7 +18,7 @@ class NotificationPrefTable(SQLModel, table=True):
     __tablename__ = "notification_prefs"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: UUID = Field(index=True) # Added ownership
+    user_id: UUID = Field(index=True)
     tag_id: int              
     condition: str           
     notification_frequency_seconds: float 

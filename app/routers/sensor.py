@@ -10,7 +10,6 @@ router = APIRouter(prefix="/api/sensor", tags=["Sensors"])
 
 @router.get("/", response_model=List[SensorRead])
 def list_sensors(available: bool = Query(None), session: Session = Depends(get_session)):
-    # Basic select all; logic for 'available' filter can be added here
     return session.exec(select(SensorTable)).all()
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

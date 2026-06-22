@@ -1,11 +1,26 @@
+import os
+from urllib.parse import quote_plus
+
 from sqlmodel import create_engine, Session, SQLModel
-from fastapi import Depends
 from typing import Generator
 
-sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
+def get_database_url() -> str:
+    """Build the Postgres connection URL from environment variables."""
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        return database_url
+
+    user = quote_plus(os.getenv("DB_USER", "nodeflow"))
+    password = quote_plus(os.getenv("DB_PASS", "nf_password"))
+    host = os.getenv("DB_HOST", "postgresql")
+    port = os.getenv("DB_PORT", "5433")
+    database = os.getenv("DB_DATABASE", "nodeflow")
+
+    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
+
+
+engine = create_engine(get_database_url())
 
 def create_db_and_tables():
     """Initializes the database and creates tables based on schemas."""

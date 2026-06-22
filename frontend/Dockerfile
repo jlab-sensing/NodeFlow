@@ -1,10 +1,8 @@
 # pull official base image
-FROM node:16.17.0-bullseye-slim AS development
+FROM node:20.19.0-bullseye-slim AS development
 
 # set working directory
 WORKDIR /app
-
-ENV PUBLIC_URL ""
 
 # add `/app/node_modules/.bin` to $PATH
 # ENV PATH /app/frontend/node_modules/.bin:$PATH
@@ -21,24 +19,6 @@ COPY src ./src
 COPY public ./public
 
 # start app
-CMD ["npm", "start", "--", "--port", "81"]
-#CMD ["nodemon", "--exec", "npm", "start"]
+CMD ["npm", "start", "--", "--host", "0.0.0.0", "--port", "81"]
 
-EXPOSE 3001
-
-
-# ############ Production Stage ####################
-# pull the official nginx:1.19.0 base image
-FROM nginx:1.19.0 AS production
-
-# removing default nginx config file
-RUN rm /etc/nginx/conf.d/default.conf
-
-# copy nginx config
-COPY --from=builder /app/frontend_server.conf /etc/nginx/nginx.conf
-COPY --from=builder /app/build/ /usr/share/nginx/html
-
-# Containers run nginx with global directives and daemon off
-EXPOSE 3001 81
-
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+EXPOSE 81

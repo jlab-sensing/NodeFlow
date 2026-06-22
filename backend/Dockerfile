@@ -25,12 +25,5 @@ WORKDIR /app
 # copy files from source tree
 COPY . .
 
-#
-# Production image
-# 
-# The production images runs the flask api code. The container has all the
-# bacend code and dependencies installed. The code is run as the "app" user.
-FROM base AS production
-
 EXPOSE 8001
 ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

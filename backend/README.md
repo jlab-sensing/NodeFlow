@@ -8,11 +8,11 @@ How to setup and test the backend APIs
 3. Once installed, run FastAPI in developer mode to view documents and calls.
 ```bash
 #Runs FastAPI in developer mode
-fastapi dev app/main.py
+fastapi dev app/main.py --port 8001
 ```
 
 4. To check if it is running, you can view at:
-http://127.0.0.1:8000
+http://127.0.0.1:8001
 
 5. To view all the interactive API docs, you can go to:
- http://127.0.0.1:8000/docs
+ http://127.0.0.1:8001/docs

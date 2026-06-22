@@ -1,0 +1,46 @@
+services: 
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile
+      target: production
+    image: nodeflow-backend
+    env_file:
+      - ${ENV_FILE:-.env}
+    ports:
+      - '8000:8000'
+    depends_on:
+      - postgresql
+    volumes: 
+      - './backend:/app'
+    
+  frontend: 
+    build: 
+      context: ./frontend
+      dockerfile: ./Dockerfile
+      target: production
+    image: nodeflow-frontend
+    env_file: 
+      - ${ENV_FILE:-.env}
+    ports:
+      - '3000:80'
+    depends_on: 
+      - backend
+    tty: true
+    volumes: 
+      - './frontend/src:/app/src'
+
+  postgresql:
+    image: postgres:16
+    environment: 
+      POSTGRES_DB: nodeflow
+      POSTGRES_USER: nodeflow
+      POSTGRES_PASSWORD: nf_password  
+    ports: 
+      - '5433:5432'
+    volumes: 
+      - postgresql-16-data:/var/lib/postgresql/data
+    
+volumes:
+  postgres-16-data:

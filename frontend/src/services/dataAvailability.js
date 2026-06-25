@@ -8,7 +8,7 @@ import axios from 'axios';
 export const getDataAvailability = (cellIds) => {
   const cellIdsParam = cellIds.join(',');
   return axios
-    .get(`${process.env.PUBLIC_URL}/api/data-availability/?cell_ids=${cellIdsParam}`)
+    .get(`${import.meta.env.VITE_API_BASE_URL}/api/data-availability/?cell_ids=${cellIdsParam}`)
     .then((res) => res.data)
     .catch((error) => {
       console.error('Error fetching data availability:', error);

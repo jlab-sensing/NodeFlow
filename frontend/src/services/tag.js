@@ -6,19 +6,19 @@ export const getTags = (params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.search) queryParams.append('search', params.search);
   
-  const url = `${process.env.PUBLIC_URL}/api/tag/${queryParams ? `?${queryParams}` : ''}`;
+  const url = `${import.meta.env.VITE_API_BASE_URL}/api/tag/${queryParams ? `?${queryParams}` : ''}`;
   return axios.get(url).then((res) => res.data);
 };
 
 // Get specific tag by ID
 export const getTag = (tagId) => {
-  return axios.get(`${process.env.PUBLIC_URL}/api/tag/${tagId}`).then((res) => res.data);
+  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/tag/${tagId}`).then((res) => res.data);
 };
 
 // Create new tag
 export const createTag = (tagData, accessToken) => {
   return axios
-    .post(`${process.env.PUBLIC_URL}/api/tag/`, tagData, {
+    .post(`${import.meta.env.VITE_API_BASE_URL}/api/tag/`, tagData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -29,7 +29,7 @@ export const createTag = (tagData, accessToken) => {
 // Update tag
 export const updateTag = (tagId, tagData, accessToken) => {
   return axios
-    .put(`${process.env.PUBLIC_URL}/api/tag/${tagId}`, tagData, {
+    .put(`${import.meta.env.VITE_API_BASE_URL}/api/tag/${tagId}`, tagData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -40,7 +40,7 @@ export const updateTag = (tagId, tagData, accessToken) => {
 // Delete tag
 export const deleteTag = (tagId, accessToken) => {
   return axios
-    .delete(`${process.env.PUBLIC_URL}/api/tag/${tagId}`, {
+    .delete(`${import.meta.env.VITE_API_BASE_URL}/api/tag/${tagId}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -51,27 +51,27 @@ export const deleteTag = (tagId, accessToken) => {
 
 // Get tags for a specific cell
 export const getCellTags = (cellId) => {
-  return axios.get(`${process.env.PUBLIC_URL}/api/cell/${cellId}/tags`).then((res) => res.data);
+  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}/tags`).then((res) => res.data);
 };
 
 // Assign tags to a cell (replaces existing tags)
 export const assignCellTags = (cellId, tagIds) => {
-  return axios.post(`${process.env.PUBLIC_URL}/api/cell/${cellId}/tags`, { tag_ids: tagIds }).then((res) => res.data);
+  return axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}/tags`, { tag_ids: tagIds }).then((res) => res.data);
 };
 
 // Add single tag to cell
 export const addTagToCell = (cellId, tagId) => {
-  return axios.put(`${process.env.PUBLIC_URL}/api/cell/${cellId}/tags/${tagId}`).then((res) => res.data);
+  return axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}/tags/${tagId}`).then((res) => res.data);
 };
 
 // Remove tag from cell
 export const removeTagFromCell = (cellId, tagId) => {
-  return axios.delete(`${process.env.PUBLIC_URL}/api/cell/${cellId}/tags/${tagId}`).then((res) => res.data);
+  return axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}/tags/${tagId}`).then((res) => res.data);
 };
 
 // Get cells by tag
 export const getCellsByTag = (tagId) => {
-  return axios.get(`${process.env.PUBLIC_URL}/api/tags/${tagId}/cells`).then((res) => res.data);
+  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/tags/${tagId}/cells`).then((res) => res.data);
 };
 
 // React Query hooks

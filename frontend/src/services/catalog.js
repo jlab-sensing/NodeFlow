@@ -17,7 +17,7 @@ import axios from 'axios';
  */
 export async function getSensorCatalog(cellId) {
   try {
-    const res = await axios.get(`${process.env.PUBLIC_URL}/api/catalog/sensors`, {
+    const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/catalog/sensors`, {
       params: { cell_id: cellId },
     });
     return res.data?.entries ?? [];

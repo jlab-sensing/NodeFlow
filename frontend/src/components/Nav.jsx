@@ -30,7 +30,7 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
     async function getUserData() {
       try {
         const user = await axiosPrivate
-          .get(`${process.env.PUBLIC_URL}/user`, {
+          .get(`${import.meta.env.VITE_API_BASE_URL}/user`, {
             signal: controller.signal,
           })
           .then((res) => res.data);

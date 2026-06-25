@@ -5,7 +5,7 @@ export const getCellData = (cellIds, resample, startTime, endTime) => {
   return axios
     .get(
       `${
-        process.env.PUBLIC_URL
+        import.meta.env.VITE_API_BASE_URL
       }/api/cell/datas?cellIds=${cellIds.toString()}&resample=${resample}&startTime=${startTime.toHTTP()}&endTime=${endTime.toHTTP()}`,
     )
     .then((res) => res.data);
@@ -13,7 +13,7 @@ export const getCellData = (cellIds, resample, startTime, endTime) => {
 
 export const getCells = () => {
   return axios
-    .get(`${process.env.PUBLIC_URL}/api/cell/id`)
+    .get(`${import.meta.env.VITE_API_BASE_URL}/api/cell/id`)
     .then((res) => res.data)
     .catch((error) => {
       console.log('Error getting cells:', error.response ? error.response.data : error.message);
@@ -22,7 +22,7 @@ export const getCells = () => {
 
 export const getCellSensors = (cellId) => {
   return axios
-    .get(`${process.env.PUBLIC_URL}/api/cell/${cellId}/sensors`)
+    .get(`${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}/sensors`)
     .then((res) => res.data)
     .catch((error) => {
       console.log('Error getting cell sensors:', error.response ? error.response.data : error.message);
@@ -33,7 +33,7 @@ export const getCellSensors = (cellId) => {
 // Get cells with their tags included
 export const getCellsWithTags = () => {
   return axios
-    .get(`${process.env.PUBLIC_URL}/api/cell/`)
+    .get(`${import.meta.env.VITE_API_BASE_URL}/api/cell/`)
     .then((res) => res.data)
     .catch((error) => {
       console.log('Error getting cells with tags:', error.response ? error.response.data : error.message);
@@ -42,7 +42,7 @@ export const getCellsWithTags = () => {
 
 export const addCell = (cellName, location, longitude, latitude, archive, email) => {
   return axios
-    .post(`${process.env.PUBLIC_URL}/api/cell/`, {
+    .post(`${import.meta.env.VITE_API_BASE_URL}/api/cell/`, {
       name: cellName,
       location: location,
       longitude: longitude,
@@ -59,7 +59,7 @@ export const addCell = (cellName, location, longitude, latitude, archive, email)
 // used to edit cell data in the table with put request
 export const updateCell = async (cellId, updatedData, accessToken) => {
   return axios
-    .put(`${process.env.PUBLIC_URL}/api/cell/${cellId}`, updatedData, {
+    .put(`${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}`, updatedData, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -74,7 +74,7 @@ export const updateCell = async (cellId, updatedData, accessToken) => {
 
 export const deleteCell = async (cellId, accessToken) => {
   return axios
-    .delete(`${process.env.PUBLIC_URL}/api/cell/${cellId}`, {
+    .delete(`${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -87,7 +87,7 @@ export const deleteCell = async (cellId, accessToken) => {
 };
 
 export const shareCell = async (cellId, email, accessToken) => {
-  const url = `${process.env.PUBLIC_URL}/api/cell/${cellId}/share`;
+  const url = `${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}/share`;
 
   try {
     const response = await axios.post(
@@ -108,7 +108,7 @@ export const shareCell = async (cellId, email, accessToken) => {
 };
 
 export const getUserCells = (axiosPrivate) => {
-  return axiosPrivate.get(`${process.env.PUBLIC_URL}/cell/?user=True`).then((res) => res.data);
+  return axiosPrivate.get(`${import.meta.env.VITE_API_BASE_URL}/cell/?user=True`).then((res) => res.data);
 };
 
 export const useCells = () =>
@@ -133,7 +133,7 @@ export const useUserCells = (axiosPrivate) =>
   });
 
 export const setCellArchive = async (cellId, archive) => {
-  const url = `${process.env.PUBLIC_URL}/api/cell/${cellId}`;
+  const url = `${import.meta.env.VITE_API_BASE_URL}/api/cell/${cellId}`;
   try {
     const response = await axios.put(url, { archive }, { headers: { 'Content-Type': 'application/json' } });
     return response.data;
@@ -158,7 +158,7 @@ export const useSetCellArchive = () => {
 };
 
 export const pollCellDataResult = (taskId) => {
-  return axios.get(`${process.env.PUBLIC_URL}/api/status/${taskId}`).then((res) => {
+  return axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/status/${taskId}`).then((res) => {
     return res.data;
   });
 };

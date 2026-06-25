@@ -12,7 +12,7 @@
 
 export const LAYOUT_VERSION = 'v1';
 
-export const DEFAULT_DASHBOARD_PANEL_ORDER = ['power-vi', 'power-p', 'teros', 'temp'];
+export const DEFAULT_CHART_PANEL_ORDER = ['power-vi', 'power-p', 'teros', 'temp'];
 
 /** Built-in top-grid panels (PowerCharts / TerosCharts). */
 export const BUILTIN_CATALOG = [

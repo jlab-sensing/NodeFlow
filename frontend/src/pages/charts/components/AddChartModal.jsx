@@ -126,7 +126,7 @@ function AddChartModal({ open, onClose, selectedCells, panelOrder, onAddPanel })
             </Box>
           ) : addableEntries.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-              All available charts are already on the dashboard.
+              All available charts are already on the page.
             </Typography>
           ) : (
             <List disablePadding>

@@ -1,6 +1,899 @@
+import { Box, Divider, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { DateTime } from 'luxon';
+import { React, useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import DateRangeNotification from '../../components/DateRangeNotification';
+import LayoutMismatchNotification from '../../components/LayoutMismatchNotification';
+import { useSmartDateRange } from '../../hooks/useSmartDateRange';
+import { useChartsHistoricalData } from './hooks/useChartsHistoricalData';
+import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate';
+import useAuth from '../../auth/hooks/useAuth';
+import { useCells } from '../../services/cell';
+import ArchiveModal from './components/ArchiveModal';
+import BackBtn from './components/BackBtn';
+import CellSelect from './components/CellSelect';
+import DateRangeSel from './components/DateRangeSel';
+import DownloadBtn from './components/DownloadBtn';
+import StreamToggle from './components/StreamToggle';
+import ChartPanelGrid from './components/ChartPanelGrid';
+import ChartPanelActions from './components/ChartPanelActions';
+import AddChartModal from './components/AddChartModal';
+import {
+  DEFAULT_CHART_PANEL_ORDER,
+  isKnownPanelId,
+  parseLayoutParam,
+  serializeLayoutParam,
+} from './catalog/chartsCatalog';
+import {
+  availablePanelIdsForCells,
+  defaultPanelOrderFromFetched,
+  fetchCatalogPanelIdsForCells,
+  fetchCellSensorsForCells,
+  panelsMissingForCells,
+} from './catalog/cellSensorLayout';
+import { panelOrderNeedsPower, panelOrderNeedsTeros } from './catalog/historicalDataLoader';
+import { io } from 'socket.io-client';
+import TopNav from '../../components/TopNav';
+
 function Charts() {
-    return (
-        <h1>Charts</h1>
+  const axiosPrivate = useAxiosPrivate();
+  const { loggedIn } = useAuth();
+  const [startDate, setStartDate] = useState(DateTime.now().minus({ days: 14 }));
+  const [endDate, setEndDate] = useState(DateTime.now());
+  const [dBtnDisabled, setDBtnDisabled] = useState(true);
+  const [selectedCells, setSelectedCells] = useState([]);
+  const [stream, setStream] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [showNoDataMessage, setShowNoDataMessage] = useState(false);
+  const [manualDateSelection, setManualDateSelection] = useState(false);
+  const smartDateRangeAppliedRef = useRef(false);
+  const cancelSmartDateRef = useRef(null);
+  const [liveData, setLiveData] = useState([]);
+
+  // Background streaming data - always collecting in background
+  const backgroundStreamDataRef = useRef([]);
+
+  // Timeout
+  const clearTimeoutIdRef = useRef(null);
+
+  const processingRef = useRef(false);
+  const socketRef = useRef(null);
+
+  // Streaming
+
+  const [hourlyStartDate, setHourlyStartDate] = useState(DateTime.now().minus({ days: 14 }));
+  const [hourlyEndDate, setHourlyEndDate] = useState(DateTime.now());
+
+  // Mobile responsive detection
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md')); // <768px = mobile
+
+  const cells = useCells();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const layoutParam = searchParams.get('layout');
+  const [panelOrder, setPanelOrder] = useState([]);
+  const [panelColumns, setPanelColumns] = useState(2);
+  const [addChartOpen, setAddChartOpen] = useState(false);
+  const [cellSensorsById, setCellSensorsById] = useState({});
+  const [layoutMismatchOpen, setLayoutMismatchOpen] = useState(false);
+  const [layoutMismatchPanels, setLayoutMismatchPanels] = useState([]);
+  const [historicalDatesReady, setHistoricalDatesReady] = useState(false);
+  const [availablePanelIds, setAvailablePanelIds] = useState(null);
+
+  // data processing
+  const processLiveData = useCallback((measurements) => {
+    if (!measurements || measurements.length === 0) return;
+
+    const processed = {
+      power: { byCell: {}, allMeasurements: [] },
+      teros: { byCell: {}, allMeasurements: [] },
+      sensors: { byType: {}, allMeasurements: [] },
+    };
+
+    // Process measurements
+    measurements.forEach((measurement) => {
+      const { type, cellId } = measurement;
+
+      // Group by sensor type and cell
+      if (type === 'power') {
+        if (!processed.power.byCell[cellId]) {
+          processed.power.byCell[cellId] = [];
+        }
+        processed.power.byCell[cellId].push(measurement);
+        processed.power.allMeasurements.push(measurement);
+      } else if (type === 'teros12') {
+        if (!processed.teros.byCell[cellId]) {
+          processed.teros.byCell[cellId] = [];
+        }
+        processed.teros.byCell[cellId].push(measurement);
+        processed.teros.allMeasurements.push(measurement);
+      } else {
+        if (!processed.sensors.byType[type]) {
+          processed.sensors.byType[type] = { byCell: {} };
+        }
+        if (!processed.sensors.byType[type].byCell[cellId]) {
+          processed.sensors.byType[type].byCell[cellId] = [];
+        }
+        processed.sensors.byType[type].byCell[cellId].push(measurement);
+        processed.sensors.allMeasurements.push(measurement);
+      }
+    });
+
+    // Sort measurements by timestamp for each group
+    Object.keys(processed.power.byCell).forEach((cellId) => {
+      processed.power.byCell[cellId].sort((a, b) => a.timestamp - b.timestamp);
+    });
+    Object.keys(processed.teros.byCell).forEach((cellId) => {
+      processed.teros.byCell[cellId].sort((a, b) => a.timestamp - b.timestamp);
+    });
+    Object.keys(processed.sensors.byType).forEach((type) => {
+      Object.keys(processed.sensors.byType[type].byCell).forEach((cellId) => {
+        processed.sensors.byType[type].byCell[cellId].sort((a, b) => a.timestamp - b.timestamp);
+      });
+    });
+
+    return processed;
+  }, []);
+
+  // Initialize timeouts when streaming starts
+  const initializeStreamingTimeouts = useCallback(() => {
+    // Clear existing timeouts
+    if (clearTimeoutIdRef.current) {
+      clearTimeout(clearTimeoutIdRef.current);
+    }
+
+    // Set timeout to clear charts after 30 minutes of no data
+    const clearTimeoutId = setTimeout(() => {
+      setLiveData([]);
+      backgroundStreamDataRef.current = [];
+    }, 30 * 60 * 1000);
+    clearTimeoutIdRef.current = clearTimeoutId;
+  }, []);
+
+  // Memoized processed data
+  const processedLiveData = useMemo(() => {
+    if (!liveData || liveData.length === 0) {
+      return {
+        power: { byCell: {}, allMeasurements: [] },
+        teros: { byCell: {}, allMeasurements: [] },
+        sensors: { byType: {}, allMeasurements: [] },
+      };
+    }
+    return processLiveData(liveData);
+  }, [liveData, processLiveData]);
+
+  const panelOrderForFetch = useMemo(() => {
+    if (!availablePanelIds) {
+      return panelOrder;
+    }
+    return panelOrder.filter((panelId) => availablePanelIds.has(panelId));
+  }, [panelOrder, availablePanelIds]);
+
+  const { historicalPowerByCell, historicalTerosByCell, historicalSensorByKey, historicalLoading } =
+    useChartsHistoricalData({
+      cells: selectedCells,
+      panelOrder: panelOrderForFetch,
+      startDate: hourlyStartDate,
+      endDate: hourlyEndDate,
+      stream,
+      cellSensorsById,
+      enabled: historicalDatesReady && selectedCells.length > 0,
+    });
+
+  const centralHistoricalActive = useMemo(
+    () => ({
+      power: !stream && panelOrderNeedsPower(panelOrderForFetch),
+      teros: !stream && panelOrderNeedsTeros(panelOrderForFetch),
+      sensors: !stream && panelOrderForFetch.some((panelId) => panelId.startsWith('u:')),
+    }),
+    [stream, panelOrderForFetch],
+  );
+
+  const panelChartProps = useMemo(
+    () => ({
+      cells: selectedCells,
+      startDate: hourlyStartDate,
+      endDate: hourlyEndDate,
+      stream,
+      liveData,
+      processedPower: processedLiveData.power,
+      processedTeros: processedLiveData.teros,
+      processedSensors: processedLiveData.sensors,
+      cellSensorsById,
+      historicalPowerByCell,
+      historicalTerosByCell,
+      historicalSensorByKey,
+      historicalLoading,
+      centralHistoricalActive,
+    }),
+    [
+      selectedCells,
+      hourlyStartDate,
+      hourlyEndDate,
+      stream,
+      liveData,
+      processedLiveData,
+      cellSensorsById,
+      historicalPowerByCell,
+      historicalTerosByCell,
+      historicalSensorByKey,
+      historicalLoading,
+      centralHistoricalActive,
+    ],
+  );
+
+  const handleAddPanel = useCallback((panelId) => {
+    if (!isKnownPanelId(panelId)) return;
+    setPanelOrder((prev) => (prev.includes(panelId) ? prev : [...prev, panelId]));
+  }, []);
+
+  const handleRemovePanel = useCallback((panelId) => {
+    setPanelOrder((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((id) => id !== panelId);
+    });
+  }, []);
+
+  // processing for WebSocket updates
+  const processImmediateUpdate = useCallback(
+    (data) => {
+      if (processingRef.current) return;
+      processingRef.current = true;
+
+      try {
+        // Always collect data in background
+        backgroundStreamDataRef.current = [
+          ...backgroundStreamDataRef.current,
+          { ...data, receivedAt: new Date().toISOString() },
+        ].slice(-200);
+
+        // Update live data if streaming
+        if (stream) {
+          setLiveData((prevData) => {
+            const newData = [
+              ...prevData,
+              {
+                ...data,
+                receivedAt: new Date().toISOString(),
+              },
+            ];
+            return newData.slice(-100);
+          });
+
+          // Clear existing timeout
+          if (clearTimeoutIdRef.current) {
+            clearTimeout(clearTimeoutIdRef.current);
+          }
+
+          // Reset timeout when new data arrives
+          initializeStreamingTimeouts();
+        }
+      } finally {
+        processingRef.current = false;
+      }
+    },
+    [stream, initializeStreamingTimeouts],
+  );
+
+  useEffect(() => {
+    // Auto-detect local development: uses localhost if running on localhost, otherwise production
+    const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const backendUrl = isLocalDev ? 'http://localhost:8000' : 'https://dirtviz.jlab.ucsc.edu';
+
+    const socket = io(backendUrl, {
+      transports: ['websocket'],
+      upgrade: false,
+      timeout: 20000,
+      forceNew: true,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      if (selectedCells.length > 0) {
+        const cellIds = selectedCells.map((cell) => cell.id);
+        socket.emit('subscribe_cells', { cellIds });
+      }
+    });
+
+    socket.on('disconnect', () => {});
+    socket.on('measurement_received', (data) => {
+      processImmediateUpdate(data);
+    });
+    socket.on('connect_error', () => {});
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+      if (clearTimeoutIdRef.current) {
+        clearTimeout(clearTimeoutIdRef.current);
+      }
+    };
+  }, [stream, processImmediateUpdate, selectedCells]);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) return;
+
+    if (selectedCells.length > 0) {
+      const cellIds = selectedCells.map((cell) => cell.id);
+      socket.emit('subscribe_cells', { cellIds });
+    }
+  }, [selectedCells]);
+
+  // Smart date range functionality
+  const {
+    calculateSmartDateRange,
+    showFallbackNotification,
+    fallbackDates,
+    showFallbackNotificationHandler,
+    hideFallbackNotification,
+  } = useSmartDateRange();
+
+  // Restore panel layout from URL only when the layout param changes (not on cells refetch).
+  useEffect(() => {
+    const parsedLayout = parseLayoutParam(layoutParam);
+    if (parsedLayout.length > 0) {
+      setPanelOrder(parsedLayout);
+    }
+  }, [layoutParam]);
+
+  const parsedUrlLayout = useMemo(() => parseLayoutParam(layoutParam), [layoutParam]);
+  const hasUrlLayout = parsedUrlLayout.length > 0;
+
+  // Cell sensors + catalog (once); default panel order when no URL layout.
+  useEffect(() => {
+    if (selectedCells.length === 0) {
+      setCellSensorsById({});
+      setAvailablePanelIds(null);
+      return undefined;
+    }
+
+    const cellIds = selectedCells.map((cell) => cell.id);
+    let cancelled = false;
+
+    Promise.all([fetchCellSensorsForCells(cellIds), fetchCatalogPanelIdsForCells(cellIds)]).then(
+      ([sensors, catalogIds]) => {
+        if (cancelled) return;
+        setCellSensorsById(sensors);
+        setAvailablePanelIds(availablePanelIdsForCells(sensors, cellIds, catalogIds));
+
+        if (!hasUrlLayout) {
+          const defaultOrder = defaultPanelOrderFromFetched(sensors, cellIds, catalogIds);
+          setPanelOrder(defaultOrder.length > 0 ? defaultOrder : DEFAULT_CHART_PANEL_ORDER);
+          setLayoutMismatchOpen(false);
+          setLayoutMismatchPanels([]);
+        }
+      },
     );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCells, hasUrlLayout]);
+
+  // Warn when a URL layout includes panels unavailable for the selected cells.
+  useEffect(() => {
+    if (!hasUrlLayout || selectedCells.length === 0 || panelOrder.length === 0 || !availablePanelIds) {
+      if (!hasUrlLayout) {
+        setLayoutMismatchOpen(false);
+        setLayoutMismatchPanels([]);
+      }
+      return undefined;
+    }
+
+    const missing = panelsMissingForCells(panelOrder, availablePanelIds);
+    if (missing.length > 0) {
+      setLayoutMismatchPanels(missing);
+      setLayoutMismatchOpen(true);
+    } else {
+      setLayoutMismatchPanels([]);
+      setLayoutMismatchOpen(false);
+    }
+  }, [selectedCells, hasUrlLayout, panelOrder, availablePanelIds]);
+
+  // Initialize state from URL parameters
+  useEffect(() => {
+    if (!cells.data) return;
+
+    const searchQueryCells = searchParams.get('cell_id');
+    const searchQueryStartDate = searchParams.get('startDate');
+    const searchQueryEndDate = searchParams.get('endDate');
+
+    if (searchQueryCells && searchQueryCells.length > 0) {
+      const selectedCellIds = searchQueryCells.split(',');
+      const selectedCells = cells.data.filter((cell) => selectedCellIds.includes(cell.id.toString()));
+      setSelectedCells(selectedCells);
+    }
+
+    // Only treat URL dates as manual if they're different from the default dates
+    if (searchQueryStartDate && searchQueryEndDate) {
+      const parsedStartDate = DateTime.fromISO(searchQueryStartDate);
+      const parsedEndDate = DateTime.fromISO(searchQueryEndDate);
+      const defaultStart = DateTime.now().minus({ days: 14 });
+      const defaultEnd = DateTime.now();
+
+      // Check if URL dates are significantly different from defaults (more than 1 hour difference)
+      const isManualSelection =
+        Math.abs(parsedStartDate.diff(defaultStart, 'hours').hours) > 3 ||
+        Math.abs(parsedEndDate.diff(defaultEnd, 'hours').hours) > 3;
+
+      setStartDate(parsedStartDate);
+      setEndDate(parsedEndDate);
+      // Also set hourly dates so charts get the correct dates from URL
+      setHourlyStartDate(parsedStartDate);
+      setHourlyEndDate(parsedEndDate);
+
+      // Only block smart date range if this appears to be a genuine manual selection
+      if (isManualSelection && searchQueryCells) {
+        setManualDateSelection(true);
+        setHistoricalDatesReady(true);
+      }
+    }
+
+    setIsInitialized(true);
+  }, [searchParams, cells.data]);
+
+  // Apply smart date range when cells are selected (only if not manual selection and not already applied)
+useEffect(() => {
+  if (!isInitialized || manualDateSelection) return;
+  if (smartDateRangeAppliedRef.current) return;
+  if (selectedCells.length === 0) return;
+
+  // Cancel any previous in-flight async call
+  if (cancelSmartDateRef.current) {
+    cancelSmartDateRef.current.cancelled = true;
+  }
+  const cancelToken = { cancelled: false };
+  cancelSmartDateRef.current = cancelToken;
+
+  const applySmartDateRange = async () => {
+    setHistoricalDatesReady(false);
+    try {
+      const {
+        startDate: smartStartDate,
+        endDate: smartEndDate,
+        isFallback,
+      } = await calculateSmartDateRange(selectedCells);
+
+      // Discard stale response if cell changed before this resolved
+      if (cancelToken.cancelled) return;
+
+      setStartDate(smartStartDate);
+      setEndDate(smartEndDate);
+      setHourlyStartDate(smartStartDate);
+      setHourlyEndDate(smartEndDate);
+      smartDateRangeAppliedRef.current = true;
+      setHistoricalDatesReady(true);
+
+      if (isFallback) {
+        showFallbackNotificationHandler();
+      }
+    } catch (error) {
+      if (!cancelToken.cancelled) {
+        console.error('Error applying smart date range:', error);
+        setHistoricalDatesReady(true);
+      }
+    }
+  };
+
+  applySmartDateRange();
+
+  return () => {
+    cancelToken.cancelled = true;
+  };
+}, [selectedCells, isInitialized, manualDateSelection, calculateSmartDateRange, showFallbackNotificationHandler]);
+// ↑ smartDateRangeApplied REMOVED — it's a ref now, refs don't trigger re-renders
+
+
+  // Sync state changes to URL
+// Sync state changes to URL
+useEffect(() => {
+  if (!isInitialized) return;
+
+  const newParams = new URLSearchParams();
+
+  if (selectedCells.length > 0) {
+    newParams.set('cell_id', selectedCells.map((cell) => cell.id).join(','));
+  }
+
+  // Only write dates to URL if user manually selected them
+  // Prevents smart-range dates from poisoning URL on reload
+  if (manualDateSelection) {
+    newParams.set('startDate', hourlyStartDate.toISO());
+    newParams.set('endDate', hourlyEndDate.toISO());
+  }
+
+  const layoutSerialized = serializeLayoutParam(panelOrder);
+  if (layoutSerialized) {
+    newParams.set('layout', layoutSerialized);
+  }
+
+  setSearchParams(newParams, { replace: true });
+}, [
+  hourlyStartDate,
+  hourlyEndDate,
+  selectedCells,
+  panelOrder,
+  isInitialized,
+  manualDateSelection,
+  setSearchParams,
+]);
+
+
+  const handleStartDateChange = (newStartDate) => {
+    if (stream) {
+      setStartDate(newStartDate);
+    } else {
+      setHourlyStartDate(newStartDate);
+    }
+    setManualDateSelection(true);
+    setHistoricalDatesReady(true);
+    smartDateRangeAppliedRef.current = true;
+  };
+
+  const handleEndDateChange = (newEndDate) => {
+    if (stream) {
+      setEndDate(newEndDate);
+    } else {
+      setHourlyEndDate(newEndDate);
+    }
+    setManualDateSelection(true);
+    setHistoricalDatesReady(true);
+    smartDateRangeAppliedRef.current = true; // ✅ new
+  };
+
+  // Handle switching between streaming and hourly modes
+  const handleStreamToggle = (newStreamMode) => {
+    // Prevent enabling streaming for unauthenticated users
+    if (newStreamMode && loggedIn === false) {
+      return;
+    }
+
+    setStream(newStreamMode);
+    if (newStreamMode) {
+      setLiveData([...backgroundStreamDataRef.current]);
+
+      // Initialize timeouts when streaming starts
+      initializeStreamingTimeouts();
+
+      setStartDate(hourlyStartDate);
+      setEndDate(hourlyEndDate);
+    } else {
+      setLiveData([]);
+
+      if (clearTimeoutIdRef.current) {
+        clearTimeout(clearTimeoutIdRef.current);
+        clearTimeoutIdRef.current = null;
+      }
+
+      setStartDate(hourlyStartDate);
+      setEndDate(hourlyEndDate);
+    }
+  };
+
+  // Handle cell selection changes
+  const handleCellSelectionChange = (newSelectedCells) => {
+  setSelectedCells(newSelectedCells);
+  if (!manualDateSelection) {
+    smartDateRangeAppliedRef.current = false; // instant reset, no setTimeout race
+    setHistoricalDatesReady(false);
+  }
+};
+
+
+  useEffect(() => {
+    if (selectedCells.length === 0 || panelOrder.length > 0) {
+      setShowNoDataMessage(false);
+      return;
+    }
+
+    setShowNoDataMessage(false);
+
+    const checkForCharts = () => {
+      const chartContainers = document.querySelectorAll('canvas');
+      const hasVisibleCharts = chartContainers.length > 0;
+      setShowNoDataMessage(!hasVisibleCharts);
+    };
+
+    const timer1 = setTimeout(checkForCharts, 500);
+    const timer2 = setTimeout(checkForCharts, 1500);
+    const timer3 = setTimeout(checkForCharts, 3000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, [selectedCells, startDate, endDate, stream, panelOrder]);
+
+  // Disable streaming when user logs out
+  useEffect(() => {
+    if (loggedIn === false && stream) {
+      setStream(false);
+      setLiveData([]);
+
+      if (clearTimeoutIdRef.current) {
+        clearTimeout(clearTimeoutIdRef.current);
+        clearTimeoutIdRef.current = null;
+      }
+    }
+  }, [loggedIn, stream]);
+
+  const showPanelSection = selectedCells.length > 0;
+
+  return (
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <TopNav />
+      <Box sx={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
+        <DateRangeNotification
+          open={showFallbackNotification}
+          onClose={hideFallbackNotification}
+          fallbackStartDate={fallbackDates.start}
+          fallbackEndDate={fallbackDates.end}
+        />
+        <LayoutMismatchNotification
+          open={layoutMismatchOpen}
+          onClose={() => setLayoutMismatchOpen(false)}
+          missingPanelIds={layoutMismatchPanels}
+        />
+        <Stack
+          direction='column'
+          divider={<Divider orientation='horizontal' flexItem />}
+          justifyContent='spaced-evently'
+          sx={{ minHeight: '100vh', boxSizing: 'border-box' }}
+        >
+          {/* Responsive Header - Mobile vs Desktop Layout */}
+          {isMobile ? (
+            // Mobile layout - Two bars for better mobile UX
+            <Box sx={{ px: 3, py: 2 }}>
+              <Stack spacing={2}>
+                {/* First bar: Navigation + Cell Selection */}
+                <Stack direction='row' spacing={2} alignItems='center'>
+                  <BackBtn />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <CellSelect
+                      selectedCells={selectedCells}
+                      setSelectedCells={handleCellSelectionChange}
+                      axiosPrivate={axiosPrivate}
+                    />
+                  </Box>
+                </Stack>
+
+                {/* Second bar: Date Range + Controls */}
+                <Stack
+                  direction='row'
+                  spacing={2}
+                  alignItems='center'
+                  justifyContent='space-between'
+                  sx={{ flexWrap: 'wrap', gap: 1 }}
+                >
+                  {!stream && (
+                    <DateRangeSel
+                      startDate={hourlyStartDate}
+                      endDate={hourlyEndDate}
+                      setStartDate={handleStartDateChange}
+                      setEndDate={handleEndDateChange}
+                    />
+                  )}
+                  {stream && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          backgroundColor: 'success.main',
+                        }}
+                      />
+                      <Typography variant='body2' color='text.secondary'>
+                        Live
+                      </Typography>
+                    </Box>
+                  )}
+                  <Box sx={{ flexGrow: 1 }} /> {/* Spacer to push toggle to right */}
+                  <Stack direction='row' spacing={1} alignItems='center'>
+                    {!stream && !cells.isLoading && !cells.isError && <ArchiveModal cells={cells} />}
+                    {!stream && (
+                      <DownloadBtn
+                        disabled={dBtnDisabled}
+                        setDBtnDisabled={setDBtnDisabled}
+                        cells={selectedCells}
+                        startDate={hourlyStartDate}
+                        endDate={hourlyEndDate}
+                      />
+                    )}
+                    <StreamToggle isStreaming={stream} onToggle={handleStreamToggle} />
+                  </Stack>
+                </Stack>
+              </Stack>
+            </Box>
+          ) : (
+            // Desktop layout - Single bar (original layout preserved)
+            <Stack direction='row' alignItems='center' sx={{ p: 2 }} spacing={3}>
+              <BackBtn />
+              <Box sx={{ flexGrow: 1, maxWidth: '30%' }}>
+                <CellSelect
+                  selectedCells={selectedCells}
+                  setSelectedCells={handleCellSelectionChange}
+                  axiosPrivate={axiosPrivate}
+                />
+              </Box>
+              <Box display='flex' justifyContent='center' alignItems='center'>
+                {!stream ? (
+                  <DateRangeSel
+                    startDate={hourlyStartDate}
+                    endDate={hourlyEndDate}
+                    setStartDate={handleStartDateChange}
+                    setEndDate={handleEndDateChange}
+                  />
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: 'success.main',
+                      }}
+                    />
+                    <Typography variant='body2' color='text.secondary'>
+                      Live
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              <Box sx={{ flexGrow: 1 }} /> {/* Spacer to push controls to right */}
+              <Stack direction='row' spacing={1} alignItems='center'>
+                {!stream && (!cells.isLoading && !cells.isError ? <ArchiveModal cells={cells} /> : <span />)}
+                {!stream && (
+                  <DownloadBtn
+                    disabled={dBtnDisabled}
+                    setDBtnDisabled={setDBtnDisabled}
+                    cells={selectedCells}
+                    startDate={hourlyStartDate}
+                    endDate={hourlyEndDate}
+                  />
+                )}
+                <StreamToggle isStreaming={stream} onToggle={handleStreamToggle} />
+              </Stack>
+            </Stack>
+          )}
+          {selectedCells.length === 0 ? (
+            <Box display='flex' justifyContent='center' alignItems='center' sx={{ minHeight: 'calc(100vh - 120px)' }}>
+              <Box textAlign='center'>
+                <Typography variant='h4' color='primary' gutterBottom>
+                  Welcome to ENTS Charts
+                </Typography>
+                <Typography variant='h6' color='text.secondary'>
+                  Please select one or more cells above to view environmental sensor data
+                </Typography>
+                <Box
+                  sx={{
+                    backgroundColor: '#d32f2f',
+                    color: 'white',
+                    px: 2,
+                    py: 1.5,
+                    textAlign: 'center',
+                    fontFamily: 'sans-serif',
+                  }}
+                >
+                  CSV export is currently non-functional. See the issue for updates:{' '}
+                  <a
+                    href='https://github.com/jlab-sensing/ENTS-backend/issues/668'
+                    target='_blank'
+                    rel='noreferrer'
+                    style={{ color: '#ffffff', textDecoration: 'underline', fontWeight: 'bold' }}
+                  >
+                    GitHub Issue #668
+                  </a>
+                </Box>
+              </Box>
+            </Box>
+          ) : showNoDataMessage && panelOrder.length === 0 ? (
+            <Box display='flex' justifyContent='center' alignItems='center' sx={{ minHeight: 'calc(100vh - 120px)' }}>
+              <Box textAlign='center'>
+                <Typography variant='body1' color='text.secondary'>
+                  No data available for the selected cells and date range
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <>
+              {/* Top charts: draggable panel grid + add/remove */}
+              <Box
+                sx={{
+                  width: '100%',
+                  p: showPanelSection ? 2 : 0,
+                  minHeight: showPanelSection ? 'auto' : 0,
+                }}
+              >
+                <ChartPanelActions
+                  onAddChart={() => setAddChartOpen(true)}
+                  panelColumns={panelColumns}
+                  onPanelColumnsChange={setPanelColumns}
+                />
+                <ChartPanelGrid
+                  panelOrder={panelOrder}
+                  onPanelOrderChange={setPanelOrder}
+                  onRemovePanel={handleRemovePanel}
+                  panelColumns={panelColumns}
+                  chartProps={panelChartProps}
+                />
+                <AddChartModal
+                  open={addChartOpen}
+                  onClose={() => setAddChartOpen(false)}
+                  selectedCells={selectedCells}
+                  panelOrder={panelOrder}
+                  onAddPanel={handleAddPanel}
+                />
+              </Box>
+            </>
+          )}
+        </Stack>
+
+        {/* 
+        TODO: Alternative layout structure from main branch - currently commented out
+        to preserve conditional rendering functionality. This structure has better spacing
+        and responsive design but doesn't include conditional rendering callbacks.
+        
+        <Divider sx={{ backgroundColor: '#e0e0e0' }} />
+
+        <Stack
+          direction='column'
+          divider={<Divider orientation='horizontal' flexItem />}
+          justifyContent='space-evenly'
+          spacing={4}
+          sx={{
+            width: '100%',
+            boxSizing: 'border-box',
+            py: 3,
+            px: { xs: 2, sm: 3, md: 4 },
+          }}
+        >
+          <Box sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+            <Grid container spacing={3} columns={{ xs: 4, sm: 8, md: 12 }}>
+              <PowerCharts 
+                cells={selectedCells} 
+                {...(!stream && { startDate, endDate })}
+                stream={stream} 
+                liveData={liveData} 
+              />
+              <TerosCharts 
+                cells={selectedCells} 
+                {...(!stream && { startDate, endDate })}
+                stream={stream} 
+                liveData={liveData} 
+              />
+            </Grid>
+          </Box>
+          <Box sx={{ py: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+            <UnifiedChart type="soilPot" cells={selectedCells} {...(!stream && { startDate, endDate })} stream={stream} liveData={liveData} />
+          </Box>
+          <Box sx={{ py: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+            <UnifiedChart type="presHum" cells={selectedCells} {...(!stream && { startDate, endDate })} stream={stream} liveData={liveData} />
+          </Box>
+          <Box sx={{ py: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+            <UnifiedChart type="sensor" cells={selectedCells} {...(!stream && { startDate, endDate })} stream={stream} liveData={liveData} />
+          </Box>
+          <Box sx={{ py: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+            <UnifiedChart type="co2" cells={selectedCells} {...(!stream && { startDate, endDate })} stream={stream} liveData={liveData} />
+          </Box>
+          <Box sx={{ py: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+            <UnifiedChart type="soilHum" cells={selectedCells} {...(!stream && { startDate, endDate })} stream={stream} liveData={liveData} />
+          </Box>
+          <Box sx={{ py: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+            <UnifiedChart type="waterPress" cells={selectedCells} {...(!stream && { startDate, endDate })} stream={stream} liveData={liveData} />
+          </Box>
+          <Box sx={{ py: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+            <UnifiedChart type="waterFlow" cells={selectedCells} {...(!stream && { startDate, endDate })} stream={stream} liveData={liveData} />
+          </Box>
+        </Stack>
+
+        <Box sx={{ height: { xs: '60px', sm: '80px', md: '100px' } }} />
+        */}
+      </Box>
+    </Box>
+  );
 }
 export default Charts;

@@ -1,5 +1,5 @@
 import { React, useMemo, useState } from 'react';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { DateTimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
 import useControlled from '@mui/utils/useControlled';

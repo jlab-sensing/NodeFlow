@@ -1,4 +1,4 @@
-# NodeFlow API
+# NodeFlow Backend
 How to setup and test the backend APIs
 
 1. Start by cloning the repository to your local machine

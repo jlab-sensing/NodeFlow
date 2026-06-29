@@ -1,6 +1,5 @@
 import os
 from typing import Any
-
 import httpx
 from fastapi import HTTPException
 
@@ -21,7 +20,7 @@ def get_ents_headers() -> dict[str, str]:
         return {}
 
     header_name = os.getenv("ENTS_API_KEY_HEADER", "X-API-Key")
-    header_value = f"{header_prefix}{api_key}" if header_prefix else api_key
+    header_value = f"{api_key}"
     return {header_name: header_value}
 
 

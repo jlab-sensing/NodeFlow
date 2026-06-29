@@ -6,6 +6,7 @@ from app.routers.solenoid import router as solenoid_router
 from app.routers.sensor import router as sensor_router
 from app.routers.logger import router as logger_router
 from app.routers.groups import router as groups_router
+from app.routers.cells import router as cell_router
 import os
 
 @asynccontextmanager
@@ -29,6 +30,7 @@ app.include_router(solenoid_router)
 app.include_router(sensor_router)
 app.include_router(logger_router)
 app.include_router(groups_router)
+app.include_router(cell_router)
 
 @app.get("/")
 async def root():

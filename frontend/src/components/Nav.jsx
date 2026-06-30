@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../auth/hooks/useAuth';
 import useAxiosPrivate from '../auth/hooks/useAxiosPrivate';
 import { logout, signIn } from '../services/auth';
-import DvIcon from './DvIcon';
+import NfIcon from './NfIcon';
 
 function Nav({ user, setUser, loggedIn, setLoggedIn }) {
   const axiosPrivate = useAxiosPrivate();
@@ -76,7 +76,7 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
           sx={{ cursor: 'pointer', display: 'flex' }}
           aria-label='Go to home page'
         >
-          <DvIcon />
+          <NfIcon />
         </Box>
 
         {/* Mobile menu */}
@@ -130,6 +130,7 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
             boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
             px: 0.75,
             py: 0.5,
+            transform: 'translateX(-28px)',
             backdropFilter: 'blur(8px)'
           }}>
             <Button onClick={() => navigate('/')} sx={{

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from typing import Any
-from app.services.ents_client import ents_get
+from app.services.ents_client import ents_get, ents_put
 
 router = APIRouter(prefix="/api/cell", tags=["Cells"])
 
@@ -13,14 +13,14 @@ async def get_cells() -> list[dict[str, Any]]:
 async def get_cell_id() -> list[dict[str, Any]]:
     return await ents_get("/api/cell/id")
 
-@router.put("/id")
-async def put_cell_id() -> list[dict[str, Any]]:
-    return await ents_put("/api/cell/id")
-
 @router.get("/{cell_id}")
 async def get_cell(cell_id: int) -> dict[str, Any]:
 # get specific cell
     return await ents_get(f"/api/cell/{cell_id}")
+
+@router.put("/{cell_id}")
+async def put_cell_id(cell_id: int) -> list[dict[str, Any]]:
+    return await ents_put(f"/api/cell/{cell_id}")
 
 @router.get("/{cell_id}/sensors")
 async def get_cell_sensors(cell_id: int) -> list[dict[str, Any]]:

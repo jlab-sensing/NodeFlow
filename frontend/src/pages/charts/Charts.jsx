@@ -763,10 +763,10 @@ useEffect(() => {
             <Box display='flex' justifyContent='center' alignItems='center' sx={{ minHeight: 'calc(100vh - 120px)' }}>
               <Box textAlign='center'>
                 <Typography variant='h4' color='primary' gutterBottom>
-                  Welcome to ENTS Charts
+                  Welcome to NodeFlow Charts
                 </Typography>
                 <Typography variant='h6' color='text.secondary'>
-                  Please select one or more cells above to view environmental sensor data
+                  Please select one or more cells above to view sensor data
                 </Typography>
                 <Box
                   sx={{

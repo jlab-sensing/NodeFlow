@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import AuthContextProvider from './auth/AuthContextProvider';
 import Charts from './pages/charts/Charts';
+import AddGroup from './pages/groups/addGroup';
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Charts />} />
             <Route path="/charts" element={<Charts />} />
+            <Route path="/add-group" element={<AddGroup />} />
           </Routes>
         </ThemeProvider>
       </AuthContextProvider>

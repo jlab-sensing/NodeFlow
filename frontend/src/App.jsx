@@ -4,6 +4,11 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import AuthContextProvider from './auth/AuthContextProvider';
 import Charts from './pages/charts/Charts';
 import AddGroup from './pages/groups/addGroup';
+import Profile from './pages/profile/profile';
+import AccountInfo from './pages/profile/components/AccountInfo';
+import CellsList from './pages/profile/components/CellsList';
+import LoggersList from './pages/profile/components/LoggersList';
+
 
 const queryClient = new QueryClient();
 
@@ -40,6 +45,11 @@ function App() {
             <Route path="/" element={<Charts />} />
             <Route path="/charts" element={<Charts />} />
             <Route path="/add-group" element={<AddGroup />} />
+            <Route path='/profile' element={<Profile />}>
+                <Route path='account' element={<AccountInfo />} />
+                <Route path='cells' element={<CellsList />} />
+                <Route path='loggers' element={<LoggersList />} />
+              </Route>
           </Routes>
         </ThemeProvider>
       </AuthContextProvider>

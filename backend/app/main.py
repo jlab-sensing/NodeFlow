@@ -13,6 +13,8 @@ from app.routers.teros_data import router as teros_data_router
 from app.routers.tag import router as tag_router
 from app.routers.catalog import router as catalog_router
 from app.routers.users import router as user_router
+from app.routers.apikey import router as apikey_router
+from app.routers.auth import router as auth_router
 import os
 
 @asynccontextmanager
@@ -43,6 +45,8 @@ app.include_router(teros_data_router)
 app.include_router(tag_router)
 app.include_router(catalog_router)
 app.include_router(user_router)
+app.include_router(apikey_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

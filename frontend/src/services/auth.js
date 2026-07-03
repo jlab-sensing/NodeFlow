@@ -5,7 +5,7 @@ export const signIn = async () => {
     // Gets authentication url from backend server
     const {
       data: { url },
-    } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/oauth/url`);
+    } = await axios.get('/api/oauth/url');
     // Navigate to consent screen
     window.location.assign(url);
   } catch (err) {
@@ -21,7 +21,7 @@ export const logout = async () => {
     localStorage.removeItem('user');
 
     // Gets authentication url from backend server
-    await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`);
+    await axios.get('/api/auth/logout');
     // Navigate to landing
     window.location.assign('/');
   } catch (err) {

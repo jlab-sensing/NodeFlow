@@ -167,9 +167,9 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
             }}>Docs</Button>
             <Button onClick={() => navigate('/profile')} sx={{
               textTransform: 'none', borderRadius: '999px', px: 1.75, py: 0.5, fontWeight: 700,
-              color: isActive.docs ? '#FFFFFF' : '#0F172A',
-              backgroundColor: isActive.docs ? '#0F172A' : 'transparent',
-              '&:hover': { backgroundColor: isActive.docs ? '#111827' : 'rgba(0,0,0,0.04)' }
+              color: isActive.profile ? '#FFFFFF' : '#0F172A',
+              backgroundColor: isActive.profile ? '#0F172A' : 'transparent',
+              '&:hover': { backgroundColor: isActive.profile ? '#111827' : 'rgba(0,0,0,0.04)' }
             }}>Profile</Button>
           </Box>
         </Box>

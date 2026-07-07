@@ -134,7 +134,7 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
             boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
             px: 0.75,
             py: 0.5,
-            transform: 'translateX(-28px)',
+            transform: 'translateX(-80px)',
             backdropFilter: 'blur(8px)'
           }}>
             <Button onClick={() => navigate('/')} sx={{

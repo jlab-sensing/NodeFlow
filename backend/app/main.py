@@ -14,7 +14,7 @@ from app.routers.tag import router as tag_router
 from app.routers.catalog import router as catalog_router
 from app.routers.users import router as user_router
 from app.routers.apikey import router as apikey_router
-from app.routers.auth import router as auth_router
+from app.auth.routes import router as auth_router
 import os
 
 @asynccontextmanager

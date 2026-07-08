@@ -10,9 +10,10 @@ class UserRead(SQLModel):
     first_name: str
     last_name: str
     date_created: datetime
-    api_key: str
+    api_key: str | None = None
 
 
 class UserUpdate(SQLModel):
     first_name: str | None = None
     last_name: str | None = None
+    api_key: str | None = None

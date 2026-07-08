@@ -21,7 +21,9 @@ export const logout = async () => {
     localStorage.removeItem('user');
 
     // Gets authentication url from backend server
-    await axios.get('/api/auth/logout');
+    await axios.get('/api/auth/logout', {
+      withCredentials: true,
+    });
     // Navigate to landing
     window.location.assign('/');
   } catch (err) {

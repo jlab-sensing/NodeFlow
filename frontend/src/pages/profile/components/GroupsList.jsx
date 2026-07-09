@@ -1,18 +1,14 @@
 import { Box, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { useOutletContext } from 'react-router-dom';
-import AddCellModal from './AddCellModal';
-import DeleteCellModal from './DeleteCellModal';
-import EditCellModal from './EditCellModal';
 import { React, useState } from 'react';
-import ShareButton from './ShareButton';
 
-function CellsList() {
+function GroupsList() {
   let data = useOutletContext();
-  const isLoading = data[1];
-  const isError = data[2];
+  const isLoading = data[12];
+  const isError = data[13];
   const user = data[4];
-  data = data[0];
+  data = data[11];
   const [selectedRowsId, setSelectedRowsId] = useState([]);
 
   if (!user) {
@@ -25,35 +21,20 @@ function CellsList() {
     return <Typography>Loading...</Typography>;
   }
   if (isError) {
-    return <Typography>Error loading cells.</Typography>;
+    return <Typography>Error loading groups.</Typography>;
   }
 
   const columns = [
-    { field: 'id', headerName: 'Cell ID', width: 90 },
+    { field: 'id', headerName: 'Group ID', width: 90 },
     { field: 'name', headerName: 'Name', width: 150 },
-    { field: 'location', headerName: 'Location', width: 150 },
-    { field: 'lat', headerName: 'Latitude', width: 150 },
-    { field: 'long', headerName: 'Longitude', width: 150 },
-    { field: 'archive', headerName: 'Archive', width: 150 },
-    {
-      field: 'edit',
-      headerName: '',
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      renderCell: (params) => <EditCellModal cell={params.row} />, // edit button in new column
-    },
   ];
 
   let rows = [];
   if (data.map) {
-    rows = data.map((cell) => ({
-      id: cell.id,
-      name: cell.name,
-      location: cell.location,
-      lat: cell.latitude,
-      long: cell.longitude,
-      archive: cell.archive,
+    rows = data.map((group) => ({
+      id: group.id,
+      name: group.name,
+      
     }));
   }
 
@@ -97,7 +78,7 @@ function CellsList() {
             mb: { xs: 1, sm: 0 },
           }}
         >
-          Your Cells
+          Your Groups
         </Typography>
         <Box
           sx={{
@@ -106,9 +87,6 @@ function CellsList() {
             flexWrap: 'wrap',
           }}
         >
-          <ShareButton ids={selectedRowsId} />
-          <AddCellModal />
-          <DeleteCellModal ids={selectedRowsId} />
         </Box>
       </Box>
 
@@ -138,4 +116,4 @@ function CellsList() {
   );
 }
 
-export default CellsList;
+export default GroupsList;

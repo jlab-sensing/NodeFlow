@@ -9,12 +9,18 @@ from app.schemas.preferences import ActivationPrefTable, NotificationPrefTable
 from app.models.groups import GroupRead, GroupCreate
 from app.models.solenoid import SolenoidRead
 from app.models.actions import SolenoidAction, NotificationPref, ActivationPref
+from app.auth.auth import get_current_user
+from app.schemas.user_schema import UserTable
 
 router = APIRouter(prefix="/api/groups", tags=["Groups"])
 
 @router.get("/", response_model=List[GroupRead])
-def get_user_group_list(session: Session = Depends(get_session)):
-    return session.exec(select(GroupTable)).all()
+def get_user_group_list(
+        session: Session = Depends(get_session),
+        current_user: UserTable = Depends(get_current_user)
+    ):
+    statement = select(GroupTable).where(GroupTable.user_id == current_user.id)
+    return session.exec(statement).all()
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_new_group(group: GroupCreate, session: Session = Depends(get_session)):

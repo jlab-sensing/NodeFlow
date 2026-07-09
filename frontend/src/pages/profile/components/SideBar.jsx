@@ -30,16 +30,53 @@ function SideBar() {
           flexDirection: 'column'
         }}
       >
+
         <MenuItem 
-          onClick={() => navigate('/profile/cells')} 
+          onClick={() => navigate('/profile/groups')} 
           sx={{
-            backgroundColor: '#588157',
+            backgroundColor: '#1E3A5F',
             borderRadius: '10px',
             padding: '1rem 1.25rem',
             color: 'white',
             transition: 'all 0.2s ease',
             '&:hover': {
-              backgroundColor: '#4a6f4a',
+              backgroundColor: '#2AB0EE',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: '2.5rem' }}>
+            <Box 
+              component='img' 
+              src={cube} 
+              sx={{ 
+                width: '1.5rem', 
+                height: '1.5rem',
+                filter: 'brightness(0) invert(1)'
+              }} 
+            />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Groups"
+            primaryTypographyProps={{ 
+              fontSize: '1rem',
+              fontWeight: 500,
+              letterSpacing: '0.025em'
+            }}
+          />
+        </MenuItem>
+
+        <MenuItem 
+          onClick={() => navigate('/profile/cells')} 
+          sx={{
+            backgroundColor: '#1E3A5F',
+            borderRadius: '10px',
+            padding: '1rem 1.25rem',
+            color: 'white',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: '#2AB0EE',
               transform: 'translateY(-1px)',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
             },
@@ -69,13 +106,13 @@ function SideBar() {
         <MenuItem 
           onClick={() => navigate('/profile/loggers')} 
           sx={{
-            backgroundColor: '#588157',
+            backgroundColor: '#1E3A5F',
             borderRadius: '10px',
             padding: '1rem 1.25rem',
             color: 'white',
             transition: 'all 0.2s ease',
             '&:hover': {
-              backgroundColor: '#4a6f4a',
+              backgroundColor: '#2AB0EE',
               transform: 'translateY(-1px)',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
             },
@@ -105,13 +142,13 @@ function SideBar() {
         <MenuItem 
           onClick={() => navigate('/profile/account')} 
           sx={{
-            backgroundColor: '#588157',
+            backgroundColor: '#1E3A5F',
             borderRadius: '10px',
             padding: '1rem 1.25rem',
             color: 'white',
             transition: 'all 0.2s ease',
             '&:hover': {
-              backgroundColor: '#4a6f4a',
+              backgroundColor: '#2AB0EE',
               transform: 'translateY(-1px)',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
             },

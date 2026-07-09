@@ -9,6 +9,7 @@ import Profile from './pages/profile/profile';
 import AccountInfo from './pages/profile/components/AccountInfo';
 import CellsList from './pages/profile/components/CellsList';
 import LoggersList from './pages/profile/components/LoggersList';
+import GroupsList from './pages/profile/components/GroupsList';
 
 
 const queryClient = new QueryClient();
@@ -47,11 +48,12 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/charts" element={<Charts />} />
             <Route path="/add-group" element={<AddGroup />} />
-            <Route path='/profile' exact element={<Navigate replace to='/profile/cells' />} />
+            <Route path='/profile' exact element={<Navigate replace to='/profile/groups' />} />
             <Route path='/profile' element={<Profile />}>
                 <Route path='account' element={<AccountInfo />} />
                 <Route path='cells' element={<CellsList />} />
                 <Route path='loggers' element={<LoggersList />} />
+                <Route path='groups' element={<GroupsList />} />
               </Route>
           </Routes>
         </ThemeProvider>

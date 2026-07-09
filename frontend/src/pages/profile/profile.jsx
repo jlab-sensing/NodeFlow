@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import useAuth from '../../auth/hooks/useAuth';
 import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate';
 import Nav from '../../components/Nav';
-import { useUserCells } from '../../services/cell'; import { useUserLoggers } from '../../services/logger'; import SideBar from './components/SideBar';
+import { useUserCells } from '../../services/cell'; import { useUserLoggers } from '../../services/logger'; import SideBar from './components/SideBar'; import { useUserGroups } from '../../services/group';
 
 function Profile() {
   const axiosPrivate = useAxiosPrivate();
@@ -12,6 +12,7 @@ function Profile() {
   const navigate = useNavigate();
 
   const { data, isLoading, isError, refetch } = useUserCells(axiosPrivate);
+  const { data: groupData, isLoading: groupIsLoading, isError: groupIsError, refetch: groupRefetch} = useUserGroups(axiosPrivate);
   const { data: loggerData, isLoading: loggerIsLoading, isError: loggerIsError, refetch: loggerRefetch } = useUserLoggers(axiosPrivate);
 
   // Redirect to home if not logged in after auth check completes
@@ -78,7 +79,7 @@ function Profile() {
             width: '100%',
           }}
         >
-          <Outlet context={[data, isLoading, isError, refetch, user, setUser, loggerData, loggerIsLoading, loggerIsError, loggerRefetch, axiosPrivate]} />
+          <Outlet context={[data, isLoading, isError, refetch, user, setUser, loggerData, loggerIsLoading, loggerIsError, loggerRefetch, axiosPrivate, groupData, groupIsLoading, groupIsError, groupRefetch]} />
         </Box>
       </Box>
     </Box>

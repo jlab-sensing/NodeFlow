@@ -219,11 +219,11 @@ function AccountInfo() {
         mt: 1 // Add some top margin for better spacing
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <AccountCircleIcon sx={{ fontSize: '2.5rem', color: '#588157' }} />
+          <AccountCircleIcon sx={{ fontSize: '2.5rem', color: '#1E3A5F' }} />
           <Typography 
             variant='h4' 
             sx={{ 
-              color: '#588157', 
+              color: '#1E3A5F', 
               fontWeight: 'bold',
               fontSize: '1.75rem'
             }}
@@ -235,7 +235,7 @@ function AccountInfo() {
           variant='contained'
           onClick={handleEdit}
           sx={{
-            backgroundColor: '#588157',
+            backgroundColor: '#1E3A5F',
             '&:hover': {
               backgroundColor: '#3a5a40',
             },
@@ -267,7 +267,7 @@ function AccountInfo() {
         >
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <EmailIcon sx={{ fontSize: '1.5rem', color: '#588157' }} />
+              <EmailIcon sx={{ fontSize: '1.5rem', color: '#1E3A5F' }} />
               <Box>
                 <Typography 
                   variant='body2' 
@@ -312,7 +312,7 @@ function AccountInfo() {
         >
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <PersonIcon sx={{ fontSize: '1.5rem', color: '#588157' }} />
+              <PersonIcon sx={{ fontSize: '1.5rem', color: '#1E3A5F' }} />
               <Box>
                 <Typography 
                   variant='body2' 
@@ -372,7 +372,7 @@ function AccountInfo() {
         >
           {/* Header Section */}
           <Box sx={{ 
-            backgroundColor: '#588157', 
+            backgroundColor: '#1E3A5F', 
             padding: '1.5rem 2rem',
             position: 'relative',
             mb: 0
@@ -480,7 +480,7 @@ function AccountInfo() {
                 variant='contained'
                 disabled={isSubmitting || !formData.first_name?.trim() || !formData.last_name?.trim()}
                 sx={{
-                  backgroundColor: '#588157',
+                  backgroundColor: '#1E3A5F',
                   '&:hover': { backgroundColor: '#3a5a40' },
                   '&:disabled': { 
                     backgroundColor: '#ccc',

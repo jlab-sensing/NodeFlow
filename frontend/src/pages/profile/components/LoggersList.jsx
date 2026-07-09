@@ -90,7 +90,7 @@ function LoggersList() {
           variant='h5'
           sx={{
             textAlign: 'center',
-            color: '#588157',
+            color: '#1E3A5F',
             fontWeight: 'bold',
             flex: 1,
             marginRight: '-8.5%',

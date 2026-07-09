@@ -10,8 +10,12 @@ router = APIRouter(prefix="/api/solenoid", tags=["Solenoids"])
 
 @router.get("/", response_model=List[SolenoidRead])
 def list_solenoids(available: bool = Query(None), session: Session = Depends(get_session)):
-    """Lists all solenoids. 'available' filter logic can be expanded here."""
-    return session.exec(select(SolenoidTable)).all()
+    statement = select(SolenoidTable)
+
+    if available is True:
+        statement = statement.where(SolenoidTable.group_id == None)
+
+    return session.exec(statement).all()
 
 @router.get("/{solenoid_id}", response_model=SolenoidRead)
 def get_specific_solenoid(solenoid_id: int, session: Session = Depends(get_session)):
@@ -31,7 +35,7 @@ def add_new_solenoid(solenoid: SolenoidCreate, session: Session = Depends(get_se
     session.refresh(db_solenoid)
     return {"message": "Solenoid registered successfully"}
 
-@router.post("/action/")
+@router.post("/action")
 async def post_action_all_solenoids(action: SolenoidAction):
     """Broadcasts an action to all solenoids."""
     return {"status": "broadcast_sent", "action": action.action}

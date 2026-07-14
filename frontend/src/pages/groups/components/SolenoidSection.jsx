@@ -46,16 +46,17 @@ const toggleSolenoidSelection = (solenoidId) => {
                 variant= {selected ? 'contained' : 'outlined'}
                 sx ={{
                     width:'90%',
-                    backgroundColor: selected ? '#F6F6F6' : '#1E3A5F',
-                    color: '#000000',
-                    borderColor: selected ? '#000000' : '#1E3A5F',
+                    backgroundColor: selected ? '#1E3A5F' : '#F6F6F6',
+                    color: selected ? '#F6F6F6': '#000000',
+                    borderColor: selected ? '#1E3A5F' : '#000000',
                     borderRadius: '6px',
                     textTransform: 'none',
                     fontSize: 18,
                     py: 1,
                     '&:hover': {
-                        backgroundColor: '#D9D9D9',
+                        backgroundColor: '#2AB0EE',
                         borderColor: '#2AB0EE',
+                        color: '#000000'
                     }
                 }}
             >

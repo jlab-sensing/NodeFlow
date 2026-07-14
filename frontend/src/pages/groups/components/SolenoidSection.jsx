@@ -3,10 +3,9 @@ import { useEffect, useState } from 'react';
 import { Box, Button} from '@mui/material'
 import axios from '../../../api/axios';
 
-function SolenoidSection() {
+function SolenoidSection({ selectedIds, onSelectionChange }) {
     const [solenoids, setSolenoids] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedSolenoids, setSelectedSolenoids] = useState([]);
 
     useEffect(() => {
         async function loadSolenoids() {
@@ -22,14 +21,14 @@ function SolenoidSection() {
                 setLoading(false);
             }
         }
-
         loadSolenoids();
     }, []);
 
-    useEffect(() => {
-
-    }, [selectedSolenoids]);
-
+const toggleSolenoidSelection = (solenoidId) => {
+    onSelectionChange((currentIds) => 
+        currentIds.includes(solenoidId) ? currentIds.filter((id) => id !== solenoidId) : [...currentIds, solenoidId]
+    );
+};
 
   return (
     <GroupSection title="Available Solenoids" >
@@ -37,15 +36,19 @@ function SolenoidSection() {
         <div>Loading...</div>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mt: 1 }}>
-          {solenoids.map((solenoid) => (
+          {solenoids.map((solenoid) => {
+            const selected = selectedIds.includes(solenoid.id);
+            return (
             <Button
                 key={solenoid.id}
-                variant= "outlined"
+                onClick={() => toggleSolenoidSelection(solenoid.id)}
+                aria-pressed={selected}
+                variant= {selected ? 'contained' : 'outlined'}
                 sx ={{
                     width:'90%',
-                    backgroundColor: '#F6F6F6',
+                    backgroundColor: selected ? '#F6F6F6' : '#1E3A5F',
                     color: '#000000',
-                    borderColor: '#000000',
+                    borderColor: selected ? '#000000' : '#1E3A5F',
                     borderRadius: '6px',
                     textTransform: 'none',
                     fontSize: 18,
@@ -58,7 +61,8 @@ function SolenoidSection() {
             >
                 {solenoid.name}
             </Button>
-        ))}
+            );
+        })}
     </Box>
       )}
     </GroupSection>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Box, Button} from '@mui/material'
 import axios from '../../../api/axios';
 
-function SensorSection() {
+function SensorSection({ selectedIds, onSelectionChange}) {
     const [sensors, setSensors] = useState([]);
     const [loading, setLoading] = useState(true);
     
@@ -20,6 +20,12 @@ function SensorSection() {
         }
         loadSensors();
     }, []);
+
+const toggleSensorSelection = (sensorId) => {
+    onSelectionChange((currentIds) => 
+        currentIds.includes(sensorId) ? currentIds.filter((id) => id !== sensorId) : [...currentIds, sensorId]
+    );
+};
     
 
     return (
@@ -28,14 +34,19 @@ function SensorSection() {
         <div>Loading...</div>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, mt: 1, width: '90%', mx: 'auto' }}>
-          {sensors.map((sensor) => (
+          {sensors.map((sensor) => {
+            const selected = selectedIds.includes(sensor.id);
+
+            return (
             <Button
                 key={sensor.id}
-                variant= "outlined"
+                onClick={() => toggleSensorSelection(sensor.id)}
+                aria-pressed={selected}
+                variant= {selected ? "contained" : "outlined"}
                 sx ={{
-                    backgroundColor: '#F6F6F6',
+                    backgroundColor: selected ? '#F6F6F6' : '#1E3A5F',
                     color: '#000000',
-                    borderColor: '#000000',
+                    borderColor: selected ? '#000000' : '#1E3A5F',
                     borderRadius: '6px',
                     textTransform: 'none',
                     fontSize: 18,
@@ -48,7 +59,8 @@ function SensorSection() {
             >
                 {sensor.sensor_type}
             </Button>
-        ))}
+            );
+        })}
     </Box>
       )}
     </GroupSection>

@@ -5,6 +5,7 @@ from uuid import UUID
 from app.database import get_session
 from app.schemas.groups import GroupTable
 from app.schemas.solenoid import SolenoidTable
+from app.schemas.sensor import SensorTable
 from app.schemas.preferences import ActivationPrefTable, NotificationPrefTable
 from app.models.groups import GroupRead, GroupCreate
 from app.models.solenoid import SolenoidRead
@@ -22,13 +23,15 @@ def get_user_group_list(
     statement = select(GroupTable).where(GroupTable.user_id == current_user.id)
     return session.exec(statement).all()
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
-def create_new_group(group: GroupCreate, session: Session = Depends(get_session)):
-    db_group = GroupTable.model_validate(group)
+@router.post("/", response_model=GroupRead, status_code=status.HTTP_201_CREATED)
+def create_new_group(group: GroupCreate, session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+    db_group = GroupTable(name=group.name, user_id=current_user.id)
+
     session.add(db_group)
     session.commit()
     session.refresh(db_group)
-    return {"message": "Group created successfully"}
+
+    return db_group
 
 @router.get("/{group_id}", response_model=GroupRead)
 def get_specific_group_info(group_id: UUID, session: Session = Depends(get_session)):
@@ -98,3 +101,19 @@ async def set_activation_pref(group_id: UUID, pref: ActivationPref, session: Ses
     session.add(db_pref)
     session.commit()
     return {"status": "activation_preference_saved", "group_id": group_id}
+
+@router.get("/{group_id}/devices")
+def get_group_devices(group_id: UUID, session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+    group_statement = select(GroupTable).where(GroupTable.uuid == group_id, GroupTable.user_id == current_user.id)
+    group = session.exec(group_statement).first()
+    if not group:
+        raise HTTPException(status_code=404, details="Group not found")
+    solenoid_statement = select(SolenoidTable).where(SolenoidTable.group_id == group_id)
+    sensor_statement = select(SensorTable).where(SensorTable.group_id == group_id)
+    solenoids = session.exec(solenoid_statement).all()
+    sensors = session.exec(sensor_statement).all()
+
+    return {
+        "solenoids": solenoids,
+        "sensors": sensors,
+    }

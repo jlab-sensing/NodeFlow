@@ -5,6 +5,7 @@ from datetime import datetime
 from app.database import get_session
 from app.schemas.sensor import SensorTable
 from app.models.sensor import SensorRead, SensorCreate
+from app.models.groups import DeviceGroupUpdate
 
 router = APIRouter(prefix="/api/sensor", tags=["Sensors"])
 
@@ -35,6 +36,17 @@ async def update_sensor(sensor_id: int, sensor_update: SensorCreate, session: Se
     session.commit()
     session.refresh(db_sensor)
     return {"message": "Sensor updated successfully"}
+
+@router.put("/{sensor_id}/group")
+def update_sensor_group( sensor_id: int, update: DeviceGroupUpdate, session: Session = Depends(get_session)):
+    sensor = session.get(SensorTable, sensor_id)
+    if not sensor:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+    sensor.group_id = update.group_id
+    session.add(sensor)
+    session.commit()
+    session.refresh(sensor)
+    return sensor
 
 @router.get("/data/")
 async def get_sensor_plot_data(sensor_id: int, start: Optional[datetime] = Query(None), end: Optional[datetime] = Query(None)):

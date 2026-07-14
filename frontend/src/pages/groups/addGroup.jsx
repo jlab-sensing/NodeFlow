@@ -1,12 +1,27 @@
-import { Box, Button, TextField, Typography } from '@mui/material';
+import { Box, Button, stepClasses, TextField, Typography } from '@mui/material';
 import Nav from '../../components/Nav';
 import TopNav from '../../components/TopNav';
 import SolenoidSection from  './components/SolenoidSection'
 import SensorSection from './components/SensorSection';
 import ActivationPrefSection from './components/ActivationPrefSection';
 import NotificationPrefSection from './components/NotificationPrefSection';
+import CreateButton from './components/CreateButton'
+
+import { useState } from 'react';
+import { useActionData, useNavigate } from 'react-router-dom';
+import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate';
 
 function AddGroup() {
+
+    const [groupName, setGroupName] = useState('');
+    const [selectedSolenoids, setSelectedSolenoids] = useState([]);
+    const [selectedSensors, setSelectedSensors] = useState([]);
+    const [creating, setCreating] = useState(false);
+
+    const axiosPrivate = useAxiosPrivate();
+    const navigate = useNavigate();
+
+
     return (
         <>
         <TopNav />
@@ -50,30 +65,30 @@ function AddGroup() {
                 <TextField
                     fullWidth
                     placeholder="Group Name"
+                    value={groupName}
+                    onChange={(event) => setGroupName(event.target.value)}
                     variant="outlined"
                     sx={{
                         backgroundColor: '#ffffff',
                     }}
                 />
 
-                <SolenoidSection />
-                <SensorSection />
+                <SolenoidSection 
+                    selectedIds={selectedSolenoids}
+                    onSelectionChange={setSelectedSolenoids}
+                />
+                <SensorSection 
+                    selectedIds={selectedSensors}
+                    onSelectionChange={setSelectedSensors}
+                />
                 <ActivationPrefSection />
                 <NotificationPrefSection />
+                <CreateButton 
+                    groupName={groupName}
+                    selectedSolenoids={selectedSolenoids}
+                    selectedSensors={selectedSensors}
+                />
 
-                <Button
-                    variant="contained"
-                    sx={{
-                        alignSelf: 'center',
-                        width: 280,
-                        borderRadius: '999px',
-                        textTransform: 'none',
-                        fontSize: 20,
-                        backgroundColor: '#2AB0EE',
-                    }}
-                >
-                    Create
-                </Button>
             </Box>
         </Box>
         </>

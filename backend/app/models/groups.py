@@ -11,3 +11,6 @@ class GroupRead(SQLModel):
     user_id: UUID 
     name: str
     date_created: datetime
+
+class DeviceGroupUpdate(SQLModel):
+    group_id: UUID

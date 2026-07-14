@@ -5,11 +5,14 @@ from app.database import get_session
 from app.schemas.solenoid import SolenoidTable
 from app.models.solenoid import SolenoidRead, SolenoidCreate
 from app.models.actions import SolenoidAction
+from app.models.groups import DeviceGroupUpdate
 
 router = APIRouter(prefix="/api/solenoid", tags=["Solenoids"])
 
 @router.get("/", response_model=List[SolenoidRead])
 def list_solenoids(available: bool = Query(None), session: Session = Depends(get_session)):
+    """Lists all solenoids where there is no associated group_id"""
+
     statement = select(SolenoidTable)
 
     if available is True:
@@ -24,6 +27,17 @@ def get_specific_solenoid(solenoid_id: int, session: Session = Depends(get_sessi
     solenoid = session.exec(statement).first()
     if not solenoid:
         raise HTTPException(status_code=404, detail="Solenoid not found")
+    return solenoid
+
+@router.put("/{solenoid_id}/group")
+def update_solenoid_group(solenoid_id: int, update: DeviceGroupUpdate, session: Session = Depends(get_session)):
+    solenoid = session.get(SolenoidTable, solenoid_id)
+    if not solenoid:
+        raise HTTPException(status_code=404, detail="Solenoid not found")
+    solenoid.group_id = update.group_id
+    session.add(solenoid)
+    session.commit()
+    session.refresh(solenoid)
     return solenoid
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

@@ -1,6 +1,6 @@
 import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, Divider, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import AddIcon from '@mui/icons-material/Add';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useState } from 'react';
 import DeleteGroupButton from './DeleteGroupButton';
@@ -135,19 +135,21 @@ function GroupsList() {
 
       <Box 
         sx={{
-          display: 'flex',
-          flexDirection: 'row',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
           alignItems: 'center',
-          justifyContent: 'space-between',
           width: '100%',
           mb: 2,
         }}
       >
+        <Box />
+
         <Typography
           variant="h5"
           sx= {{
             color: '#1E3A5F',
             fontWeight: 'bold',
+            textAlign: 'center',
           }}
           >
             Your Groups
@@ -161,7 +163,7 @@ function GroupsList() {
               justifySelf: 'end',
             }}
           >
-            <AddIcon />
+            <AddCircleIcon />
           </Button>
           </Box>
           <Box

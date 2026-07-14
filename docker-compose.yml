@@ -9,6 +9,8 @@ services:
       - ${ENV_FILE:-.env}
     ports:
       - '8001:8001'
+    environment:
+      SOLENOID_TESTER_URL: http://solenoid-tester:8002
     depends_on:
       - postgresql
     volumes: 
@@ -51,6 +53,27 @@ services:
       PGADMIN_DEFAULT_PASSWORD: strong-password
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+
+  solenoid-tester:
+    build:
+      context: ./TestSolenoid
+      dockerfile: Dockerfile
+    image: nodeflow-soldenoid-tester
+    container_name: TestSolenoid
+    environment:
+      INITIAL_SOLENOID_STATE: closed
+    ports:
+      - '127.0.0.1:8002:8002'
+    healthcheck:
+      test: [
+        'CMD',
+        'python',
+        '-c',
+        "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"
+      ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     
 volumes:
   postgresql-16-data:

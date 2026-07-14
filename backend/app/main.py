@@ -15,6 +15,7 @@ from app.routers.catalog import router as catalog_router
 from app.routers.users import router as user_router
 from app.routers.apikey import router as apikey_router
 from app.auth.routes import router as auth_router
+from app.routers.test_solenoid import router as test_solenoid_router
 import os
 
 @asynccontextmanager
@@ -47,6 +48,7 @@ app.include_router(catalog_router)
 app.include_router(user_router)
 app.include_router(apikey_router)
 app.include_router(auth_router)
+app.include_router(test_solenoid_router)
 
 
 @app.get("/")

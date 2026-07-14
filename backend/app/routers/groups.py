@@ -63,13 +63,52 @@ def update_group(group_id: UUID, group_update: GroupCreate, session: Session = D
     return {"message": "Group updated successfully"}
 
 @router.delete("/{group_id}")
-def delete_group(group_id: UUID, session: Session = Depends(get_session)):
-    db_group = session.get(GroupTable, group_id)
-    if not db_group:
-        raise HTTPException(status_code=404, detail="Group not found")
-    session.delete(db_group)
+def delete_group(
+    group_id: UUID, 
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
+    group_statement = select(GroupTable).where(
+        GroupTable.uuid == group_id,
+        GroupTable.user_id == current_user.id,
+    )
+    group = session.exec(group_statement).first()
+
+    if not group:
+        raise HTTPException(
+            status_code=404,
+            detail="Group not found",
+        )
+    
+    solenoids = session.exec(
+        select(SolenoidTable).where(
+            SolenoidTable.group_id == group_id,
+            SolenoidTable.user_id == current_user.id,
+        )
+    ).all()
+
+    sensors = session.exec(
+        select(SensorTable).where(
+            SensorTable.group_id == group_id,
+            SolenoidTable.user_id == current_user.id,
+        )
+    ).all()
+    
+    for solenoid in solenoids:
+        solenoid.group_id = None
+        session.add(solenoid)
+
+    for sensor in sensors:
+        sensor.group_id = None
+        session.add(sensor)
+    
+    session.delete(group)
     session.commit()
-    return {"message": "Group deleted successfully"}
+
+    return {
+        "message": "Group deleted successfully"
+    }
+
 
 @router.post("/{group_id}/solenoid/{solenoid_id}/action/")
 async def post_solenoid_action(group_id: UUID, solenoid_id: int, action: SolenoidAction):

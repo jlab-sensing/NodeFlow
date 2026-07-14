@@ -1,16 +1,21 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, CircularProgress, Divider, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, Divider, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useOutletContext } from 'react-router-dom';
+import AddIcon from '@mui/icons-material/Add';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useState } from 'react';
+import DeleteGroupButton from './DeleteGroupButton';
 
 function GroupsList() {
+  const navigate = useNavigate();
   const data = useOutletContext();
 
   const isLoading = data[12];
   const isError = data[13];
   const user = data[4];
   const axiosPrivate = data[10];
+  const refetchGroups = data[14];
   const groups = data[11];
+
 
   const [expandedGroup, setExpandedGroup] = useState(null);
   const [devicesByGroup, setDevicesByGroup] = useState({});
@@ -53,6 +58,19 @@ function GroupsList() {
     } finally {
       setLoadingGroup(null);
     }
+  };
+
+  const handleGroupDeleted = async (groupUuid) => {
+    setExpandedGroup(null);
+
+    setDevicesByGroup((currentDevices) => {
+      const updatedDevices = {
+        ...currentDevices
+      };
+      delete updatedDevices[groupUuid];
+      return updatedDevices;
+    });
+    await refetchGroups();
   };
 
 
@@ -114,18 +132,38 @@ function GroupsList() {
         boxSizing: 'border-box',
       }}
       >
+
+      <Box 
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          mb: 2,
+        }}
+      >
         <Typography
           variant="h5"
           sx= {{
-            textAlign: 'center',
             color: '#1E3A5F',
             fontWeight: 'bold',
-            mb: 2,
           }}
           >
             Your Groups
           </Typography>
 
+          <Button
+            onClick={() => navigate('/add-group')}
+            aria-label='Add group'
+            sx={{
+              color: 'black',
+              justifySelf: 'end',
+            }}
+          >
+            <AddIcon />
+          </Button>
+          </Box>
           <Box
             sx={{
               display: 'flex',
@@ -167,7 +205,15 @@ function GroupsList() {
                         },
                       }}
                     >
-                      <Box>
+                      <Box 
+                        sx={{ 
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          pr: 2,
+                        }}
+                      >
                         <Typography
                           sx={{
                             color: '#1E3A5F',
@@ -232,19 +278,31 @@ function GroupsList() {
                               <Box
                                 key={solenoid.id}
                                 sx={{
+                                  width: '95%',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
                                   backgroundColor: '#f6f6f6',
                                   border: '1px solid #CCCCCC',
                                   borderRadius: '6px',
                                   p: 1.5,
+                                  pr: 2,
                                 }}
                               >
-                                <Typography fontWeight="bold">
+                                <Typography 
+                                  fontWeight="bold" 
+                                  sx={{
+                                    color: '#1E3A5F',
+                                  }}
+                                >
                                   {solenoid.name}
                                 </Typography>
 
                                 <Typography
                                   variant="body2"
                                   color="text.secondary"
+                                  sx={{
+                                    ml: 10
+                                  }}
                                 >
                                   State: {solenoid.active_state}
                                 </Typography>
@@ -282,10 +340,14 @@ function GroupsList() {
                               <Box
                                 key={sensor.id}
                                 sx={{
+                                  width: '95%',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
                                   backgroundColor: '#f6f6f6',
                                   border: '1px solid #CCCCCC',
                                   borderRadius: '6px',
                                   p: 1.5,
+                                  pr: 2,
                                 }}
                               >
                                 <Typography fontWeight="bold">
@@ -308,6 +370,22 @@ function GroupsList() {
                         )}
                         </Box>
                       ) : null}
+
+                      <Divider sx={{ my: 3}} />
+
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'flex-end',
+                        }}
+                      >
+                        <DeleteGroupButton
+                          group={group}
+                          axiosPrivate={axiosPrivate}
+                          onDeleted={handleGroupDeleted}
+                        />
+                      </Box>
+
                     </AccordionDetails>
                   </Accordion>
                 );

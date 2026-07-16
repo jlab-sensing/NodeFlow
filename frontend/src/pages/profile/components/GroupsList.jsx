@@ -33,10 +33,6 @@ function GroupsList() {
     setExpandedGroup(groupUuid);
     setError('');
 
-    if (devicesByGroup[groupUuid]){
-      return;
-    }
-
     try {
       setLoadingGroup(groupUuid);
       const response = await axiosPrivate.get(

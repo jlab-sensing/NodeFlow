@@ -1,8 +1,20 @@
-import { Box } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import TopNav from "../../components/TopNav";
 import TestSolenoidStatus from "./components/TestSolenoidTracker";
+import GroupBox from "./components/GroupBox";
+import { useUserGroups } from "../../services/group";
+import useAxiosPrivate from "../../auth/hooks/useAxiosPrivate";
 
 function Dashboard() {
+    const axiosPrivate = useAxiosPrivate();
+
+    const {
+        data: groups = [],
+        isLoading,
+        isError,
+    } = useUserGroups(axiosPrivate);
+
+
     return (
         
         <Box
@@ -17,11 +29,36 @@ function Dashboard() {
                 component={"main"}
                 sx={{
                     display: 'flex',
-                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    gap: 2,
                     p: 4,
                 }}
             >
                 <TestSolenoidStatus />
+
+                {isLoading ? (
+                    <CircularProgress />
+                ) : isError ? (
+                    <Typography color="error">
+                        Unable to load groups.
+                    </Typography>
+                ) : (
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2,
+                            width: '100%',
+                        }}
+                    >
+                        {groups.map((group) => (
+                            <GroupBox
+                                key={group.uuid}
+                                group={group}
+                            />
+                        ))}
+                    </Box>
+                )}
             </Box>
         </Box>
 

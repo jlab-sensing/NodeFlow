@@ -1,6 +1,7 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import useAxiosPrivate from "../../../auth/hooks/useAxiosPrivate";
+import OpenCloseButton from "./OpenCloseButton";
 
 function GroupBox({ group }) {
   const axiosPrivate = useAxiosPrivate();
@@ -10,6 +11,8 @@ function GroupBox({ group }) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [changingSolenoidId, setChangingSolenoidId] = useState(null);
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +49,42 @@ function GroupBox({ group }) {
       cancelled = true;
     };
   }, [axiosPrivate, group.uuid]);
+
+  const handleSolenoidStateChange = async (
+    solenoidId,
+    requestedState,
+  ) => {
+    try {
+      setActionError("");
+      setChangingSolenoidId(solenoidId);
+
+      const action = requestedState === "open" ? "open" : "close";
+      const response = await axiosPrivate.post(
+        `/api/solenoid/${solenoidId}/${action}`,
+      );
+      const confirmedState = response.data.state;
+
+      setDevices((currentDevices) => ({
+        ...currentDevices,
+        solenoids: (currentDevices.solenoids ?? []).map(
+          (solenoid) =>
+            solenoid.id === solenoidId
+              ? {
+                  ...solenoid,
+                  active_state: confirmedState,
+                }
+              : solenoid,
+        ),
+      }));
+    } catch (requestError) {
+      console.error("Unable to change solenoid state", requestError);
+      setActionError(
+        requestError.response?.data?.detail || "unable to change solenoid state",
+      );
+    } finally {
+      setChangingSolenoidId(null);
+    }
+  }
 
   const solenoids = devices.solenoids ?? [];
   const sensors = devices.sensors ?? [];
@@ -85,20 +124,44 @@ function GroupBox({ group }) {
 
             {solenoids.length > 0 ? (
               solenoids.map((solenoid) => (
-                <Typography
-                  key={solenoid.id}
-                  variant="body2"
-                  component="div"
-                  sx={{ mb: 0.5 }}
+                <Box
+                    key={solenoid.id}
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                        mb: 1.5,
+                    }}
                 >
-                  {solenoid.name}: {solenoid.active_state}
-                </Typography>
+                    <Typography variant="body2">
+                        {solenoid.name}
+                    </Typography>
+
+                    <OpenCloseButton
+                        state={solenoid.active_state}
+                        loading={changingSolenoidId === solenoid.id}
+                        onStateChange={(requestedState) =>
+                            handleSolenoidStateChange(
+                                solenoid.id,
+                                requestedState,
+                            )
+                        }
+                    />
+                </Box>
               ))
             ) : (
               <Typography variant="body2" component="div">
                 No solenoids
               </Typography>
             )}
+
+            {actionError && (
+                <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                    {actionError}
+                </Typography>
+            )}
+
           </Box>
 
           <Box sx={{ flex: 1 }}>

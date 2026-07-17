@@ -129,7 +129,7 @@ function GroupBox({ group }) {
                     sx={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        justifyContent: "flex-start",
                         gap: 2,
                         mb: 1.5,
                     }}

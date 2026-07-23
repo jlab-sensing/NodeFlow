@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import AuthCallback from './auth/Callback';
-import AuthContextProvider from './auth/AuthContextProvider';
+import AuthContextProvider, { AuthContext } from './auth/AuthContextProvider';
 import Charts from './pages/charts/Charts';
 import AddGroup from './pages/groups/addGroup';
 import Profile from './pages/profile/profile';
@@ -11,9 +11,12 @@ import CellsList from './pages/profile/components/CellsList';
 import LoggersList from './pages/profile/components/LoggersList';
 import GroupsList from './pages/profile/components/GroupsList';
 import Dashboard from './pages/dashboard/Dashboard';
+import { useContext } from 'react';
 
 
 const queryClient = new QueryClient();
+
+
 
 function App() {
   const theme = createTheme({
@@ -40,6 +43,15 @@ function App() {
     },
   });
 
+  const RequireAuth =({children}) => {
+    const { user } = useContext(AuthContext);
+
+    if (!user) {
+      return <Navigate to="/" replace />;
+    }
+    return children;
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContextProvider>
@@ -51,7 +63,11 @@ function App() {
             <Route path="/charts" element={<Charts />} />
             <Route path="/add-group" element={<AddGroup />} />
             <Route path='/profile' exact element={<Navigate replace to='/profile/groups' />} />
-            <Route path='/profile' element={<Profile />}>
+            <Route path='/profile' element={
+              <RequireAuth>
+                <Profile />
+              </RequireAuth>
+              }>
                 <Route path='account' element={<AccountInfo />} />
                 <Route path='cells' element={<CellsList />} />
                 <Route path='loggers' element={<LoggersList />} />

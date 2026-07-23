@@ -1,41 +1,64 @@
-import { CircularProgress, Stack, Switch, Typography } from "@mui/material";
+import { CircularProgress, Stack, Switch } from "@mui/material";
 import {styled} from '@mui/material/styles';
 
 const SolenoidSwitch = styled(Switch)(({ theme }) => ({
-    width: 76,
-    height: 34,
+    width: 110,
+    height: 38,
     padding: 0,
 
     "& .MuiSwitch-switchBase":{
-        padding: 3,
+        padding: 4,
         transitionDuration: "200ms",
+        zIndex: 2,
+
         "&.Mui-checked": {
-            transform: "translateX(42px)",
+            transform: "translateX(61px)",
             color: "#ffffff",
 
             "& + .MuiSwitch-track": {
                 backgroundColor: theme.palette.success.main,
                 opacity: 1,
+
+                "&::before": {
+                    content: '"OPEN"',
+                    left: 12,
+                    right: "auto",
+                },
             },
         },
+
         "&.Mui-disabled + .MuiSwitch-track":{
             opacity: 0.5,
         },
     },
 
     "& .MuiSwitch-thumb": {
-        width: 28,
-        height: 28,
+        width: 40,
+        height: 30,
+        borderRadius: "5px",
         boxShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
     },
 
     "& .MuiSwitch-track":{
-        borderRadius: 17,
+        position: "relative",
+        borderRadius: 5,
         backgroundColor: theme.palette.error.main,
         opacity: 1,
         transition: theme.transitions.create("background-color", {
             duration: 200,
         }),
+
+        "&::before": {
+            content: '"CLOSED"',
+            position: "absolute",
+            top: "50%",
+            right: 9,
+            transform: "translateY(-50%)",
+            color: "#FFFFFF",
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+        },
     },
 }));
 
@@ -53,33 +76,17 @@ function OpenCloseButton({
     };
 
     return (
-        <Stack direction="row" spacing={1.5} alignItems="center">
-            <Typography
-                variant="body2"
-                color={!isOpen ? "error.main" : "text.secondary"}
-                fontWeight={!isOpen ? 600: 400}
-            >
-                Closed
-            </Typography>
-
+       <Stack direction="row" spacing={1} alignItems="center">
             <SolenoidSwitch
                 checked={isOpen}
                 onChange={handleChange}
                 disabled={disabled || loading}
                 slotProps={{
                     input: {
-                        "aria-label": "Open or close solenoid",
+                        "aria-label": `Solenoid is currently ${state}`
                     },
                 }}
             />
-
-            <Typography
-                variant="body2"
-                color={isOpen ? "success.main" : "text.secondary"}
-                fontWeight={isOpen ? 600 : 400}
-            >
-                Open
-            </Typography>
 
             {loading && <CircularProgress size={18} />}
         </Stack>

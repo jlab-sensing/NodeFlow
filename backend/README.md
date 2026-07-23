@@ -1,4 +1,4 @@
-# NodeFlow Backend
+# NodeFlow Backend API
 
 ## Introduction
 
@@ -9,6 +9,8 @@ The NodeFlow backend is built using the [FastAPI](https://fastapi.tiangolo.com/)
 The NodeFlow API handles users authentication using a [refresh token flow](https://cloudentity.com/developers/basics/oauth-grant-types/refresh-token-flow/). Users are given an access token to the API and a refresh token to designate access time. Currently, still under construction
 
 The authentication module is located under `auth`
+
+
 
 1. Start by cloning the repository to your local machine
 

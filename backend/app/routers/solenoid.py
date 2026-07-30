@@ -6,10 +6,12 @@ from app.schemas.solenoid import SolenoidTable
 from app.models.solenoid import SolenoidRead, SolenoidCreate
 from app.models.actions import SolenoidAction
 from app.models.groups import DeviceGroupUpdate
+from app.schemas.groups import GroupTable
 import httpx
 import os
 from app.auth.auth import get_current_user
 from app.schemas.user_schema import UserTable
+from app.services.solenoid_control import close_solenoid, open_solenoid
 
 router = APIRouter(prefix="/api/solenoid", tags=["Solenoids"])
 
@@ -61,31 +63,35 @@ async def post_action_all_solenoids(action: SolenoidAction):
     return {"status": "broadcast_sent", "action": action.action}
 
 @router.post('/{solenoid_id}/close')
-async def close_specific_solenoid(solenoid_id: int, session: Session=Depends(get_session)):
+async def close_specific_solenoid(solenoid_id: int, session: Session=Depends(get_session), current_user: UserTable = Depends(get_current_user)):
     """Close a specific solenoid"""
-    statement = select(SolenoidTable).where(SolenoidTable.id == solenoid_id)
+    statement = select(SolenoidTable).where(SolenoidTable.id == solenoid_id, SolenoidTable.user_id == current_user.id)
     solenoid=session.exec(statement).first()
     if not solenoid: 
         raise HTTPException(status_code=404, detail="Solenoid not found")
-    # implement talking to solenoid here
-    # Start of test code
+
+    if solenoid.group_id is not None:
+        group_statement = select(GroupTable).where(
+            GroupTable.uuid == solenoid.group_id,
+            GroupTable.user_id == current_user.id,
+        )
+        group = session.exec(group_statement).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="group not found")
+        group.irrigation_mode = "manual"
+        session.add(group)
+        session.commit()
+
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.post(f"{SOLENOID_TESTER_URL}/close")
-            response.raise_for_status()
-            tester_response = response.json()
+        updated_solenoid = await close_solenoid(solenoid, session)
     except httpx.HTTPError as error:
         raise HTTPException(status_code=503, detail="Test solenoid unavailable") from error
-    
-    solenoid.active_state = tester_response["state"]
-    session.add(solenoid)
-    session.commit()
-    session.refresh(solenoid)
+
     return {
-        "solenoid_id": solenoid.id,
-        "state": tester_response["state"],
+        "solenoid_id": updated_solenoid.id,
+        "state": updated_solenoid.active_state,
+        "mode": "manual" if solenoid.group_id is not None else None,
     }
-    # end of test code
 
 
 @router.post("/{solenoid_id}/open")    
@@ -95,25 +101,15 @@ async def open_specific_solenoid(solenoid_id: int, session: Session = Depends(ge
     solenoid = session.exec(statement).first()
     if not solenoid:
         raise HTTPException(status_code=404, detail="Solenoid not found")
-    # Implement talking to solenoid here
-    # Start of test code
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.post(f"{SOLENOID_TESTER_URL}/open")
-            response.raise_for_status()
-            tester_response = response.json()
+        updated_solenoid = await open_solenoid(solenoid, session)
     except httpx.HTTPError as error:
         raise HTTPException(status_code=503, detail="Test solenoid unavailable") from error
-    
-    solenoid.active_state = tester_response["state"]
-    session.add(solenoid)
-    session.commit()
-    session.refresh(solenoid)
+
     return {
-        "solenoid_id": solenoid.id,
-        "state": tester_response["state"],
+        "solenoid_id": updated_solenoid.id,
+        "state": updated_solenoid.active_state,
     }
-    # End of test code
 
 @router.delete("/{solenoid_id}")
 async def delete_solenoid(solenoid_id: int, session: Session = Depends(get_session)):

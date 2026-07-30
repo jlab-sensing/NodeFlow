@@ -5,6 +5,7 @@ import AuthCallback from './auth/Callback';
 import AuthContextProvider, { AuthContext } from './auth/AuthContextProvider';
 import Charts from './pages/charts/Charts';
 import AddGroup from './pages/groups/addGroup';
+import EditGroup from './pages/groups/editGroup';
 import Profile from './pages/profile/profile';
 import AccountInfo from './pages/profile/components/AccountInfo';
 import CellsList from './pages/profile/components/CellsList';
@@ -16,7 +17,15 @@ import { useContext } from 'react';
 
 const queryClient = new QueryClient();
 
+function RequireAuth({ children }) {
+  const { user } = useContext(AuthContext);
 
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
 
 function App() {
   const theme = createTheme({
@@ -43,15 +52,6 @@ function App() {
     },
   });
 
-  const RequireAuth =({children}) => {
-    const { user } = useContext(AuthContext);
-
-    if (!user) {
-      return <Navigate to="/" replace />;
-    }
-    return children;
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContextProvider>
@@ -62,6 +62,11 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/charts" element={<Charts />} />
             <Route path="/add-group" element={<AddGroup />} />
+            <Route path="/groups/:groupId/edit" element={
+              <RequireAuth>
+                <EditGroup />
+              </RequireAuth>
+            } />
             <Route path='/profile' exact element={<Navigate replace to='/profile/groups' />} />
             <Route path='/profile' element={
               <RequireAuth>

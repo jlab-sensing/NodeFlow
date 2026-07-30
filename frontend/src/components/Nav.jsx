@@ -64,8 +64,6 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
   const isActive = useMemo(() => ({
     home: location.pathname === '/',
     dashboard: location.pathname.startsWith('/dashboard'),
-    map: location.pathname.startsWith('/map'),
-    docs: location.pathname.startsWith('/docs'),
     profile: location.pathname.startsWith('/profile'),
   }), [location.pathname]);
 
@@ -96,12 +94,6 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
               </ListItemButton>
               <ListItemButton onClick={() => { navigate('/dashboard'); closeDrawer(); }}>
                 <ListItemText primary='Dashboard' />
-              </ListItemButton>
-              <ListItemButton onClick={() => { navigate('/map'); closeDrawer(); }}>
-                <ListItemText primary='Map' />
-              </ListItemButton>
-              <ListItemButton onClick={() => { navigate('/docs'); closeDrawer(); }}>
-                <ListItemText primary='Docs' />
               </ListItemButton>
               <ListItemButton onClick={() => { navigate('/profile'); closeDrawer(); }}>
                 <ListItemText primary='Profile' />
@@ -153,18 +145,6 @@ function Nav({ user, setUser, loggedIn, setLoggedIn }) {
               backgroundColor: isActive.dashboard ? '#0F172A' : 'transparent',
               '&:hover': { backgroundColor: isActive.dashboard ? '#111827' : 'rgba(0,0,0,0.04)' }
             }}>Dashboard</Button>
-            <Button onClick={() => navigate('/map')} sx={{
-              textTransform: 'none', borderRadius: '999px', px: 1.75, py: 0.5, fontWeight: 700,
-              color: isActive.map ? '#FFFFFF' : '#0F172A',
-              backgroundColor: isActive.map ? '#0F172A' : 'transparent',
-              '&:hover': { backgroundColor: isActive.map ? '#111827' : 'rgba(0,0,0,0.04)' }
-            }}>Map</Button>
-            <Button onClick={() => navigate('/docs')} sx={{
-              textTransform: 'none', borderRadius: '999px', px: 1.75, py: 0.5, fontWeight: 700,
-              color: isActive.docs ? '#FFFFFF' : '#0F172A',
-              backgroundColor: isActive.docs ? '#0F172A' : 'transparent',
-              '&:hover': { backgroundColor: isActive.docs ? '#111827' : 'rgba(0,0,0,0.04)' }
-            }}>Docs</Button>
             <Button onClick={() => navigate('/profile')} sx={{
               textTransform: 'none', borderRadius: '999px', px: 1.75, py: 0.5, fontWeight: 700,
               color: isActive.profile ? '#FFFFFF' : '#0F172A',

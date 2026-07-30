@@ -21,6 +21,7 @@ function GroupsList() {
   const [devicesByGroup, setDevicesByGroup] = useState({});
   const [loadingGroup, setLoadingGroup] = useState(null);
   const [error, setError] = useState('');
+  const [activationPrefByGroup, setActivationPrefByGroup] = useState({});
 
 
   const handleGroupToggle = async (groupUuid) => {
@@ -35,13 +36,23 @@ function GroupsList() {
 
     try {
       setLoadingGroup(groupUuid);
-      const response = await axiosPrivate.get(
-        `/api/groups/${groupUuid}/devices`
-      );
+      const [devicesResponse, activationPrefResponse] = await Promise.all([
+        axiosPrivate.get(
+          `/api/groups/${groupUuid}/devices`,
+        ),
+        axiosPrivate.get(
+          `/api/groups/${groupUuid}/activationPref/`
+        ),
+      ]);
 
       setDevicesByGroup((currentDevices) => ({
         ...currentDevices,
-        [groupUuid]: response.data,
+        [groupUuid]: devicesResponse.data,
+      }));
+
+      setActivationPrefByGroup((currentPreferences) => ({
+        ...currentPreferences, 
+        [groupUuid]: activationPrefResponse.data
       }));
     } catch (requestError) {
       console.error(
@@ -65,6 +76,14 @@ function GroupsList() {
       };
       delete updatedDevices[groupUuid];
       return updatedDevices;
+    });
+
+    setActivationPrefByGroup((currentPreferences) => {
+      const updatedPreferences = {
+        ...currentPreferences
+      };
+      delete updatedPreferences[groupUuid];
+      return updatedPreferences;
     });
     await refetchGroups();
   };
@@ -94,13 +113,7 @@ function GroupsList() {
     );
   }
 
-  if (!groups || groups.length === 0) {
-    return (
-      <Typography>
-        You do not have any groups yet.
-      </Typography>
-    );
-  }
+  const hasGroups = Array.isArray(groups) && groups.length > 0;
 
   return (
     <Box
@@ -169,11 +182,28 @@ function GroupsList() {
               gap: 1,
             }}
             >
-              {groups.map((group) => {
+              {!hasGroups ? (
+                <Box
+                  sx={{
+                    backgroundColor: '#F6F6F6',
+                    borderRadius: '8px',
+                    minHeight: 64,
+                    px: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    You do not have any groups configured.
+                  </Typography>
+                  </Box>
+              ) : (groups.map((group) => {
                 const isExpanded = expandedGroup === group.uuid;
                 const devices = devicesByGroup[group.uuid];
                 const sensors = devices?.sensors || [];
                 const solenoids = devices?.solenoids || [];
+                const activationPreference = activationPrefByGroup[group.uuid];
+                const activationSensor = sensors.find((sensor) => sensor.id === activationPreference?.sensor_id);
                 const isLoadingDevices = loadingGroup === group.uuid;
 
                 return (
@@ -369,14 +399,123 @@ function GroupsList() {
                         </Box>
                       ) : null}
 
-                      <Divider sx={{ my: 3}} />
+                      {activationPreference && (
+                        <>
+                          <Divider sx={{ my: 3}} />
+
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              color: '#1E3A5F',
+                              fontWeight: 'bold',
+                              mb: 1,
+                            }}
+                          >
+                            Activation
+                          </Typography>
+
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: {
+                                xs: "1fr",
+                                sm: "repeat(3, 1fr)",
+                              },
+                              gap: 2,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                backgroundColor: "#F6F6F6",
+                                border: "1px solid #CCCCCC",
+                                borderRadius: "6px",
+                                p: 1.5,
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                component="div"
+                              >
+                                Measurement
+                              </Typography>
+
+                              <Typography fontWeight="bold">
+                                {activationPreference.measurement}
+                                {activationSensor ? ` - ${activationSensor.sensor_type}` : ""}
+                              </Typography>
+                            </Box>
+
+                            <Box
+                              sx={{
+                                backgroundColor: "#f6f6f6",
+                                border: "1px solid #CCCCCC",
+                                borderRadius: "6px",
+                                p: 1.5,
+                              }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  component="div"
+                                >
+                                  Operator
+                                </Typography>
+
+                                <Typography fontWeight="bold">
+                                  {activationPreference.condition_operator}
+                                </Typography>
+                              </Box>
+
+                              <Box
+                                sx={{
+                                  backgroundColor: "#F6F6F6",
+                                  border: "1px solid #CCCCCC",
+                                  borderRadius: "6px",
+                                  p: 1.5
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  component="div"
+                                >
+                                  Threshold
+                                </Typography>
+
+                                <Typography fontWeight="bold">
+                                  {activationPreference.condition_value}
+                                </Typography>
+                              </Box>
+                          </Box>
+
+                        </>
+                      )}
+
+                      <Divider sx={{ my: 3 }} />
 
                       <Box
                         sx={{
                           display: 'flex',
                           justifyContent: 'flex-end',
+                          gap: 1,
                         }}
                       >
+                        <Button
+                          variant="contained"
+                          onClick={() =>
+                            navigate(`/groups/${group.uuid}/edit`)
+                          }
+                          sx={{
+                            backgroundColor: "#1E3A5F",
+                            "&:hover": {
+                              backgroundColor: "#2AB0EE",
+                            },
+                          }}
+                        >
+                          Edit
+                        </Button>
+
                         <DeleteGroupButton
                           group={group}
                           axiosPrivate={axiosPrivate}
@@ -387,7 +526,7 @@ function GroupsList() {
                     </AccordionDetails>
                   </Accordion>
                 );
-              })}
+              }))}
             </Box>
       </Box>
   );

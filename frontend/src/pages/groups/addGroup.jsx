@@ -1,99 +1,96 @@
-import { Box, Button, stepClasses, TextField, Typography } from '@mui/material';
-import Nav from '../../components/Nav';
-import TopNav from '../../components/TopNav';
-import SolenoidSection from  './components/SolenoidSection'
-import SensorSection from './components/SensorSection';
-import ActivationPrefSection from './components/ActivationPrefSection';
-import NotificationPrefSection from './components/NotificationPrefSection';
-import CreateButton from './components/CreateButton'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useAxiosPrivate from "../../auth/hooks/useAxiosPrivate";
+import GroupForm from "./components/GroupForm";
 
-import { useState } from 'react';
-import { useActionData, useNavigate } from 'react-router-dom';
-import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate';
+const emptyGroupConfig = {
+    name: "",
+    selectedSolenoidIds: [],
+    selectedSensorIds: [],
+
+    activationPreference: {
+        sensorId: "",
+        measurement: "",
+        conditionOperator: "<",
+        conditionValue: "",
+        closeConditionOperator: ">",
+        closeConditionValue: "",
+        enabled: true,
+    },
+};
 
 function AddGroup() {
-
-    const [groupName, setGroupName] = useState('');
-    const [selectedSolenoids, setSelectedSolenoids] = useState([]);
-    const [selectedSensors, setSelectedSensors] = useState([]);
-    const [creating, setCreating] = useState(false);
-
     const axiosPrivate = useAxiosPrivate();
     const navigate = useNavigate();
 
+    const [creating, setCreating] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleCreate = async (formData) => {
+        try {
+            setCreating(true);
+            setError("");
+
+            const groupResponse = await axiosPrivate.post("/api/groups/", {
+                name: formData.name.trim(),
+            });
+            const groupId = groupResponse.data.uuid;
+
+            await Promise.all([
+                ...formData.selectedSolenoidIds.map((id) =>
+                    axiosPrivate.put(`/api/solenoid/${id}/group`, {
+                        group_id: groupId,
+                    }),
+                ),
+                ...formData.selectedSensorIds.map((id) =>
+                    axiosPrivate.put(`/api/sensor/${id}/group`, {
+                        group_id: groupId,
+                    }),
+                ),
+            ]);
+
+            const preference = formData.activationPreference;
+            const hasCloseCondition = preference.closeConditionValue !== "";
+            if (
+                preference.sensorId
+                && preference.measurement
+                && preference.conditionValue !== ""
+            ) {
+                await axiosPrivate.post(
+                    `/api/groups/${groupId}/activationPref/`,
+                    {
+                        sensor_id: Number(preference.sensorId),
+                        measurement: preference.measurement,
+                        condition_operator: preference.conditionOperator,
+                        condition_value: Number(preference.conditionValue),
+                        close_condition_operator:
+                            hasCloseCondition ? preference.closeConditionOperator : null,
+                        close_condition_value:
+                            hasCloseCondition ? Number(preference.closeConditionValue) : null,
+                        enabled: preference.enabled,
+                    },
+                );
+            }
+
+            navigate("/profile/groups");
+        } catch (requestError) {
+            setError(
+                requestError.response?.data?.detail || "Unable to create group",
+            );
+        } finally {
+            setCreating(false);
+        }
+    };
 
     return (
-        <>
-        <TopNav />
-        <Box
-            sx={{
-            minHeight: 'calc(100vh - 72px)',
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            backgroundColor: '#ffffff',
-            px: 3,
-            py: 4,
-            }}
-        >
-            <Box
-                sx={{
-                    width: '100%',
-                    maxWidth: 1000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2,
-                    backgroundColor: '#d9d9d9',
-                    border: '1px solid #777',
-                    borderRadius: '14px',
-                    px: 4,
-                    py: 3,
-                }}
-            >
-                <Typography 
-                    variant="h5"
-                    sx={{
-                        textAlign: { xs: 'left', sm: 'center' },
-                        color: '#1E3A5F',
-                        fontWeight: 'bold',
-                        fontSize: 48,
-
-                    }}>
-                    Add Group
-                </Typography>
-
-                <TextField
-                    fullWidth
-                    placeholder="Group Name"
-                    value={groupName}
-                    onChange={(event) => setGroupName(event.target.value)}
-                    variant="outlined"
-                    sx={{
-                        backgroundColor: '#ffffff',
-                    }}
-                />
-
-                <SolenoidSection 
-                    selectedIds={selectedSolenoids}
-                    onSelectionChange={setSelectedSolenoids}
-                />
-                <SensorSection 
-                    selectedIds={selectedSensors}
-                    onSelectionChange={setSelectedSensors}
-                />
-                <ActivationPrefSection />
-                <NotificationPrefSection />
-                <CreateButton 
-                    groupName={groupName}
-                    selectedSolenoids={selectedSolenoids}
-                    selectedSensors={selectedSensors}
-                />
-
-            </Box>
-        </Box>
-        </>
-        
-    )
+        <GroupForm
+            mode="create"
+            initialValues={emptyGroupConfig}
+            onSubmit={handleCreate}
+            submitting={creating}
+            error={error}
+        />
+    );
 }
 
 export default AddGroup;

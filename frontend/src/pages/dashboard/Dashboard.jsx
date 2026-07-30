@@ -4,6 +4,7 @@ import TestSolenoidStatus from "./components/TestSolenoidTracker";
 import GroupBox from "./components/GroupBox";
 import { useUserGroups } from "../../services/group";
 import useAxiosPrivate from "../../auth/hooks/useAxiosPrivate";
+import TestSensorTracker from "./components/TestSensorTracker";
 
 function Dashboard() {
     const axiosPrivate = useAxiosPrivate();
@@ -34,7 +35,16 @@ function Dashboard() {
                     p: 4,
                 }}
             >
-                <TestSolenoidStatus />
+                <Box
+                    sx={{
+                        display: "flex",
+                        gap: 2,
+                        flexWrap: "wrap",
+                    }}
+                >
+                    <TestSolenoidStatus />
+                    <TestSensorTracker />
+                </Box>
 
                 {isLoading ? (
                     <CircularProgress />

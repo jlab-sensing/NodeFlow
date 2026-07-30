@@ -11,8 +11,10 @@ services:
       - '8001:8001'
     environment:
       SOLENOID_TESTER_URL: http://solenoid-tester:8002
+      SENSOR_TESTER_URL: http://sensor-tester:8003
     depends_on:
       - postgresql
+      - sensor-tester
     volumes: 
       - './backend:/app'
     
@@ -33,11 +35,11 @@ services:
 
   postgresql:
     image: postgres:16
-    environment: 
+    environment:
       POSTGRES_DB: nodeflow
       POSTGRES_USER: nodeflow
       POSTGRES_PASSWORD: nf_password  
-    ports: 
+    ports:
       - '5433:5432'
     volumes: 
       - postgresql-16-data:/var/lib/postgresql/data
@@ -70,6 +72,29 @@ services:
         'python',
         '-c',
         "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"
+      ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  sensor-tester:
+    build:
+      context: ./TestSensor
+      dockerfile: Dockerfile
+    container_name: TestSensor
+    environment:
+      INITIAL_SENSOR_VALUE: 0.40
+      INITIAL_SENSOR_MODE: sine
+      SENSOR_TYPE: soil_moisture
+      SENSOR_MEASUREMENT: vwc
+    ports:
+      - "127.0.0.1:8003:8003"
+    healthcheck:
+      test: [
+        "CMD",
+        "python",
+        "-c",
+        "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"
       ]
       interval: 10s
       timeout: 3s

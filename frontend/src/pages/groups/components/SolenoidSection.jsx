@@ -10,9 +10,7 @@ function SolenoidSection({ selectedIds, onSelectionChange }) {
     useEffect(() => {
         async function loadSolenoids() {
             try {
-                const res = await axios.get('/api/solenoid/', {
-                    params: {available: true },
-                });
+                const res = await axios.get('/api/solenoid/');
 
                 setSolenoids(res.data);
             } catch (error) {
@@ -36,7 +34,9 @@ const toggleSolenoidSelection = (solenoidId) => {
         <div>Loading...</div>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mt: 1 }}>
-          {solenoids.map((solenoid) => {
+          {solenoids
+            .filter((solenoid) => !solenoid.group_id || selectedIds.includes(solenoid.id))
+            .map((solenoid) => {
             const selected = selectedIds.includes(solenoid.id);
             return (
             <Button

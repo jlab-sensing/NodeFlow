@@ -6,13 +6,16 @@ class ActivationPrefTable(SQLModel, table=True):
     __tablename__ = "activation_prefs"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    uuid: UUID = Field(default_factory=uuid4)
+    uuid: UUID = Field(default_factory=uuid4, index=True)
     user_id: UUID = Field(index=True)
-    tag_id: int
-    sensor: str
-    condition_operator: str  
-    condition_value: float   
-    activated: bool          
+    group_id: UUID = Field(index=True)
+    sensor_id: int
+    measurement: str
+    condition_operator: str
+    condition_value: float
+    close_condition_operator: Optional[str] = None
+    close_condition_value: Optional[float] = None
+    enabled: bool = True
 
 class NotificationPrefTable(SQLModel, table=True):
     __tablename__ = "notification_prefs"

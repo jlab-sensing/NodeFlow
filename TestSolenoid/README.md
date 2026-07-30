@@ -1,3 +1,15 @@
 # Test Solenoid
 
-This is a container that is meant to act as a test solenoid. Real solenoids are not currently ready to be tested on, so this is where tests will occur for now. 
+A small FastAPI service that simulates an open or closed solenoid for NodeFlow.
+
+The initial state is configured with `INITIAL_SOLENOID_STATE`. Updating
+`/status` sets the state directly, while `/open` and `/close` provide explicit
+commands that behave like operations sent to a real solenoid.
+
+## Endpoints
+
+- `GET /health`
+- `GET /status`
+- `PUT /status`
+- `POST /open`
+- `POST /close`

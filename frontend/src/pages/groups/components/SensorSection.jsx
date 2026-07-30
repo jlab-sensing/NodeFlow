@@ -34,7 +34,9 @@ const toggleSensorSelection = (sensorId) => {
         <div>Loading...</div>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, mt: 1, width: '90%', mx: 'auto' }}>
-          {sensors.map((sensor) => {
+          {sensors
+            .filter((sensor) => !sensor.group_id || selectedIds.includes(sensor.id))
+            .map((sensor) => {
             const selected = selectedIds.includes(sensor.id);
 
             return (

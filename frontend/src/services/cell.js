@@ -108,7 +108,7 @@ export const shareCell = async (cellId, email, accessToken) => {
 };
 
 export const getUserCells = (axiosPrivate) => {
-  return axiosPrivate.get(`${import.meta.env.VITE_API_BASE_URL}/cell/?user=True`).then((res) => res.data);
+  return axiosPrivate.get('/api/cell/?user=True').then((res) => res.data);
 };
 
 export const useCells = () =>

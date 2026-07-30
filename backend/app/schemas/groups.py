@@ -11,3 +11,4 @@ class GroupTable(SQLModel, table=True):
     name: str
     user_id: UUID 
     date_created: datetime = Field(default_factory=datetime.utcnow)
+    irrigation_mode: str = Field(default="auto")

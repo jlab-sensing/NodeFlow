@@ -1,5 +1,5 @@
 import axios from 'axios';
-const RESOURCES_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
+const RESOURCES_URL = `${import.meta.env.VITE_API_BASE_URL}`;
 
 export default axios.create({
   baseURL: RESOURCES_URL,

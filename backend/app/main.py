@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
+import asyncio
+import os
+
 from app.database import create_db_and_tables
 from app.routers.solenoid import router as solenoid_router
 from app.routers.sensor import router as sensor_router
@@ -13,12 +16,22 @@ from app.routers.teros_data import router as teros_data_router
 from app.routers.tag import router as tag_router
 from app.routers.catalog import router as catalog_router
 from app.routers.users import router as user_router
-import os
+from app.routers.apikey import router as apikey_router
+from app.auth.routes import router as auth_router
+from app.routers.test_solenoid import router as test_solenoid_router
+from app.services.activation_engine import run_activation_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
-    yield
+    activation_task = asyncio.create_task(run_activation_loop())
+
+    try:
+        yield
+    finally:
+        activation_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await activation_task
 
 app = FastAPI(title="NodeFlow API", lifespan=lifespan)
 
@@ -43,6 +56,9 @@ app.include_router(teros_data_router)
 app.include_router(tag_router)
 app.include_router(catalog_router)
 app.include_router(user_router)
+app.include_router(apikey_router)
+app.include_router(auth_router)
+app.include_router(test_solenoid_router)
 
 
 @app.get("/")

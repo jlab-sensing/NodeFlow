@@ -114,7 +114,7 @@ function GroupBox({ group }) {
       );
       const confirmedState = response.data.state;
 
-      if (action === "close" && response.data.mode) {
+      if (response.data.mode) {
         setIrrigationMode(response.data.mode);
       }
 

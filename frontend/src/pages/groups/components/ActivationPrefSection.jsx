@@ -194,6 +194,7 @@ function ActivationPrefSection({ selectedSensorIds, value, onChange }) {
               sx={{
                 alignSelf: "center",
                 textTransform: "none",
+                mt: "4px"
               }}
             >
               Create a close condition
@@ -218,7 +219,7 @@ function ActivationPrefSection({ selectedSensorIds, value, onChange }) {
                   borderRadius: "6px",
                   backgroundColor: "#f6f6f6",
                   position: "relative",
-                  pt: 7,
+                  pt: 6,
                 }}
               >
                 <Tooltip title="Delete close condition">

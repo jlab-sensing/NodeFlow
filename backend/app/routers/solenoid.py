@@ -95,20 +95,39 @@ async def close_specific_solenoid(solenoid_id: int, session: Session=Depends(get
 
 
 @router.post("/{solenoid_id}/open")    
-async def open_specific_solenoid(solenoid_id: int, session: Session = Depends(get_session)):
+async def open_specific_solenoid(solenoid_id: int, session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
     """Open a specific solenoid"""
-    statement = select(SolenoidTable).where(SolenoidTable.id == solenoid_id)
+    statement = select(SolenoidTable).where(
+        SolenoidTable.id == solenoid_id,
+        SolenoidTable.user_id == current_user.id,
+    )
     solenoid = session.exec(statement).first()
-    if not solenoid:
-        raise HTTPException(status_code=404, detail="Solenoid not found")
-    try:
-        updated_solenoid = await open_solenoid(solenoid, session)
-    except httpx.HTTPError as error:
-        raise HTTPException(status_code=503, detail="Test solenoid unavailable") from error
 
+    if not solenoid:
+        raise HTTPException(status_code=404, detail="solenoid not found")
+
+    if solenoid.group_id is not None:
+        group_statement = select(GroupTable).where(
+            GroupTable.uuid == solenoid.group_id,
+            GroupTable.user_id == current_user.id,
+        )
+        group = session.exec(group_statement).first()
+
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        group.irrigation_mode = "manual"
+        session.add(group)
+        session.commit()
+
+    try:
+        update_solenoid = await open_solenoid(solenoid, session)
+    except httpx.HTTPError as error:
+        raise HTTPException(status_code=503, detail = "test solenoid unavailable") from EOFError
     return {
-        "solenoid_id": updated_solenoid.id,
-        "state": updated_solenoid.active_state,
+        "solenoid_id": update_solenoid.id,
+        "state": update_solenoid.active_state,
+        "mode": "manual" if solenoid.group_id is not None else None,
     }
 
 @router.delete("/{solenoid_id}")

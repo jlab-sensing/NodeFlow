@@ -1,8 +1,4 @@
-export function getNonStreamTimeDomain(stream, startDate, endDate) {
-  if (stream) {
-    return {};
-  }
-
+export function getChartTimeDomain(startDate, endDate) {
   if (
     !startDate ||
     !endDate ||

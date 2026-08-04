@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 
-function ChartPanelPlaceholder({ message = 'No data for the selected cells or date range.', loading = false }) {
+function ChartPanelPlaceholder({ message = 'No data for the selected sensors or date range.', loading = false }) {
   return (
     <Box
       sx={{

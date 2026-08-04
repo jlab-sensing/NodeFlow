@@ -12,8 +12,6 @@
 
 export const LAYOUT_VERSION = 'v1';
 
-export const DEFAULT_CHART_PANEL_ORDER = ['power-vi', 'power-p', 'teros', 'temp'];
-
 /** Built-in top-grid panels (PowerCharts / TerosCharts). */
 export const BUILTIN_CATALOG = [
   {
@@ -111,25 +109,6 @@ const ALL_ENTRIES = [...BUILTIN_CATALOG, ...UNIFIED_CATALOG];
 
 const PANEL_ID_SET = new Set(ALL_ENTRIES.map((e) => e.panelId));
 
-/** Unified types rendered in the legacy bottom stack (auto, not in panel grid). */
-export const LEGACY_BOTTOM_UNIFIED_TYPES = [
-  'power_voltage',
-  'power_current',
-  'teros12_vwc',
-  'teros12_vwc_adj',
-  'teros12_temp',
-  'teros12_ec',
-  'soilPot',
-  'presHum',
-  'sensor',
-  'co2',
-  'temperature',
-  'soilHum',
-  'waterPress',
-  'waterFlow',
-  'waterFlowD10',
-];
-
 /**
  * @param {string} panelId
  * @returns {CatalogEntry | undefined}
@@ -146,13 +125,6 @@ export function isKnownPanelId(panelId) {
 }
 
 /**
- * @param {string} unifiedType
- */
-export function unifiedTypeToPanelId(unifiedType) {
-  return `u:${unifiedType}`;
-}
-
-/**
  * @param {string} panelId
  * @returns {string | null}
  */
@@ -162,33 +134,5 @@ export function panelIdToUnifiedType(panelId) {
 }
 
 export { isLayoutPanelEntry, parseLayoutParam, serializeLayoutParam } from './layoutPanels';
-
-/**
- * @param {string[]} panelOrder
- */
-export function getUnifiedTypesInPanelOrder(panelOrder) {
-  return panelOrder.map(panelIdToUnifiedType).filter(Boolean);
-}
-
-/**
- * @param {import('../../../services/catalog').CatalogApiEntry[]} apiEntries
- * @returns {CatalogEntry[]}
- */
-export function catalogEntriesFromApi(apiEntries) {
-  if (!Array.isArray(apiEntries)) return [...ALL_ENTRIES];
-
-  const byId = new Map(ALL_ENTRIES.map((e) => [e.panelId, e]));
-  return apiEntries
-    .map((row) => {
-      const base = byId.get(row.panel_id);
-      if (!base) return null;
-      return {
-        ...base,
-        label: row.label || base.label,
-        description: row.description || base.description,
-      };
-    })
-    .filter(Boolean);
-}
 
 export { ALL_ENTRIES as FULL_CATALOG };

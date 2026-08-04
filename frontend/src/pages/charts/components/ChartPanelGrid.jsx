@@ -17,11 +17,12 @@ import UnifiedChart from './UnifiedChart';
 
 function ChartPanelContent({ panelId, chartProps }) {
   const shared = {
-    cells: chartProps.cells,
+    sensors: chartProps.sensors,
+    axiosPrivate: chartProps.axiosPrivate,
     startDate: chartProps.startDate,
     endDate: chartProps.endDate,
-    stream: chartProps.stream,
-    liveData: chartProps.liveData,
+    historicalSensorByKey: chartProps.historicalSensorByKey,
+    historicalLoading: chartProps.historicalLoading,
   };
 
   const unifiedType = panelIdToUnifiedType(panelId);
@@ -29,13 +30,10 @@ function ChartPanelContent({ panelId, chartProps }) {
     return (
       <UnifiedChart
         type={unifiedType}
-        cells={chartProps.cells}
+        sensors={chartProps.sensors}
+        axiosPrivate={chartProps.axiosPrivate}
         startDate={chartProps.startDate}
         endDate={chartProps.endDate}
-        stream={chartProps.stream}
-        liveData={chartProps.liveData}
-        processedData={chartProps.processedSensors}
-        cellSensorsById={chartProps.cellSensorsById}
         historicalSensorByKey={chartProps.historicalSensorByKey}
         centralHistoricalActive={chartProps.centralHistoricalActive?.sensors}
         historicalLoading={chartProps.historicalLoading}
@@ -49,11 +47,7 @@ function ChartPanelContent({ panelId, chartProps }) {
         <PowerCharts
           {...shared}
           variant='voltage'
-          processedData={chartProps.processedPower}
           onDataStatusChange={chartProps.onPowerDataStatusChange}
-          historicalPowerByCell={chartProps.historicalPowerByCell}
-          centralHistoricalActive={chartProps.centralHistoricalActive?.power}
-          historicalLoading={chartProps.historicalLoading}
         />
       );
     case 'power-p':
@@ -61,11 +55,7 @@ function ChartPanelContent({ panelId, chartProps }) {
         <PowerCharts
           {...shared}
           variant='power'
-          processedData={chartProps.processedPower}
           onDataStatusChange={chartProps.onPowerDataStatusChange}
-          historicalPowerByCell={chartProps.historicalPowerByCell}
-          centralHistoricalActive={chartProps.centralHistoricalActive?.power}
-          historicalLoading={chartProps.historicalLoading}
         />
       );
     case 'teros':
@@ -73,11 +63,7 @@ function ChartPanelContent({ panelId, chartProps }) {
         <TerosCharts
           {...shared}
           variant='vwc'
-          processedData={chartProps.processedTeros}
           onDataStatusChange={chartProps.onTerosDataStatusChange}
-          historicalTerosByCell={chartProps.historicalTerosByCell}
-          centralHistoricalActive={chartProps.centralHistoricalActive?.teros}
-          historicalLoading={chartProps.historicalLoading}
         />
       );
     case 'temp':
@@ -85,11 +71,7 @@ function ChartPanelContent({ panelId, chartProps }) {
         <TerosCharts
           {...shared}
           variant='temp'
-          processedData={chartProps.processedTeros}
           onDataStatusChange={chartProps.onTerosDataStatusChange}
-          historicalTerosByCell={chartProps.historicalTerosByCell}
-          centralHistoricalActive={chartProps.centralHistoricalActive?.teros}
-          historicalLoading={chartProps.historicalLoading}
         />
       );
     default:
@@ -198,22 +180,13 @@ ChartPanelGrid.propTypes = {
   onRemovePanel: PropTypes.func.isRequired,
   panelColumns: PropTypes.oneOf([1, 2]).isRequired,
   chartProps: PropTypes.shape({
-    cells: PropTypes.array,
+    sensors: PropTypes.array,
+    axiosPrivate: PropTypes.func,
     startDate: PropTypes.any,
     endDate: PropTypes.any,
-    stream: PropTypes.bool,
-    liveData: PropTypes.array,
-    processedPower: PropTypes.object,
-    processedTeros: PropTypes.object,
-    processedSensors: PropTypes.object,
-    cellSensorsById: PropTypes.object,
-    historicalPowerByCell: PropTypes.object,
-    historicalTerosByCell: PropTypes.object,
     historicalSensorByKey: PropTypes.object,
     historicalLoading: PropTypes.bool,
     centralHistoricalActive: PropTypes.shape({
-      power: PropTypes.bool,
-      teros: PropTypes.bool,
       sensors: PropTypes.bool,
     }),
     onPowerDataStatusChange: PropTypes.func,

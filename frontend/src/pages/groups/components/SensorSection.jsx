@@ -1,16 +1,17 @@
 import GroupSection from './GroupSection'
 import { useEffect, useState } from 'react';
 import { Box, Button} from '@mui/material'
-import axios from '../../../api/axios';
+import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate';
 
 function SensorSection({ selectedIds, onSelectionChange}) {
+    const axiosPrivate = useAxiosPrivate();
     const [sensors, setSensors] = useState([]);
     const [loading, setLoading] = useState(true);
     
     useEffect(() => {
         async function loadSensors() {
             try {
-                const res = await axios.get('/api/sensor/');    
+                const res = await axiosPrivate.get('/api/sensor/');
                 setSensors(res.data);
             } catch (error) {
                 console.error('Error loading sensors', error);
@@ -19,7 +20,7 @@ function SensorSection({ selectedIds, onSelectionChange}) {
             }
         }
         loadSensors();
-    }, []);
+    }, [axiosPrivate]);
 
 const toggleSensorSelection = (sensorId) => {
     onSelectionChange((currentIds) => 

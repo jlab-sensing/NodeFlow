@@ -1,19 +1,17 @@
 import 'chartjs-adapter-luxon';
-import { DateTime } from 'luxon';
 import PropTypes from 'prop-types';
-import { React } from 'react';
 import { getAxisBoundsAndStepValues } from '../alignAxis';
-import { getNonStreamTimeDomain } from '../timeDomain';
+import { getChartTimeDomain } from '../timeDomain';
 import ChartWrapper from '../ChartWrapper';
 
-export default function VChart({ data, stream, startDate, endDate, onResampleChange }) {
+export default function VChart({ data, startDate, endDate, onResampleChange }) {
   const { leftYMin, leftYMax, leftYStep, rightYMin, rightYMax, rightYStep } = getAxisBoundsAndStepValues(
     data.datasets.filter((_, i) => i % 2 == 0),
     data.datasets.filter((_, i) => i % 2 == 1),
     10,
     10,
   );
-  const nonStreamXDomain = getNonStreamTimeDomain(stream, startDate, endDate);
+  const chartTimeDomain = getChartTimeDomain(startDate, endDate);
 
   const chartOptions = {
     maintainAspectRatio: false,
@@ -41,13 +39,13 @@ export default function VChart({ data, stream, startDate, endDate, onResampleCha
             day: 'MM/dd',
           },
         },
-        ...nonStreamXDomain,
+        ...chartTimeDomain,
       },
       vAxis: {
         position: 'left',
         title: {
           display: true,
-          text: 'Cell Voltage (mV)',
+          text: 'Voltage (mV)',
         },
         ticks: {
           stepSize: leftYStep,
@@ -73,70 +71,11 @@ export default function VChart({ data, stream, startDate, endDate, onResampleCha
     },
   };
 
-  const streamChartOptions = {
-    maintainAspectRatio: false,
-    responsive: true,
-    scales: {
-      x: {
-        position: 'bottom',
-        title: {
-          display: true,
-          text: 'Time',
-        },
-        type: 'time',
-        ticks: {
-          autoSkip: false,
-          autoSkipPadding: 50,
-          maxRotation: 0,
-          major: {
-            enabled: true,
-          },
-          padding: 15,
-        },
-        grid: {
-          tickLength: 15,
-        },
-        time: {
-          displayFormats: {
-            second: 'hh:mm:ss',
-            minute: 'hh:mm',
-            hour: 'hh:mm a',
-            day: 'D',
-          },
-        },
-        suggestedMin: DateTime.now().minus({ second: 10 }).toJSON(),
-        suggestedMax: DateTime.now().toJSON(),
-      },
-      vAxis: {
-        type: 'linear',
-        grace: '10%',
-        position: 'left',
-        title: {
-          display: true,
-          text: 'Cell Voltage (mV)',
-        },
-        grid: {
-          drawOnChartArea: false,
-        },
-      },
-      cAxis: {
-        type: 'linear',
-        grace: '10%',
-        position: 'right',
-        title: {
-          display: true,
-          text: 'Current (µA)',
-        },
-      },
-    },
-  };
-
   return (
     <ChartWrapper
       id='v'
       data={data}
-      options={stream ? streamChartOptions : chartOptions}
-      stream={stream}
+      options={chartOptions}
       onResampleChange={onResampleChange}
     />
   );
@@ -144,7 +83,6 @@ export default function VChart({ data, stream, startDate, endDate, onResampleCha
 
 VChart.propTypes = {
   data: PropTypes.object,
-  stream: PropTypes.bool,
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,

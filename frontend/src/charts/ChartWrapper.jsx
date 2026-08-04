@@ -1,4 +1,4 @@
-import { React, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import Modal from '@mui/material/Modal';
 import Fade from '@mui/material/Fade';
@@ -26,11 +26,10 @@ import {
 import 'chartjs-adapter-luxon';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { Line } from 'react-chartjs-2';
-import usePrevious from '../hooks/usePrevious';
 ChartJS.register(LineController, LineElement, PointElement, LinearScale, chartTooltip, Legend, TimeScale, zoomPlugin);
 
 //** Wrapper for chart functionality and state */
-function ChartWrapper({ id, data, options, stream, onResampleChange }) {
+function ChartWrapper({ id, data, options, onResampleChange }) {
   const [resetSelected] = useState(false);
   const [zoomSelected, setZoomSelected] = useState(false);
   const [panSelected, setPanSelected] = useState(true);
@@ -41,8 +40,6 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
   const [resampleAnchor, setResampleAnchor] = useState(null);
   const [selectedResample, setSelectedResample] = useState('hour');
   const [scaleRef, setScaleRef] = useState({});
-  const [prevData, setPrevData] = useState(data);
-  const prevScaleRef = usePrevious(scaleRef);
 
   //** defines axis for charts, charts may have different axis names/
   const axes = Object.keys(options.scales);
@@ -79,9 +76,6 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
   function Options() {
     return {
       ...options,
-      // Disable animations when streaming
-      animation: stream ? false : options.animation,
-      animations: stream ? { x: { duration: 0 }, y: { duration: 0 } } : options.animations,
       plugins: {
         zoom: {
           zoom: {
@@ -207,36 +201,19 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomSelected, panSelected, scaleRef, data]);
 
-  //** Maintain zoom and pan when streaming new data */
+  //** Keep the current zoom and pan bounds when historical data changes. */
   useEffect(() => {
-    if (JSON.stringify(prevData) != JSON.stringify(data)) {
-      setPrevData(data);
-      if (stream) {
-        if (chartRef.current && chartRef.current.config.data != data) {
-          chartRef.current.config.data.labels = data.labels;
-          chartRef.current.config.data.datasets = data.datasets;
-          chartRef.current.update();
-          return;
-        }
-      } else {
-        if (chartRef.current && chartRef.current.config.data != data) {
-          chartRef.current.config.data.labels = data.labels;
-          chartRef.current.config.data.datasets = data.datasets;
-          if (prevScaleRef != undefined) {
-            setScales(prevScaleRef);
-            chartRef.current.update();
-          } else if (scaleRef != undefined) {
-            setScales(scaleRef);
-            chartRef.current.update();
-          }
-          chartRef.current.update();
-          return;
-        }
+    if (chartRef.current && chartRef.current.config.data != data) {
+      chartRef.current.config.data.labels = data.labels;
+      chartRef.current.config.data.datasets = data.datasets;
+      if (scaleRef != undefined) {
+        setScales(scaleRef);
       }
+      chartRef.current.update();
     }
     // TODO: refactor for better state management
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, scaleRef, prevScaleRef, stream]);
+  }, [data, scaleRef]);
 
   /** Sets zoom / pan when state is updated onZoomComplete or onPanComplete */
   useEffect(() => {
@@ -315,9 +292,7 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
           </ToggleButton>
         </Tooltip>
 
-        {/* Show additional controls only when not streaming */}
-        {!stream && (
-          <>
+        <>
             <Tooltip
               title='Zoom'
               placement='bottom'
@@ -482,8 +457,7 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
                 <Box component='img' src={downloadIcon} sx={{ width: '20px', height: '20px' }}></Box>
               </ToggleButton>
             </Tooltip>
-          </>
-        )}
+        </>
 
         <Tooltip
           title='Fullscreen'
@@ -562,9 +536,7 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
                     <Box component='img' src={reset} sx={{ width: '20px', height: '20px' }}></Box>
                   </ToggleButton>
                 </Tooltip>
-                {/* Show additional controls only when not streaming */}
-                {!stream && (
-                  <Tooltip
+                <Tooltip
                     title='Zoom'
                     placement='bottom'
                     disableInteractive
@@ -584,10 +556,8 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
                     <ToggleButton value={zoomSelected} selected={zoomSelected} onClick={handleToggleZoom}>
                       <Box component='img' src={zoom} sx={{ width: '20px', height: '20px' }}></Box>
                     </ToggleButton>
-                  </Tooltip>
-                )}
-                {!stream && (
-                  <>
+                </Tooltip>
+                <>
                     <Tooltip
                       title='Pan'
                       placement='bottom'
@@ -716,8 +686,7 @@ function ChartWrapper({ id, data, options, stream, onResampleChange }) {
                         <Box component='img' src={downloadIcon} sx={{ width: '20px', height: '20px' }}></Box>
                       </ToggleButton>
                     </Tooltip>
-                  </>
-                )}
+                </>
 
                 <Tooltip
                   title='Windowed'
@@ -754,6 +723,5 @@ ChartWrapper.propTypes = {
   id: PropTypes.string,
   data: PropTypes.object,
   options: PropTypes.object,
-  stream: PropTypes.bool,
   onResampleChange: PropTypes.func,
 };

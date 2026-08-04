@@ -1,8 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import {
-  Box,
   Chip,
-  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -10,61 +8,26 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  MenuItem,
-  Select,
   Stack,
   Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getSensorCatalog } from '../../../services/catalog';
-import { catalogEntriesFromApi, FULL_CATALOG } from '../catalog/chartsCatalog';
+import { useMemo } from 'react';
+import { FULL_CATALOG } from '../catalog/chartsCatalog';
 
-function AddChartModal({ open, onClose, selectedCells, panelOrder, onAddPanel }) {
-  const [pickCellId, setPickCellId] = useState(null);
-  const [catalogEntries, setCatalogEntries] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const needsCellPick = selectedCells.length > 1;
-  const activeCellId = needsCellPick ? pickCellId : selectedCells[0]?.id ?? null;
-
-  useEffect(() => {
-    if (!open) return;
-    if (selectedCells.length === 1) {
-      setPickCellId(selectedCells[0].id);
-    } else if (selectedCells.length > 1 && pickCellId == null) {
-      setPickCellId(selectedCells[0].id);
-    }
-  }, [open, selectedCells, pickCellId]);
-
-  const loadCatalog = useCallback(async (cellId) => {
-    if (!cellId) {
-      setCatalogEntries([]);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const apiEntries = await getSensorCatalog(cellId);
-      setCatalogEntries(catalogEntriesFromApi(apiEntries));
-    } catch {
-      setCatalogEntries(FULL_CATALOG);
-      setError('Could not load catalog from server; showing all chart types.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (open && activeCellId) {
-      loadCatalog(activeCellId);
-    }
-  }, [open, activeCellId, loadCatalog]);
-
+function AddChartModal({ open, onClose, selectedSensors, panelOrder, onAddPanel }) {
+  const availablePanelIds = useMemo(
+    () => new Set(selectedSensors.flatMap((sensor) => sensor.panel_ids ?? [])),
+    [selectedSensors],
+  );
   const addableEntries = useMemo(
-    () => catalogEntries.filter((entry) => !panelOrder.includes(entry.panelId)),
-    [catalogEntries, panelOrder],
+    () =>
+      FULL_CATALOG.filter(
+        (entry) =>
+          availablePanelIds.has(entry.panelId) &&
+          !panelOrder.includes(entry.panelId),
+      ),
+    [availablePanelIds, panelOrder],
   );
 
   const handleSelect = (panelId) => {
@@ -72,14 +35,12 @@ function AddChartModal({ open, onClose, selectedCells, panelOrder, onAddPanel })
     onClose();
   };
 
-  const activeCellName = selectedCells.find((c) => c.id === activeCellId)?.name;
-
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
       <DialogTitle sx={{ pr: 6 }}>
-        Add chart from catalog
+        Add sensor chart
         <IconButton
-          aria-label="Close"
+          aria-label='Close'
           onClick={onClose}
           sx={{ position: 'absolute', right: 12, top: 12 }}
         >
@@ -88,45 +49,9 @@ function AddChartModal({ open, onClose, selectedCells, panelOrder, onAddPanel })
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pb: 1 }}>
-          {needsCellPick && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Cell
-              </Typography>
-              <Select
-                fullWidth
-                size="small"
-                value={pickCellId ?? ''}
-                onChange={(e) => setPickCellId(Number(e.target.value))}
-              >
-                {selectedCells.map((cell) => (
-                  <MenuItem key={cell.id} value={cell.id}>
-                    {cell.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          )}
-
-          {!needsCellPick && activeCellName && (
-            <Typography variant="body2" color="text.secondary">
-              Charts available for <strong>{activeCellName}</strong>
-            </Typography>
-          )}
-
-          {error && (
-            <Typography variant="body2" color="warning.main">
-              {error}
-            </Typography>
-          )}
-
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={32} />
-            </Box>
-          ) : addableEntries.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-              All available charts are already on the page.
+          {addableEntries.length === 0 ? (
+            <Typography variant='body2' color='text.secondary' sx={{ py: 2 }}>
+              All charts supported by the selected sensors are already displayed.
             </Typography>
           ) : (
             <List disablePadding>
@@ -147,7 +72,7 @@ function AddChartModal({ open, onClose, selectedCells, panelOrder, onAddPanel })
                     primaryTypographyProps={{ fontWeight: 600 }}
                   />
                   <Chip
-                    size="small"
+                    size='small'
                     label={entry.category}
                     sx={{ ml: 1, textTransform: 'capitalize' }}
                   />
@@ -164,10 +89,10 @@ function AddChartModal({ open, onClose, selectedCells, panelOrder, onAddPanel })
 AddChartModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  selectedCells: PropTypes.arrayOf(
+  selectedSensors: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string,
+      uuid: PropTypes.string.isRequired,
+      panel_ids: PropTypes.arrayOf(PropTypes.string),
     }),
   ).isRequired,
   panelOrder: PropTypes.arrayOf(PropTypes.string).isRequired,

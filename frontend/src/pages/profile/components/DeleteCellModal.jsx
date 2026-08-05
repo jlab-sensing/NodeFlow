@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, IconButton, Modal, Typography } from '@mui/material';
-import { React, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { deleteCell } from '../../../services/cell';
 import PropTypes from 'prop-types';
@@ -11,7 +11,6 @@ function DeleteCellModal({ ids }) {
   let data = useOutletContext();
   const refetch = data[3];
   const user = data[4];
-  data = data[0];
   const { auth } = useAuth();
   const [isOpen, setOpen] = useState(false);
   const [response, setResponse] = useState(null);

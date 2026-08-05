@@ -1,14 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 
 function usePrevious(value) {
-  const ref = useRef();
+  const [trackedValues, setTrackedValues] = useState({
+    current: value,
+    previous: undefined,
+  });
 
-  // since assigning a value doesn't rerender the app
-  // ref is the previous state
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  return ref.current;
+  if (!Object.is(value, trackedValues.current)) {
+    setTrackedValues({
+      current: value,
+      previous: trackedValues.current,
+    });
+  }
+
+  return trackedValues.previous;
 }
 
 export default usePrevious;

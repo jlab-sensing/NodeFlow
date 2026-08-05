@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useEffect, useState } from 'react';
-import axios from '../../../api/axios';
+import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate';
 import GroupSection from './GroupSection';
 
 const measurementsBySensorType = {
@@ -24,6 +24,7 @@ const measurementsBySensorType = {
 
 function ActivationPrefSection({ selectedSensorIds, value, onChange }) {
 
+  const axiosPrivate = useAxiosPrivate();
   const [sensors, setSensors] = useState([]);
   const [showCloseCondition, setShowCloseCondition] = useState(value.closeConditionValue !== "");
 
@@ -33,14 +34,14 @@ function ActivationPrefSection({ selectedSensorIds, value, onChange }) {
   useEffect(() => {
     async function loadSensors() {
       try {
-        const response = await axios.get("/api/sensor/");
+        const response = await axiosPrivate.get("/api/sensor/");
         setSensors(response.data);
       } catch (error) {
         console.error("Unable to load sensors", error);
       }
     }
     loadSensors();
-  }, []);
+  }, [axiosPrivate]);
 
   const selectedSensors = sensors.filter((sensor) =>
     selectedSensorIds.includes(sensor.id),

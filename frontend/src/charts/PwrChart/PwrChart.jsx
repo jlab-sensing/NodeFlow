@@ -1,14 +1,12 @@
 import 'chartjs-adapter-luxon';
-import { DateTime } from 'luxon';
 import PropTypes from 'prop-types';
-import { React } from 'react';
 import { getAxisBoundsAndStepValues } from '../alignAxis';
-import { getNonStreamTimeDomain } from '../timeDomain';
+import { getChartTimeDomain } from '../timeDomain';
 import ChartWrapper from '../ChartWrapper';
 
-export default function PwrChart({ data, stream, startDate, endDate, onResampleChange }) {
+export default function PwrChart({ data, startDate, endDate, onResampleChange }) {
   const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(data.datasets, [], 10, 5);
-  const nonStreamXDomain = getNonStreamTimeDomain(stream, startDate, endDate);
+  const chartTimeDomain = getChartTimeDomain(startDate, endDate);
 
   const chartOptions = {
     maintainAspectRatio: false,
@@ -36,7 +34,7 @@ export default function PwrChart({ data, stream, startDate, endDate, onResampleC
             day: 'MM/dd',
           },
         },
-        ...nonStreamXDomain,
+        ...chartTimeDomain,
       },
       y: {
         type: 'linear',
@@ -53,57 +51,11 @@ export default function PwrChart({ data, stream, startDate, endDate, onResampleC
     },
   };
 
-  const streamChartOptions = {
-    maintainAspectRatio: false,
-    responsive: true,
-    scales: {
-      x: {
-        position: 'bottom',
-        title: {
-          display: true,
-          text: 'Time',
-        },
-        type: 'time',
-        ticks: {
-          autoSkip: true,
-          autoSkipPadding: 50,
-          maxRotation: 0,
-          major: {
-            enabled: true,
-          },
-          padding: 15,
-        },
-        grid: {
-          tickLength: 15,
-        },
-        time: {
-          displayFormats: {
-            second: 'hh:mm:ss',
-            minute: 'hh:mm',
-            hour: 'hh:mm a',
-            day: 'D',
-          },
-        },
-        suggestedMin: DateTime.now().minus({ second: 10 }).toJSON(),
-        suggestedMax: DateTime.now().toJSON(),
-      },
-      y: {
-        type: 'linear',
-        grace: '10%',
-        title: {
-          display: true,
-          text: 'Power (µW)',
-        },
-      },
-    },
-  };
-
   return (
     <ChartWrapper
       id='pwr'
       data={data}
-      options={stream ? streamChartOptions : chartOptions}
-      stream={stream}
+      options={chartOptions}
       onResampleChange={onResampleChange}
     />
   );
@@ -111,7 +63,6 @@ export default function PwrChart({ data, stream, startDate, endDate, onResampleC
 
 PwrChart.propTypes = {
   data: PropTypes.object,
-  stream: PropTypes.bool,
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,

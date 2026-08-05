@@ -1,116 +1,81 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  fetchChartsPowerTerosData,
-  fetchChartsSensorData,
-} from '../catalog/historicalDataLoader';
+import { fetchChartsSensorData } from '../catalog/historicalDataLoader';
 
 const EMPTY = {};
 
 /**
- * Central historical loader for chart panels (catalog-gated, deduped, stale-safe).
+ * Central UUID-keyed historical loader for every measurement-based panel.
+ * PowerCharts uses its owned UUID endpoint separately because its response is
+ * a combined voltage/current/power payload rather than a single measurement.
  */
 export function useChartsHistoricalData({
-  cells,
+  axiosPrivate,
+  sensors,
   panelOrder,
   startDate,
   endDate,
-  stream,
-  cellSensorsById,
   resample = 'hour',
   enabled = true,
 }) {
-  const [historicalPowerByCell, setHistoricalPowerByCell] = useState(EMPTY);
-  const [historicalTerosByCell, setHistoricalTerosByCell] = useState(EMPTY);
   const [historicalSensorByKey, setHistoricalSensorByKey] = useState(EMPTY);
-  const [powerTerosLoading, setPowerTerosLoading] = useState(false);
-  const [sensorLoading, setSensorLoading] = useState(false);
+  const [historicalLoading, setHistoricalLoading] = useState(false);
 
-  const cellIdsKey = useMemo(() => cells.map((cell) => cell.id).join(','), [cells]);
   const panelOrderKey = useMemo(() => panelOrder.join(','), [panelOrder]);
   const rangeKey = useMemo(
     () => `${startDate.toISO()}|${endDate.toISO()}`,
     [startDate, endDate],
   );
-  const sensorInputsKey = useMemo(() => JSON.stringify(cellSensorsById ?? {}), [cellSensorsById]);
-  const cellSnapshot = useMemo(
-    () => cells.map(({ id, name }) => ({ id, name })),
-    [cells],
+  const sensorInputsKey = useMemo(
+    () =>
+      JSON.stringify(
+        sensors.map(
+          ({ uuid, name, has_chart_data: hasChartData, measurements, panel_ids: panelIds }) => ({
+            uuid,
+            name,
+            hasChartData,
+            measurements,
+            panelIds,
+          }),
+        ),
+      ),
+    [sensors],
+  );
+  const sensorSnapshot = useMemo(
+    () =>
+      sensors.map(
+        ({ uuid, name, has_chart_data: hasChartData, measurements, panel_ids: panelIds }) => ({
+          uuid,
+          name,
+          has_chart_data: hasChartData,
+          measurements,
+          panel_ids: panelIds,
+        }),
+      ),
+    [sensors],
   );
   const panelOrderSnapshot = useMemo(() => [...panelOrder], [panelOrder]);
-  const sensorInputs = useMemo(() => cellSensorsById ?? {}, [cellSensorsById]);
-  const historicalLoading = powerTerosLoading || sensorLoading;
 
   useEffect(() => {
-    if (!enabled || stream) {
-      setPowerTerosLoading(false);
-      setSensorLoading(false);
-      setHistoricalPowerByCell(EMPTY);
-      setHistoricalTerosByCell(EMPTY);
-      setHistoricalSensorByKey(EMPTY);
-      return undefined;
-    }
-
-    if (!cellIdsKey || !panelOrderKey) {
-      setPowerTerosLoading(false);
-      setSensorLoading(false);
-      setHistoricalPowerByCell(EMPTY);
-      setHistoricalTerosByCell(EMPTY);
+    if (!enabled || sensors.length === 0 || !panelOrderKey) {
+      // Reset the UUID-keyed cache when historical requests are inactive.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHistoricalLoading(false);
       setHistoricalSensorByKey(EMPTY);
       return undefined;
     }
 
     let cancelled = false;
-    setPowerTerosLoading(true);
-
-    fetchChartsPowerTerosData({
-      cells: cellSnapshot,
-      panelOrder: panelOrderSnapshot,
-      startDate,
-      endDate,
-      resample,
-    })
-      .then((payload) => {
-        if (cancelled) return;
-        setHistoricalPowerByCell(payload.historicalPowerByCell);
-        setHistoricalTerosByCell(payload.historicalTerosByCell);
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        console.error('Chart power/TEROS historical load failed:', error);
-        setHistoricalPowerByCell(EMPTY);
-        setHistoricalTerosByCell(EMPTY);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setPowerTerosLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, stream, cellIdsKey, panelOrderKey, rangeKey, resample, cellSnapshot, panelOrderSnapshot, startDate, endDate]);
-
-  useEffect(() => {
-    if (!enabled || stream || !cellIdsKey || !panelOrderKey) {
-      setSensorLoading(false);
-      setHistoricalSensorByKey(EMPTY);
-      return undefined;
-    }
-
-    let cancelled = false;
-    setSensorLoading(true);
-
+    setHistoricalLoading(true);
     fetchChartsSensorData({
-      cells: cellSnapshot,
+      axiosPrivate,
+      sensors: sensorSnapshot,
       panelOrder: panelOrderSnapshot,
       startDate,
       endDate,
-      cellSensorsById: sensorInputs,
       resample,
     })
-      .then((payload) => {
-        if (cancelled) return;
-        setHistoricalSensorByKey(payload.historicalSensorByKey);
+      .then(({ historicalSensorByKey: nextCache }) => {
+        if (!cancelled) setHistoricalSensorByKey(nextCache);
       })
       .catch((error) => {
         if (cancelled) return;
@@ -118,8 +83,7 @@ export function useChartsHistoricalData({
         setHistoricalSensorByKey(EMPTY);
       })
       .finally(() => {
-        if (cancelled) return;
-        setSensorLoading(false);
+        if (!cancelled) setHistoricalLoading(false);
       });
 
     return () => {
@@ -127,18 +91,17 @@ export function useChartsHistoricalData({
     };
   }, [
     enabled,
-    stream,
-    cellIdsKey,
+    sensors.length,
+    sensorInputsKey,
     panelOrderKey,
     rangeKey,
     resample,
-    sensorInputsKey,
-    sensorInputs,
-    cellSnapshot,
+    axiosPrivate,
+    sensorSnapshot,
     panelOrderSnapshot,
     startDate,
     endDate,
   ]);
 
-  return { historicalPowerByCell, historicalTerosByCell, historicalSensorByKey, historicalLoading };
+  return { historicalSensorByKey, historicalLoading };
 }

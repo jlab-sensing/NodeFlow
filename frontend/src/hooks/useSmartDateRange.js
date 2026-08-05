@@ -1,24 +1,30 @@
 import { DateTime } from 'luxon';
 import { useCallback, useState } from 'react';
-import { getDataAvailability } from '../services/dataAvailability';
+import { getSensorDataAvailability } from '../services/dataAvailability';
 
 /**
  * Custom hook for intelligent date range selection
  * Automatically selects the most recent 2 weeks of available data,
  * falling back to the last available 2-week period if needed
  */
-export function useSmartDateRange() {
+export function useSmartDateRange(axiosPrivate) {
   const [showFallbackNotification, setShowFallbackNotification] = useState(false);
   const [fallbackDates, setFallbackDates] = useState({ start: null, end: null });
 
   /**
    * Calculate intelligent date range based on data availability
-   * @param {Array} selectedCells - Array of selected cell objects
+   * @param {string|string[]} sensorUuids - One sensor UUID or an array of UUIDs
    * @returns {Object} { startDate, endDate, isFallback }
    */
-  const calculateSmartDateRange = useCallback(async (selectedCells) => {
-    if (!selectedCells || selectedCells.length === 0) {
-      // Default range when no cells selected
+  const calculateSmartDateRange = useCallback(async (sensorUuids) => {
+    const requestedSensorUuids = Array.isArray(sensorUuids)
+      ? sensorUuids
+      : sensorUuids
+        ? [sensorUuids]
+        : [];
+
+    if (requestedSensorUuids.length === 0) {
+      // Default range when no sensors are selected.
       return {
         startDate: DateTime.now().minus({ days: 14 }),
         endDate: DateTime.now(),
@@ -27,8 +33,10 @@ export function useSmartDateRange() {
     }
 
     try {
-      const cellIds = selectedCells.map((cell) => cell.id);
-      const availability = await getDataAvailability(cellIds);
+      const availability = await getSensorDataAvailability(
+        axiosPrivate,
+        requestedSensorUuids,
+      );
 
       if (!availability.latest_timestamp) {
         // No data available, use default range
@@ -97,7 +105,7 @@ export function useSmartDateRange() {
         isFallback: false,
       };
     }
-  }, []);
+  }, [axiosPrivate]);
 
   /**
    * Show the fallback notification

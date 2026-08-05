@@ -1,79 +1,64 @@
-import { getPowerData } from '../../../services/power';
-import { getTerosData } from '../../../services/teros';
-import { getSensorData } from '../../../services/sensor';
+import { getSensorChartData } from '../../../services/chartData';
 import { CHART_CONFIGS } from '../components/chartConfigs';
 import { panelIdToUnifiedType } from './chartsCatalog';
 import { measurementMatches } from '../components/unifiedChartUtils';
 
 export { measurementMatches };
 
-export function sensorDataCacheKey(cellId, sensorName, measurement) {
-  return `${cellId}:${sensorName}:${measurement}`.toLowerCase();
+const BUILTIN_SENSOR_CONFIGS = {
+  teros: {
+    measurements: ['Volumetric Water Content', 'Electrical Conductivity'],
+  },
+  temp: {
+    measurements: ['Temperature'],
+  },
+};
+
+export function sensorDataCacheKey(sensorUuid, measurement) {
+  return `${sensorUuid}:${measurement}`.toLowerCase();
 }
 
-/**
- * @param {unknown[]} cellSensors
- * @param {{ sensor_name: string, measurements: string[] }} config
- */
-export function resolveSensorsToFetch(cellSensors, config) {
-  const relevantSensors = (Array.isArray(cellSensors) ? cellSensors : []).filter(
-    (sensor) =>
-      sensor?.name === config.sensor_name && measurementMatches(sensor?.measurement, config.measurements),
-  );
+function measurementsForPanel(sensor, panelId, config) {
+  if (!(sensor.panel_ids ?? []).includes(panelId)) return [];
 
-  const seenMeasurements = new Set();
-  const uniqueSensors = relevantSensors.filter((sensor) => {
-    const key = sensor.measurement.toLowerCase();
-    if (seenMeasurements.has(key)) return false;
-    seenMeasurements.add(key);
+  const seen = new Set();
+  return (sensor.measurements ?? []).filter((measurement) => {
+    if (!measurementMatches(measurement, config.measurements)) return false;
+
+    const key = measurement.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
-
-  if (uniqueSensors.length > 0) {
-    return uniqueSensors;
-  }
-
-  return config.measurements.map((meas) => ({ name: config.sensor_name, measurement: meas }));
-}
-
-export function panelOrderNeedsPower(panelOrder) {
-  return panelOrder.some((panelId) => panelId === 'power-vi' || panelId === 'power-p');
-}
-
-export function panelOrderNeedsTeros(panelOrder) {
-  return panelOrder.some((panelId) => panelId === 'teros' || panelId === 'temp');
 }
 
 /**
- * @param {string[]} panelOrder
- * @param {Array<{ id: string|number }>} cells
- * @param {Record<string, unknown[]>} cellSensorsById
+ * Build one request per selected sensor UUID and measurement. A sensor is
+ * included only when its chart-source capabilities contain the panel.
  */
-export function collectUnifiedSensorRequests(panelOrder, cells, cellSensorsById) {
+export function collectUnifiedSensorRequests(panelOrder, sensors) {
   const requests = [];
   const seen = new Set();
 
   panelOrder.forEach((panelId) => {
     const unifiedType = panelIdToUnifiedType(panelId);
-    if (!unifiedType) return;
-
-    const config = CHART_CONFIGS[unifiedType];
+    const config = unifiedType
+      ? CHART_CONFIGS[unifiedType]
+      : BUILTIN_SENSOR_CONFIGS[panelId];
     if (!config) return;
 
-    cells.forEach((cell) => {
-      const cellId = cell.id;
-      const cellSensors = cellSensorsById[String(cellId)];
-      const sensorsToFetch = resolveSensorsToFetch(cellSensors, config);
+    sensors.forEach((sensor) => {
+      if (!sensor.has_chart_data) return;
 
-      sensorsToFetch.forEach((sensor) => {
-        const cacheKey = sensorDataCacheKey(cellId, sensor.name, sensor.measurement);
+      measurementsForPanel(sensor, panelId, config).forEach((measurement) => {
+        const cacheKey = sensorDataCacheKey(sensor.uuid, measurement);
         if (seen.has(cacheKey)) return;
+
         seen.add(cacheKey);
         requests.push({
           cacheKey,
-          cellId,
-          name: sensor.name,
-          measurement: sensor.measurement,
+          sensorUuid: sensor.uuid,
+          measurement,
         });
       });
     });
@@ -83,30 +68,32 @@ export function collectUnifiedSensorRequests(panelOrder, cells, cellSensorsById)
 }
 
 /**
- * @param {Array<{ id: string|number, name: string }>} cells
- * @param {string} unifiedType
- * @param {Record<string, unknown[]>} cellSensorsById
- * @param {Record<string, unknown>} historicalSensorByKey
+ * Convert the UUID-keyed cache into the object shape consumed by
+ * UnifiedChart: { [sensorUuid]: { name, [measurement]: payload } }.
  */
-export function buildUnifiedChartDataFromCache(cells, unifiedType, cellSensorsById, historicalSensorByKey) {
+export function buildUnifiedChartDataFromCache(
+  sensors,
+  unifiedType,
+  historicalSensorByKey,
+) {
+  const panelId = `u:${unifiedType}`;
   const config = CHART_CONFIGS[unifiedType];
   if (!config) return {};
 
-  const entries = cells.map(({ id, name }) => {
-    const sensorsToFetch = resolveSensorsToFetch(cellSensorsById[String(id)], config);
-    const measEntries = sensorsToFetch
-      .map((sensor) => {
-        const cacheKey = sensorDataCacheKey(id, sensor.name, sensor.measurement);
+  const entries = sensors.map((sensor) => {
+    const measurementEntries = measurementsForPanel(sensor, panelId, config)
+      .map((measurement) => {
+        const cacheKey = sensorDataCacheKey(sensor.uuid, measurement);
         const payload = historicalSensorByKey[cacheKey];
-        return payload ? [sensor.measurement, payload] : null;
+        return payload ? [measurement, payload] : null;
       })
       .filter(Boolean);
 
     return [
-      id,
+      sensor.uuid,
       {
-        name,
-        ...Object.fromEntries(measEntries),
+        name: sensor.name,
+        ...Object.fromEntries(measurementEntries),
       },
     ];
   });
@@ -115,168 +102,32 @@ export function buildUnifiedChartDataFromCache(cells, unifiedType, cellSensorsBy
 }
 
 /**
- * Catalog-gated, deduped historical fetch for chart panels.
- * @param {object} params
- * @param {Array<{ id: string|number, name: string }>} params.cells
- * @param {string[]} params.panelOrder
- * @param {import('luxon').DateTime} params.startDate
- * @param {import('luxon').DateTime} params.endDate
- * @param {Record<string, unknown[]>} params.cellSensorsById
- * @param {string} [params.resample]
- */
-export async function fetchChartsHistoricalData({
-  cells,
-  panelOrder,
-  startDate,
-  endDate,
-  cellSensorsById,
-  resample = 'hour',
-}) {
-  if (!cells.length || !panelOrder.length) {
-    return {
-      historicalPowerByCell: {},
-      historicalTerosByCell: {},
-      historicalSensorByKey: {},
-    };
-  }
-
-  const startHTTP = startDate.toHTTP();
-  const endHTTP = endDate.toHTTP();
-  const tasks = [];
-
-  if (panelOrderNeedsPower(panelOrder)) {
-    tasks.push(
-      Promise.all(
-        cells.map(async ({ id, name }) => {
-          const powerData = await getPowerData(id, startHTTP, endHTTP, resample);
-          return [id, { name, powerData }];
-        }),
-      ).then((entries) => ({ kind: 'power', data: Object.fromEntries(entries) })),
-    );
-  }
-
-  if (panelOrderNeedsTeros(panelOrder)) {
-    tasks.push(
-      Promise.all(
-        cells.map(async ({ id, name }) => {
-          const terosData = await getTerosData(id, startHTTP, endHTTP, resample);
-          return [id, { name, terosData }];
-        }),
-      ).then((entries) => ({ kind: 'teros', data: Object.fromEntries(entries) })),
-    );
-  }
-
-  const sensorRequests = collectUnifiedSensorRequests(panelOrder, cells, cellSensorsById);
-  if (sensorRequests.length > 0) {
-    tasks.push(
-      Promise.all(
-        sensorRequests.map(async ({ cacheKey, cellId, name, measurement }) => {
-          const payload = await getSensorData(name, cellId, measurement, startHTTP, endHTTP, resample);
-          return [cacheKey, payload];
-        }),
-      ).then((entries) => ({ kind: 'sensor', data: Object.fromEntries(entries) })),
-    );
-  }
-
-  const results = await Promise.all(tasks);
-  const historicalPowerByCell = {};
-  const historicalTerosByCell = {};
-  const historicalSensorByKey = {};
-
-  results.forEach((result) => {
-    if (result.kind === 'power') {
-      Object.assign(historicalPowerByCell, result.data);
-    } else if (result.kind === 'teros') {
-      Object.assign(historicalTerosByCell, result.data);
-    } else if (result.kind === 'sensor') {
-      Object.assign(historicalSensorByKey, result.data);
-    }
-  });
-
-  return { historicalPowerByCell, historicalTerosByCell, historicalSensorByKey };
-}
-
-/**
- * Power + TEROS only (does not depend on cell sensor metadata).
- */
-export async function fetchChartsPowerTerosData({
-  cells,
-  panelOrder,
-  startDate,
-  endDate,
-  resample = 'hour',
-}) {
-  if (!cells.length || !panelOrder.length) {
-    return { historicalPowerByCell: {}, historicalTerosByCell: {} };
-  }
-
-  const startHTTP = startDate.toHTTP();
-  const endHTTP = endDate.toHTTP();
-  const tasks = [];
-
-  if (panelOrderNeedsPower(panelOrder)) {
-    tasks.push(
-      Promise.all(
-        cells.map(async ({ id, name }) => {
-          const powerData = await getPowerData(id, startHTTP, endHTTP, resample);
-          return [id, { name, powerData }];
-        }),
-      ).then((entries) => ({ kind: 'power', data: Object.fromEntries(entries) })),
-    );
-  }
-
-  if (panelOrderNeedsTeros(panelOrder)) {
-    tasks.push(
-      Promise.all(
-        cells.map(async ({ id, name }) => {
-          const terosData = await getTerosData(id, startHTTP, endHTTP, resample);
-          return [id, { name, terosData }];
-        }),
-      ).then((entries) => ({ kind: 'teros', data: Object.fromEntries(entries) })),
-    );
-  }
-
-  const results = await Promise.all(tasks);
-  const historicalPowerByCell = {};
-  const historicalTerosByCell = {};
-
-  results.forEach((result) => {
-    if (result.kind === 'power') {
-      Object.assign(historicalPowerByCell, result.data);
-    } else if (result.kind === 'teros') {
-      Object.assign(historicalTerosByCell, result.data);
-    }
-  });
-
-  return { historicalPowerByCell, historicalTerosByCell };
-}
-
-/**
- * Unified sensor series only (depends on cell sensor metadata).
+ * Fetch historical data for unified sensor panels through NodeFlow's owned,
+ * UUID-based chart-data endpoint.
  */
 export async function fetchChartsSensorData({
-  cells,
+  axiosPrivate,
+  sensors,
   panelOrder,
   startDate,
   endDate,
-  cellSensorsById,
   resample = 'hour',
 }) {
-  if (!cells.length || !panelOrder.length) {
+  if (!sensors.length || !panelOrder.length) {
     return { historicalSensorByKey: {} };
   }
 
-  const startHTTP = startDate.toHTTP();
-  const endHTTP = endDate.toHTTP();
-  const sensorRequests = collectUnifiedSensorRequests(panelOrder, cells, cellSensorsById);
-
-  if (sensorRequests.length === 0) {
-    return { historicalSensorByKey: {} };
-  }
-
+  const sensorRequests = collectUnifiedSensorRequests(panelOrder, sensors);
   const entries = await Promise.all(
-    sensorRequests.map(async ({ cacheKey, cellId, name, measurement }) => {
-      const payload = await getSensorData(name, cellId, measurement, startHTTP, endHTTP, resample);
+    sensorRequests.map(async ({ cacheKey, sensorUuid, measurement }) => {
+      const payload = await getSensorChartData(
+        axiosPrivate,
+        sensorUuid,
+        measurement,
+        startDate,
+        endDate,
+        resample,
+      );
       return [cacheKey, payload];
     }),
   );

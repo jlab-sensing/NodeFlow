@@ -1,17 +1,14 @@
-import axios from 'axios';
-
 /**
- * Get data availability information for specified cells
- * @param {Array} cellIds - Array of cell IDs to check
- * @returns {Promise} Promise resolving to data availability information
+ * Get aggregate historical availability for owned NodeFlow sensors.
+ *
+ * @param {import('axios').AxiosInstance} axiosPrivate
+ * @param {string[]} sensorUuids
  */
-export const getDataAvailability = (cellIds) => {
-  const cellIdsParam = cellIds.join(',');
-  return axios
-    .get(`${import.meta.env.VITE_API_BASE_URL}/api/data-availability/?cell_ids=${cellIdsParam}`)
-    .then((res) => res.data)
-    .catch((error) => {
-      console.error('Error fetching data availability:', error);
-      throw error;
-    });
-};
+export const getSensorDataAvailability = (axiosPrivate, sensorUuids) =>
+  axiosPrivate
+    .get('/api/data-availability/sensors', {
+      params: {
+        sensor_uuids: sensorUuids.join(','),
+      },
+    })
+    .then((response) => response.data);

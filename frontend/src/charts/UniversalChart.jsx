@@ -1,17 +1,15 @@
 import 'chartjs-adapter-luxon';
-import { DateTime } from 'luxon';
 import PropTypes from 'prop-types';
-import { React } from 'react';
 import { getAxisBoundsAndStepValues } from './alignAxis';
-import { getNonStreamTimeDomain } from './timeDomain';
+import { getChartTimeDomain } from './timeDomain';
 import ChartWrapper from './ChartWrapper';
 import { chartPlugins } from './plugins';
 import { getVwcAxisBounds } from './VwcChart/vwcAxis';
 
-export default function UniversalChart({ data, stream, chartId, measurements, units, axisIds, axisPolicy, startDate, endDate, onResampleChange }) {
+export default function UniversalChart({ data, chartId, measurements, units, axisIds, axisPolicy, startDate, endDate, onResampleChange }) {
   // Build chart options dynamically based on measurements
   const buildChartOptions = () => {
-    const nonStreamXDomain = getNonStreamTimeDomain(stream, startDate, endDate);
+    const chartTimeDomain = getChartTimeDomain(startDate, endDate);
 
     const scales = {
       x: {
@@ -22,37 +20,20 @@ export default function UniversalChart({ data, stream, chartId, measurements, un
         },
         type: 'time',
         ticks: {
-          autoSkip: stream ? true : false,
+          autoSkip: false,
           autoSkipPadding: 50,
           maxRotation: 0,
           major: {
             enabled: true,
           },
-          ...(stream && { padding: 15 }),
         },
-        ...(stream && {
-          grid: {
-            tickLength: 15,
-          },
-        }),
         time: {
-          displayFormats: stream
-            ? {
-              second: 'hh:mm:ss',
-              minute: 'hh:mm',
-              hour: 'hh:mm a',
-              day: 'D',
-            }
-            : {
-              hour: 'hh:mm a',
-              day: 'MM/dd',
-            },
+          displayFormats: {
+            hour: 'hh:mm a',
+            day: 'MM/dd',
+          },
         },
-        ...(stream && {
-          suggestedMin: DateTime.now().minus({ second: 10 }).toJSON(),
-          suggestedMax: DateTime.now().toJSON(),
-        }),
-        ...nonStreamXDomain,
+        ...chartTimeDomain,
       },
     };
 
@@ -76,16 +57,14 @@ export default function UniversalChart({ data, stream, chartId, measurements, un
             min: singleAxisBounds.min,
             max: singleAxisBounds.max,
           }
-          : stream
-            ? { grace: '10%' }
-            : {
-              ticks: {
-                stepSize: leftYStep,
-                callback: (value) => +value.toFixed(5),
-              },
-              min: leftYMin,
-              max: leftYMax,
-            }),
+          : {
+            ticks: {
+              stepSize: leftYStep,
+              callback: (value) => +value.toFixed(5),
+            },
+            min: leftYMin,
+            max: leftYMax,
+          }),
       };
     }
     // Handle dual measurements (left and right axes)
@@ -107,16 +86,12 @@ export default function UniversalChart({ data, stream, chartId, measurements, un
           display: true,
           text: `${measurements[0].charAt(0).toUpperCase() + measurements[0].slice(1)} (${units[0]})`,
         },
-        ...(stream
-          ? { grace: '10%' }
-          : {
-            ticks: {
-              stepSize: leftYStep,
-              callback: (value) => +value.toFixed(5),
-            },
-            min: leftYMin,
-            max: leftYMax,
-          }),
+        ticks: {
+          stepSize: leftYStep,
+          callback: (value) => +value.toFixed(5),
+        },
+        min: leftYMin,
+        max: leftYMax,
       };
 
       scales[axisIds[1]] = {
@@ -126,16 +101,12 @@ export default function UniversalChart({ data, stream, chartId, measurements, un
           display: true,
           text: `${measurements[1].charAt(0).toUpperCase() + measurements[1].slice(1)} (${units[1]})`,
         },
-        ...(stream
-          ? { grace: '10%' }
-          : {
-            ticks: {
-              stepSize: rightYStep,
-              callback: (value) => +value.toFixed(5),
-            },
-            min: rightYMin,
-            max: rightYMax,
-          }),
+        ticks: {
+          stepSize: rightYStep,
+          callback: (value) => +value.toFixed(5),
+        },
+        min: rightYMin,
+        max: rightYMax,
       };
     }
 
@@ -151,13 +122,12 @@ export default function UniversalChart({ data, stream, chartId, measurements, un
   const chartOptions = buildChartOptions();
 
   return (
-    <ChartWrapper id={chartId} data={data} options={chartOptions} stream={stream} onResampleChange={onResampleChange} />
+    <ChartWrapper id={chartId} data={data} options={chartOptions} onResampleChange={onResampleChange} />
   );
 }
 
 UniversalChart.propTypes = {
   data: PropTypes.object.isRequired,
-  stream: PropTypes.bool,
   chartId: PropTypes.string.isRequired,
   measurements: PropTypes.arrayOf(PropTypes.string).isRequired,
   units: PropTypes.arrayOf(PropTypes.string).isRequired,

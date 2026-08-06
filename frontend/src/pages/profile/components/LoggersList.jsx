@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import AddLoggerModal from './AddLoggerModal';
 import DeleteLoggerModal from './DeleteLoggerModal';
 import EditLoggerModal from './EditLoggerModal';
-import { React, useState } from 'react';
+import { useState } from 'react';
 
 function LoggersList() {
   let data = useOutletContext();

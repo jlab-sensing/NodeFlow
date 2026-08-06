@@ -1,7 +1,6 @@
 import { Alert, Snackbar } from '@mui/material';
 import { DateTime } from 'luxon';
 import PropTypes from 'prop-types';
-import React from 'react';
 
 function DateRangeNotification({ open, onClose, fallbackStartDate, fallbackEndDate }) {
   const formatDate = (date) => {

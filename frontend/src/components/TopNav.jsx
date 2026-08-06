@@ -1,4 +1,3 @@
-import { React } from 'react';
 import Nav from './Nav';
 import useAuth from '../auth/hooks/useAuth';
 

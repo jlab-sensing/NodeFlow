@@ -1,7 +1,7 @@
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Chip, IconButton, Modal, TextField, Typography } from '@mui/material';
-import { React, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { addCell } from '../../../services/cell';
 import { useAssignCellTags } from '../../../services/tag';
@@ -12,7 +12,6 @@ function AddCellModal() {
   const refetch = data[3];
   const user = data[4];
   const axiosPrivate = data[6];
-  data = data[0];
   const [isOpen, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');

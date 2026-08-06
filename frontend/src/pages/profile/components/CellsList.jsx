@@ -4,7 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import AddCellModal from './AddCellModal';
 import DeleteCellModal from './DeleteCellModal';
 import EditCellModal from './EditCellModal';
-import { React, useState } from 'react';
+import { useState } from 'react';
 import ShareButton from './ShareButton';
 
 function CellsList() {

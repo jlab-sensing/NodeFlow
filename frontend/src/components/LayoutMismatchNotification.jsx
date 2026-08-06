@@ -1,6 +1,5 @@
 import { Alert, Snackbar } from '@mui/material';
 import PropTypes from 'prop-types';
-import React from 'react';
 import { getCatalogEntry } from '../pages/charts/catalog/chartsCatalog';
 
 function LayoutMismatchNotification({ open, onClose, missingPanelIds }) {

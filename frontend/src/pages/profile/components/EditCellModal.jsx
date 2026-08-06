@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Modal, Box, Typography, Button, IconButton, TextField } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useOutletContext } from 'react-router-dom';
@@ -11,30 +11,25 @@ import useAuth from '../../../auth/hooks/useAuth';
 function EditCellModal({ cell }) {
   const data = useOutletContext();
   const refetch = data[3];
-  const axiosPrivate = data[6];
   const { auth } = useAuth();
 
   const [isOpen, setOpen] = useState(false);
   const [formData, setFormData] = useState({ ...cell });
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [editedTags, setEditedTags] = useState(null);
   const [response, setResponse] = useState(null);
   const [isSubmitting, setSubmitting] = useState(false);
 
   const { data: cellTags = [] } = useCellTags(cell.id);
   const assignCellTagsMutation = useAssignCellTags();
+  
+  const selectedTags = editedTags ?? cellTags;
 
   const handleOpen = () => {
     setOpen(true);
     setResponse(null);
     setFormData({ ...cell });
-    setSelectedTags(cellTags);
+    setEditedTags(null);
   };
-
-  useEffect(() => {
-    if (cellTags.length > 0) {
-      setSelectedTags(cellTags);
-    }
-  }, [cellTags]);
 
   const handleClose = () => setOpen(false);
 
@@ -215,7 +210,7 @@ function EditCellModal({ cell }) {
                     }}
                   />
 
-                  <TagSelector selectedTags={selectedTags} onTagsChange={setSelectedTags} axiosPrivate={axiosPrivate} />
+                  <TagSelector selectedTags={selectedTags} onTagsChange={setEditedTags} />
                 </Box>
 
                 {/* Action Buttons */}

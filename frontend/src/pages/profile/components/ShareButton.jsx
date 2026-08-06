@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import ShareIcon from '@mui/icons-material/Send';
 import { Box, Button, IconButton, TextField, Typography } from '@mui/material';
-import { React, useState } from 'react';
+import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import Popover from '@mui/material/Popover';
 import { shareCell } from '../../../services/cell';
@@ -9,10 +9,9 @@ import PropTypes from 'prop-types';
 import useAuth from '../../../auth/hooks/useAuth';
 
 function ShareButton({ ids }) {
-  let data = useOutletContext();
+  const data = useOutletContext();
   const refetch = data[3];
   const user = data[4];
-  data = data[0];
   const { auth } = useAuth();
   const [response, setResponse] = useState(null);
   const [email, setEmail] = useState('');

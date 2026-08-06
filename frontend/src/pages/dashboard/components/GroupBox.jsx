@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import useAxiosPrivate from "../../../auth/hooks/useAxiosPrivate";
 import ManualAutoSwitch from "./ManualAutoSwitch";
 import OpenCloseButton from "./OpenCloseButton";
-import axios from "../../../api/axios";
 
 function GroupBox({ group }) {
   const axiosPrivate = useAxiosPrivate();

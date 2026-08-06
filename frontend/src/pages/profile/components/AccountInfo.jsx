@@ -9,29 +9,29 @@ import {
   Modal,
   TextField,
   Typography,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import EmailIcon from '@mui/icons-material/Email';
-import PersonIcon from '@mui/icons-material/Person';
-import { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate';
+} from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'
+import EmailIcon from '@mui/icons-material/Email'
+import PersonIcon from '@mui/icons-material/Person'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
 
 function AccountInfo() {
-  const axiosPrivate = useAxiosPrivate();
-  const contextData = useOutletContext();
-  const user = contextData?.[4]; // Keeping the same context access pattern as original
-  const setUser = contextData?.[5]; // Get the setUser function from context
+  const axiosPrivate = useAxiosPrivate()
+  const contextData = useOutletContext()
+  const user = contextData?.[4] // Keeping the same context access pattern as original
+  const setUser = contextData?.[5] // Get the setUser function from context
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-  });
-  const [error, setError] = useState(null);
+  })
+  const [error, setError] = useState(null)
 
   // API key management is intentionally disabled in NodeFlow for now.
   // API keys remain a DirtViz/ENTS concern and should not be shown here.
@@ -54,9 +54,9 @@ function AccountInfo() {
   //     fetchApiKey();
   //   }
   // }, [axiosPrivate, user]);
-  
+
   if (!user) {
-    return <></>;
+    return <></>
   }
 
   // const handleGenerateApiKey = async () => {
@@ -109,14 +109,14 @@ function AccountInfo() {
    * Handles opening the edit form and initializes form data
    */
   const handleEdit = () => {
-    setIsEditing(true);
+    setIsEditing(true)
     // Set form data with current values to avoid race condition
     setFormData({
       first_name: user.first_name || '',
       last_name: user.last_name || '',
-    });
-    setError(null);
-  };
+    })
+    setError(null)
+  }
 
   /**
    * Validates form input before submission
@@ -124,15 +124,15 @@ function AccountInfo() {
    */
   const validateForm = () => {
     if (!formData.first_name || formData.first_name.trim() === '') {
-      setError('First name cannot be empty');
-      return false;
+      setError('First name cannot be empty')
+      return false
     }
     if (!formData.last_name || formData.last_name.trim() === '') {
-      setError('Last name cannot be empty');
-      return false;
+      setError('Last name cannot be empty')
+      return false
     }
-    return true;
-  };
+    return true
+  }
 
   /**
    * Handles saving updated user information
@@ -140,12 +140,12 @@ function AccountInfo() {
   const handleSave = async () => {
     // Validate form before submission
     if (!validateForm()) {
-      return;
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
-      const response = await axiosPrivate.put('/user', formData);
+      const response = await axiosPrivate.put('/user', formData)
       if (response.status === 200 && response.data) {
         // Update the user data in parent context
         if (setUser) {
@@ -153,28 +153,28 @@ function AccountInfo() {
             ...user,
             first_name: response.data.first_name,
             last_name: response.data.last_name,
-          });
+          })
         }
-        setIsEditing(false);
-        setError(null);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000); // Hide after 3 seconds
+        setIsEditing(false)
+        setError(null)
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 3000) // Hide after 3 seconds
       }
     } catch (error) {
-      console.error('Error updating user:', error);
-      setError('Failed to update user information. Please try again.');
+      console.error('Error updating user:', error)
+      setError('Failed to update user information. Please try again.')
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   /**
    * Handles canceling the edit operation
    */
   const handleCancel = () => {
-    setIsEditing(false);
-    setError(null);
-  };
+    setIsEditing(false)
+    setError(null)
+  }
 
   return (
     <Box
@@ -193,7 +193,7 @@ function AccountInfo() {
       {/* Fixed position notification to avoid overlap */}
       <Fade in={showSuccess} timeout={700}>
         <Alert
-          severity='success'
+          severity="success"
           sx={{
             position: 'fixed',
             top: '20px',
@@ -211,28 +211,30 @@ function AccountInfo() {
       </Fade>
 
       {/* Header Section */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 4,
-        mt: 1 // Add some top margin for better spacing
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 4,
+          mt: 1, // Add some top margin for better spacing
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <AccountCircleIcon sx={{ fontSize: '2.5rem', color: '#1E3A5F' }} />
-          <Typography 
-            variant='h4' 
-            sx={{ 
-              color: '#1E3A5F', 
+          <Typography
+            variant="h4"
+            sx={{
+              color: '#1E3A5F',
               fontWeight: 'bold',
-              fontSize: '1.75rem'
+              fontSize: '1.75rem',
             }}
           >
             Account Information
           </Typography>
         </Box>
         <Button
-          variant='contained'
+          variant="contained"
           onClick={handleEdit}
           sx={{
             backgroundColor: '#1E3A5F',
@@ -253,7 +255,7 @@ function AccountInfo() {
       {/* Profile Cards */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* Email Card */}
-        <Card 
+        <Card
           sx={{
             borderRadius: '12px',
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
@@ -261,33 +263,33 @@ function AccountInfo() {
             transition: 'all 0.2s ease-in-out',
             '&:hover': {
               boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
-              transform: 'translateY(-2px)'
-            }
+              transform: 'translateY(-2px)',
+            },
           }}
         >
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <EmailIcon sx={{ fontSize: '1.5rem', color: '#1E3A5F' }} />
               <Box>
-                <Typography 
-                  variant='body2' 
-                  sx={{ 
-                    color: '#666', 
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#666',
                     fontSize: '0.875rem',
                     fontWeight: 500,
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    mb: 0.5
+                    mb: 0.5,
                   }}
                 >
                   Email Address
                 </Typography>
-                <Typography 
-                  variant='h6' 
-                  sx={{ 
+                <Typography
+                  variant="h6"
+                  sx={{
                     color: '#333',
                     fontWeight: 500,
-                    fontSize: '1.1rem'
+                    fontSize: '1.1rem',
                   }}
                 >
                   {user.email}
@@ -298,7 +300,7 @@ function AccountInfo() {
         </Card>
 
         {/* Name Card */}
-        <Card 
+        <Card
           sx={{
             borderRadius: '12px',
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
@@ -306,33 +308,33 @@ function AccountInfo() {
             transition: 'all 0.2s ease-in-out',
             '&:hover': {
               boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
-              transform: 'translateY(-2px)'
-            }
+              transform: 'translateY(-2px)',
+            },
           }}
         >
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <PersonIcon sx={{ fontSize: '1.5rem', color: '#1E3A5F' }} />
               <Box>
-                <Typography 
-                  variant='body2' 
-                  sx={{ 
-                    color: '#666', 
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#666',
                     fontSize: '0.875rem',
                     fontWeight: 500,
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    mb: 0.5
+                    mb: 0.5,
                   }}
                 >
                   Full Name
                 </Typography>
-                <Typography 
-                  variant='h6' 
-                  sx={{ 
+                <Typography
+                  variant="h6"
+                  sx={{
                     color: '#333',
                     fontWeight: 500,
-                    fontSize: '1.1rem'
+                    fontSize: '1.1rem',
                   }}
                 >
                   {user.first_name} {user.last_name}
@@ -343,13 +345,12 @@ function AccountInfo() {
         </Card>
 
         {/* API key management is intentionally hidden in NodeFlow. */}
-
       </Box>
 
       <Modal
         open={isEditing}
         onClose={handleCancel}
-        aria-labelledby='edit-profile-modal-title'
+        aria-labelledby="edit-profile-modal-title"
       >
         <Box
           sx={{
@@ -364,49 +365,51 @@ function AccountInfo() {
             border: 'none',
             overflow: 'hidden',
           }}
-          component='form'
+          component="form"
           onSubmit={(e) => {
-            e.preventDefault();
-            handleSave();
+            e.preventDefault()
+            handleSave()
           }}
         >
           {/* Header Section */}
-          <Box sx={{ 
-            backgroundColor: '#1E3A5F', 
-            padding: '1.5rem 2rem',
-            position: 'relative',
-            mb: 0
-          }}>
+          <Box
+            sx={{
+              backgroundColor: '#1E3A5F',
+              padding: '1.5rem 2rem',
+              position: 'relative',
+              mb: 0,
+            }}
+          >
             <IconButton
-              sx={{ 
-                position: 'absolute', 
-                top: '0.75rem', 
+              sx={{
+                position: 'absolute',
+                top: '0.75rem',
                 right: '0.75rem',
                 color: 'white',
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
               }}
-              aria-label='close'
-              size='small'
+              aria-label="close"
+              size="small"
               onClick={handleCancel}
             >
-              <CloseIcon fontSize='small' />
+              <CloseIcon fontSize="small" />
             </IconButton>
-            <Typography 
-              variant='h5' 
-              component='h2'
-              sx={{ 
+            <Typography
+              variant="h5"
+              component="h2"
+              sx={{
                 color: 'white',
                 fontWeight: 600,
-                fontSize: '1.5rem'
+                fontSize: '1.5rem',
               }}
             >
               Edit Profile
             </Typography>
-            <Typography 
-              variant='body2' 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 color: 'rgba(255, 255, 255, 0.8)',
-                mt: 0.5
+                mt: 0.5,
               }}
             >
               Update your account information
@@ -415,53 +418,63 @@ function AccountInfo() {
 
           {/* Form Section */}
           <Box sx={{ padding: '2rem' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <Box
+              sx={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
+            >
               <TextField
                 fullWidth
-                label='First Name'
+                label="First Name"
                 value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, first_name: e.target.value })
+                }
                 error={error && error.includes('First name')}
                 helperText={error && error.includes('First name') ? error : ''}
                 required
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '8px',
-                  }
+                  },
                 }}
               />
               <TextField
                 fullWidth
-                label='Last Name'
+                label="Last Name"
                 value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, last_name: e.target.value })
+                }
                 error={error && error.includes('Last name')}
                 helperText={error && error.includes('Last name') ? error : ''}
                 required
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '8px',
-                  }
+                  },
                 }}
               />
-              {error && !error.includes('First name') && !error.includes('Last name') && (
-                <Typography color='error' sx={{ fontSize: '0.875rem' }}>
-                  {error}
-                </Typography>
-              )}
+              {error &&
+                !error.includes('First name') &&
+                !error.includes('Last name') && (
+                  <Typography color="error" sx={{ fontSize: '0.875rem' }}>
+                    {error}
+                  </Typography>
+                )}
             </Box>
 
             {/* Action Buttons */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: '0.75rem', 
-              justifyContent: 'flex-end',
-              mt: '2rem',
-              pt: '1.5rem',
-              borderTop: '1px solid #f0f0f0'
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+                mt: '2rem',
+                pt: '1.5rem',
+                borderTop: '1px solid #f0f0f0',
+              }}
+            >
               <Button
-                variant='outlined'
+                variant="outlined"
                 onClick={handleCancel}
                 disabled={isSubmitting}
                 sx={{
@@ -469,25 +482,29 @@ function AccountInfo() {
                   color: '#666',
                   '&:hover': {
                     borderColor: '#bbb',
-                    backgroundColor: '#f5f5f5'
-                  }
+                    backgroundColor: '#f5f5f5',
+                  },
                 }}
               >
                 Cancel
               </Button>
               <Button
-                type='submit'
-                variant='contained'
-                disabled={isSubmitting || !formData.first_name?.trim() || !formData.last_name?.trim()}
+                type="submit"
+                variant="contained"
+                disabled={
+                  isSubmitting ||
+                  !formData.first_name?.trim() ||
+                  !formData.last_name?.trim()
+                }
                 sx={{
                   backgroundColor: '#1E3A5F',
                   '&:hover': { backgroundColor: '#3a5a40' },
-                  '&:disabled': { 
+                  '&:disabled': {
                     backgroundColor: '#ccc',
-                    color: '#888'
+                    color: '#888',
                   },
                   borderRadius: '8px',
-                  px: '1.5rem'
+                  px: '1.5rem',
                 }}
               >
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
@@ -497,7 +514,7 @@ function AccountInfo() {
         </Box>
       </Modal>
     </Box>
-  );
+  )
 }
 
-export default AccountInfo;
+export default AccountInfo

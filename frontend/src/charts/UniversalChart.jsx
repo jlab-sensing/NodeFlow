@@ -1,15 +1,25 @@
-import 'chartjs-adapter-luxon';
-import PropTypes from 'prop-types';
-import { getAxisBoundsAndStepValues } from './alignAxis';
-import { getChartTimeDomain } from './timeDomain';
-import ChartWrapper from './ChartWrapper';
-import { chartPlugins } from './plugins';
-import { getVwcAxisBounds } from './VwcChart/vwcAxis';
+import 'chartjs-adapter-luxon'
+import PropTypes from 'prop-types'
+import { getAxisBoundsAndStepValues } from './alignAxis'
+import { getChartTimeDomain } from './timeDomain'
+import ChartWrapper from './ChartWrapper'
+import { chartPlugins } from './plugins'
+import { getVwcAxisBounds } from './VwcChart/vwcAxis'
 
-export default function UniversalChart({ data, chartId, measurements, units, axisIds, axisPolicy, startDate, endDate, onResampleChange }) {
+export default function UniversalChart({
+  data,
+  chartId,
+  measurements,
+  units,
+  axisIds,
+  axisPolicy,
+  startDate,
+  endDate,
+  onResampleChange,
+}) {
   // Build chart options dynamically based on measurements
   const buildChartOptions = () => {
-    const chartTimeDomain = getChartTimeDomain(startDate, endDate);
+    const chartTimeDomain = getChartTimeDomain(startDate, endDate)
 
     const scales = {
       x: {
@@ -35,12 +45,18 @@ export default function UniversalChart({ data, chartId, measurements, units, axi
         },
         ...chartTimeDomain,
       },
-    };
+    }
 
     // Handle single measurement (left axis only)
     if (measurements.length === 1) {
-      const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(data.datasets, [], 10, 5);
-      const singleAxisBounds = axisPolicy === 'vwcPercent' ? getVwcAxisBounds(data.datasets, 10) : null;
+      const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(
+        data.datasets,
+        [],
+        10,
+        5,
+      )
+      const singleAxisBounds =
+        axisPolicy === 'vwcPercent' ? getVwcAxisBounds(data.datasets, 10) : null
 
       scales.y = {
         type: 'linear',
@@ -51,33 +67,37 @@ export default function UniversalChart({ data, chartId, measurements, units, axi
         },
         ...(singleAxisBounds
           ? {
-            ticks: {
-              stepSize: singleAxisBounds.step,
-            },
-            min: singleAxisBounds.min,
-            max: singleAxisBounds.max,
-          }
+              ticks: {
+                stepSize: singleAxisBounds.step,
+              },
+              min: singleAxisBounds.min,
+              max: singleAxisBounds.max,
+            }
           : {
-            ticks: {
-              stepSize: leftYStep,
-              callback: (value) => +value.toFixed(5),
-            },
-            min: leftYMin,
-            max: leftYMax,
-          }),
-      };
+              ticks: {
+                stepSize: leftYStep,
+                callback: (value) => +value.toFixed(5),
+              },
+              min: leftYMin,
+              max: leftYMax,
+            }),
+      }
     }
     // Handle dual measurements (left and right axes)
     else if (measurements.length === 2) {
-      const leftDatasets = data.datasets.filter((d) => d.yAxisID === axisIds[0]);
-      const rightDatasets = data.datasets.filter((d) => d.yAxisID === axisIds[1]);
+      const leftDatasets = data.datasets.filter((d) => d.yAxisID === axisIds[0])
+      const rightDatasets = data.datasets.filter(
+        (d) => d.yAxisID === axisIds[1],
+      )
 
-      const { leftYMin, leftYMax, leftYStep, rightYMin, rightYMax, rightYStep } = getAxisBoundsAndStepValues(
-        leftDatasets,
-        rightDatasets,
-        8,
-        0.2,
-      );
+      const {
+        leftYMin,
+        leftYMax,
+        leftYStep,
+        rightYMin,
+        rightYMax,
+        rightYStep,
+      } = getAxisBoundsAndStepValues(leftDatasets, rightDatasets, 8, 0.2)
 
       scales[axisIds[0]] = {
         type: 'linear',
@@ -92,7 +112,7 @@ export default function UniversalChart({ data, chartId, measurements, units, axi
         },
         min: leftYMin,
         max: leftYMax,
-      };
+      }
 
       scales[axisIds[1]] = {
         type: 'linear',
@@ -107,7 +127,7 @@ export default function UniversalChart({ data, chartId, measurements, units, axi
         },
         min: rightYMin,
         max: rightYMax,
-      };
+      }
     }
 
     return {
@@ -115,15 +135,22 @@ export default function UniversalChart({ data, chartId, measurements, units, axi
       responsive: true,
       parsing: false,
       scales,
-      ...(measurements.length > 1 && { plugins: structuredClone(chartPlugins) }),
-    };
-  };
+      ...(measurements.length > 1 && {
+        plugins: structuredClone(chartPlugins),
+      }),
+    }
+  }
 
-  const chartOptions = buildChartOptions();
+  const chartOptions = buildChartOptions()
 
   return (
-    <ChartWrapper id={chartId} data={data} options={chartOptions} onResampleChange={onResampleChange} />
-  );
+    <ChartWrapper
+      id={chartId}
+      data={data}
+      options={chartOptions}
+      onResampleChange={onResampleChange}
+    />
+  )
 }
 
 UniversalChart.propTypes = {
@@ -136,4 +163,4 @@ UniversalChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
-};
+}

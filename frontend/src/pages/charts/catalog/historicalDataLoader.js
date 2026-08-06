@@ -1,9 +1,9 @@
-import { getSensorChartData } from '../../../services/chartData';
-import { CHART_CONFIGS } from '../components/chartConfigs';
-import { panelIdToUnifiedType } from './chartsCatalog';
-import { measurementMatches } from '../components/unifiedChartUtils';
+import { getSensorChartData } from '../../../services/chartData'
+import { CHART_CONFIGS } from '../components/chartConfigs'
+import { panelIdToUnifiedType } from './chartsCatalog'
+import { measurementMatches } from '../components/unifiedChartUtils'
 
-export { measurementMatches };
+export { measurementMatches }
 
 const BUILTIN_SENSOR_CONFIGS = {
   teros: {
@@ -12,24 +12,24 @@ const BUILTIN_SENSOR_CONFIGS = {
   temp: {
     measurements: ['Temperature'],
   },
-};
+}
 
 export function sensorDataCacheKey(sensorUuid, measurement) {
-  return `${sensorUuid}:${measurement}`.toLowerCase();
+  return `${sensorUuid}:${measurement}`.toLowerCase()
 }
 
 function measurementsForPanel(sensor, panelId, config) {
-  if (!(sensor.panel_ids ?? []).includes(panelId)) return [];
+  if (!(sensor.panel_ids ?? []).includes(panelId)) return []
 
-  const seen = new Set();
+  const seen = new Set()
   return (sensor.measurements ?? []).filter((measurement) => {
-    if (!measurementMatches(measurement, config.measurements)) return false;
+    if (!measurementMatches(measurement, config.measurements)) return false
 
-    const key = measurement.toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+    const key = measurement.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 /**
@@ -37,34 +37,34 @@ function measurementsForPanel(sensor, panelId, config) {
  * included only when its chart-source capabilities contain the panel.
  */
 export function collectUnifiedSensorRequests(panelOrder, sensors) {
-  const requests = [];
-  const seen = new Set();
+  const requests = []
+  const seen = new Set()
 
   panelOrder.forEach((panelId) => {
-    const unifiedType = panelIdToUnifiedType(panelId);
+    const unifiedType = panelIdToUnifiedType(panelId)
     const config = unifiedType
       ? CHART_CONFIGS[unifiedType]
-      : BUILTIN_SENSOR_CONFIGS[panelId];
-    if (!config) return;
+      : BUILTIN_SENSOR_CONFIGS[panelId]
+    if (!config) return
 
     sensors.forEach((sensor) => {
-      if (!sensor.has_chart_data) return;
+      if (!sensor.has_chart_data) return
 
       measurementsForPanel(sensor, panelId, config).forEach((measurement) => {
-        const cacheKey = sensorDataCacheKey(sensor.uuid, measurement);
-        if (seen.has(cacheKey)) return;
+        const cacheKey = sensorDataCacheKey(sensor.uuid, measurement)
+        if (seen.has(cacheKey)) return
 
-        seen.add(cacheKey);
+        seen.add(cacheKey)
         requests.push({
           cacheKey,
           sensorUuid: sensor.uuid,
           measurement,
-        });
-      });
-    });
-  });
+        })
+      })
+    })
+  })
 
-  return requests;
+  return requests
 }
 
 /**
@@ -76,18 +76,18 @@ export function buildUnifiedChartDataFromCache(
   unifiedType,
   historicalSensorByKey,
 ) {
-  const panelId = `u:${unifiedType}`;
-  const config = CHART_CONFIGS[unifiedType];
-  if (!config) return {};
+  const panelId = `u:${unifiedType}`
+  const config = CHART_CONFIGS[unifiedType]
+  if (!config) return {}
 
   const entries = sensors.map((sensor) => {
     const measurementEntries = measurementsForPanel(sensor, panelId, config)
       .map((measurement) => {
-        const cacheKey = sensorDataCacheKey(sensor.uuid, measurement);
-        const payload = historicalSensorByKey[cacheKey];
-        return payload ? [measurement, payload] : null;
+        const cacheKey = sensorDataCacheKey(sensor.uuid, measurement)
+        const payload = historicalSensorByKey[cacheKey]
+        return payload ? [measurement, payload] : null
       })
-      .filter(Boolean);
+      .filter(Boolean)
 
     return [
       sensor.uuid,
@@ -95,10 +95,10 @@ export function buildUnifiedChartDataFromCache(
         name: sensor.name,
         ...Object.fromEntries(measurementEntries),
       },
-    ];
-  });
+    ]
+  })
 
-  return Object.fromEntries(entries);
+  return Object.fromEntries(entries)
 }
 
 /**
@@ -114,10 +114,10 @@ export async function fetchChartsSensorData({
   resample = 'hour',
 }) {
   if (!sensors.length || !panelOrder.length) {
-    return { historicalSensorByKey: {} };
+    return { historicalSensorByKey: {} }
   }
 
-  const sensorRequests = collectUnifiedSensorRequests(panelOrder, sensors);
+  const sensorRequests = collectUnifiedSensorRequests(panelOrder, sensors)
   const entries = await Promise.all(
     sensorRequests.map(async ({ cacheKey, sensorUuid, measurement }) => {
       const payload = await getSensorChartData(
@@ -127,10 +127,10 @@ export async function fetchChartsSensorData({
         startDate,
         endDate,
         resample,
-      );
-      return [cacheKey, payload];
+      )
+      return [cacheKey, payload]
     }),
-  );
+  )
 
-  return { historicalSensorByKey: Object.fromEntries(entries) };
+  return { historicalSensorByKey: Object.fromEntries(entries) }
 }

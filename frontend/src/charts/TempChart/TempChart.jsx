@@ -1,12 +1,22 @@
-import 'chartjs-adapter-luxon';
-import PropTypes from 'prop-types';
-import { getAxisBoundsAndStepValues } from '../alignAxis';
-import { getChartTimeDomain } from '../timeDomain';
-import ChartWrapper from '../ChartWrapper';
+import 'chartjs-adapter-luxon'
+import PropTypes from 'prop-types'
+import { getAxisBoundsAndStepValues } from '../alignAxis'
+import { getChartTimeDomain } from '../timeDomain'
+import ChartWrapper from '../ChartWrapper'
 
-export default function TempChart({ data, startDate, endDate, onResampleChange }) {
-  const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(data.datasets, [], 10, 5);
-  const chartTimeDomain = getChartTimeDomain(startDate, endDate);
+export default function TempChart({
+  data,
+  startDate,
+  endDate,
+  onResampleChange,
+}) {
+  const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(
+    data.datasets,
+    [],
+    10,
+    5,
+  )
+  const chartTimeDomain = getChartTimeDomain(startDate, endDate)
 
   const chartOptions = {
     maintainAspectRatio: false,
@@ -50,20 +60,20 @@ export default function TempChart({ data, startDate, endDate, onResampleChange }
         },
       },
     },
-  };
+  }
 
   return (
     <ChartWrapper
-      id='temp'
+      id="temp"
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
     />
-  );
+  )
 }
 TempChart.propTypes = {
   data: PropTypes.object,
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
-};
+}

@@ -1,11 +1,11 @@
-import { Alert, Snackbar } from '@mui/material';
-import PropTypes from 'prop-types';
-import { getCatalogEntry } from '../pages/charts/catalog/chartsCatalog';
+import { Alert, Snackbar } from '@mui/material'
+import PropTypes from 'prop-types'
+import { getCatalogEntry } from '../pages/charts/catalog/chartsCatalog'
 
 function LayoutMismatchNotification({ open, onClose, missingPanelIds }) {
   const labels = missingPanelIds
     .map((panelId) => getCatalogEntry(panelId)?.label || panelId)
-    .join(', ');
+    .join(', ')
 
   return (
     <Snackbar
@@ -14,18 +14,18 @@ function LayoutMismatchNotification({ open, onClose, missingPanelIds }) {
       onClose={onClose}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
     >
-      <Alert onClose={onClose} severity='warning' sx={{ width: '100%' }}>
-        Some charts in your saved layout are not available for the selected cell(s):{' '}
-        <strong>{labels}</strong>. Those panels may show no data.
+      <Alert onClose={onClose} severity="warning" sx={{ width: '100%' }}>
+        Some charts in your saved layout are not available for the selected
+        cell(s): <strong>{labels}</strong>. Those panels may show no data.
       </Alert>
     </Snackbar>
-  );
+  )
 }
 
 LayoutMismatchNotification.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   missingPanelIds: PropTypes.arrayOf(PropTypes.string).isRequired,
-};
+}
 
-export default LayoutMismatchNotification;
+export default LayoutMismatchNotification

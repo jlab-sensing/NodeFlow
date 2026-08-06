@@ -126,4 +126,4 @@ export const CHART_CONFIGS = {
     axisIds: ['y'],
     chartId: 'waterFlow',
   },
-};
+}

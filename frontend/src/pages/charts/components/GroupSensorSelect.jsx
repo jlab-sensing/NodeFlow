@@ -1,4 +1,4 @@
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import {
   Box,
   Button,
@@ -9,9 +9,9 @@ import {
   MenuItem,
   TextField,
   Typography,
-} from '@mui/material';
-import PropTypes from 'prop-types';
-import { useCallback, useMemo, useState } from 'react';
+} from '@mui/material'
+import PropTypes from 'prop-types'
+import { useCallback, useMemo, useState } from 'react'
 
 function GroupSensorSelect({
   groups,
@@ -21,252 +21,194 @@ function GroupSensorSelect({
   loading = false,
   error = false,
 }) {
-  const [anchorElement, setAnchorElement] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [anchorElement, setAnchorElement] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const menuOpen = Boolean(anchorElement);
+  const menuOpen = Boolean(anchorElement)
 
   const selectedSensorIdSet = useMemo(
     () => new Set(selectedSensorIds),
     [selectedSensorIds],
-  );
+  )
 
   const sensorsById = useMemo(
-    () =>
-      new Map(
-        sensors.map((sensor) => [
-          sensor.uuid,
-          sensor,
-        ]),
-      ),
+    () => new Map(sensors.map((sensor) => [sensor.uuid, sensor])),
     [sensors],
-  );
+  )
 
   const knownGroupIds = useMemo(
     () => new Set(groups.map((group) => group.uuid)),
     [groups],
-  );
+  )
 
   const sensorsByGroup = useMemo(() => {
-    const groupedSensors = new Map();
+    const groupedSensors = new Map()
 
     groups.forEach((group) => {
-      groupedSensors.set(group.uuid, []);
-    });
+      groupedSensors.set(group.uuid, [])
+    })
 
     sensors.forEach((sensor) => {
-      if (
-        sensor.group_id &&
-        groupedSensors.has(sensor.group_id)
-      ) {
-        groupedSensors
-          .get(sensor.group_id)
-          .push(sensor);
+      if (sensor.group_id && groupedSensors.has(sensor.group_id)) {
+        groupedSensors.get(sensor.group_id).push(sensor)
       }
-    });
+    })
 
     groupedSensors.forEach((groupSensors) => {
       groupSensors.sort((firstSensor, secondSensor) =>
         firstSensor.name.localeCompare(secondSensor.name),
-      );
-    });
+      )
+    })
 
-    return groupedSensors;
-  }, [groups, sensors]);
+    return groupedSensors
+  }, [groups, sensors])
 
   const ungroupedSensors = useMemo(
     () =>
       sensors
         .filter(
-          (sensor) =>
-            !sensor.group_id ||
-            !knownGroupIds.has(sensor.group_id),
+          (sensor) => !sensor.group_id || !knownGroupIds.has(sensor.group_id),
         )
         .sort((firstSensor, secondSensor) =>
           firstSensor.name.localeCompare(secondSensor.name),
         ),
     [sensors, knownGroupIds],
-  );
+  )
 
-  const normalizedSearchQuery =
-    searchQuery.trim().toLowerCase();
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
 
   const sensorMatchesSearch = useCallback(
     (sensor) => {
       if (!normalizedSearchQuery) {
-        return true;
+        return true
       }
 
-      const searchableText = [
-        sensor.name,
-        sensor.sensor_type,
-        sensor.logger_id,
-      ]
+      const searchableText = [sensor.name, sensor.sensor_type, sensor.logger_id]
         .filter((value) => value != null)
         .join(' ')
-        .toLowerCase();
+        .toLowerCase()
 
-      return searchableText.includes(
-        normalizedSearchQuery,
-      );
+      return searchableText.includes(normalizedSearchQuery)
     },
     [normalizedSearchQuery],
-  );
+  )
 
   const visibleGroups = useMemo(
     () =>
       groups
         .map((group) => {
-          const groupSensors =
-            sensorsByGroup.get(group.uuid) ?? [];
+          const groupSensors = sensorsByGroup.get(group.uuid) ?? []
 
           const groupMatchesSearch = group.name
             .toLowerCase()
-            .includes(normalizedSearchQuery);
+            .includes(normalizedSearchQuery)
 
           const visibleSensors =
-            groupMatchesSearch ||
-            !normalizedSearchQuery
+            groupMatchesSearch || !normalizedSearchQuery
               ? groupSensors
-              : groupSensors.filter(
-                  sensorMatchesSearch,
-                );
+              : groupSensors.filter(sensorMatchesSearch)
 
           return {
             group,
             groupSensors,
             visibleSensors,
             groupMatchesSearch,
-          };
+          }
         })
         .filter(
-          ({
-            groupMatchesSearch,
-            visibleSensors,
-          }) =>
+          ({ groupMatchesSearch, visibleSensors }) =>
             !normalizedSearchQuery ||
             groupMatchesSearch ||
             visibleSensors.length > 0,
         )
         .sort((firstGroup, secondGroup) =>
-          firstGroup.group.name.localeCompare(
-            secondGroup.group.name,
-          ),
+          firstGroup.group.name.localeCompare(secondGroup.group.name),
         ),
-    [
-      groups,
-      sensorsByGroup,
-      normalizedSearchQuery,
-      sensorMatchesSearch,
-    ],
-  );
+    [groups, sensorsByGroup, normalizedSearchQuery, sensorMatchesSearch],
+  )
 
   const visibleUngroupedSensors = useMemo(
-    () =>
-      ungroupedSensors.filter(
-        sensorMatchesSearch,
-      ),
-    [ungroupedSensors, sensorMatchesSearch]);
+    () => ungroupedSensors.filter(sensorMatchesSearch),
+    [ungroupedSensors, sensorMatchesSearch],
+  )
 
   const selectedSensors = useMemo(
     () =>
       selectedSensorIds
-        .map((sensorId) =>
-          sensorsById.get(sensorId),
-        )
+        .map((sensorId) => sensorsById.get(sensorId))
         .filter(Boolean),
     [selectedSensorIds, sensorsById],
-  );
+  )
 
   const selectionLabel = useMemo(() => {
     if (loading) {
-      return 'Loading sensors...';
+      return 'Loading sensors...'
     }
 
     if (error) {
-      return 'Unable to load sensors';
+      return 'Unable to load sensors'
     }
 
     if (selectedSensors.length === 0) {
-      return 'Select groups or sensors';
+      return 'Select groups or sensors'
     }
 
     if (selectedSensors.length === 1) {
-      return selectedSensors[0].name;
+      return selectedSensors[0].name
     }
 
-    return `${selectedSensors.length} sensors selected`;
-  }, [loading, error, selectedSensors]);
+    return `${selectedSensors.length} sensors selected`
+  }, [loading, error, selectedSensors])
 
   const toggleSensor = (sensorId) => {
     if (selectedSensorIdSet.has(sensorId)) {
       onSelectionChange(
-        selectedSensorIds.filter(
-          (selectedId) =>
-            selectedId !== sensorId,
-        ),
-      );
-      return;
+        selectedSensorIds.filter((selectedId) => selectedId !== sensorId),
+      )
+      return
     }
 
-    onSelectionChange([
-      ...selectedSensorIds,
-      sensorId,
-    ]);
-  };
+    onSelectionChange([...selectedSensorIds, sensorId])
+  }
 
   const toggleGroup = (groupSensors) => {
     if (groupSensors.length === 0) {
-      return;
+      return
     }
 
-    const groupSensorIds = groupSensors.map(
-      (sensor) => sensor.uuid,
-    );
+    const groupSensorIds = groupSensors.map((sensor) => sensor.uuid)
 
-    const allGroupSensorsSelected =
-      groupSensorIds.every((sensorId) =>
-        selectedSensorIdSet.has(sensorId),
-      );
+    const allGroupSensorsSelected = groupSensorIds.every((sensorId) =>
+      selectedSensorIdSet.has(sensorId),
+    )
 
     if (allGroupSensorsSelected) {
-      const groupSensorIdSet = new Set(
-        groupSensorIds,
-      );
+      const groupSensorIdSet = new Set(groupSensorIds)
 
       onSelectionChange(
-        selectedSensorIds.filter(
-          (sensorId) =>
-            !groupSensorIdSet.has(sensorId),
-        ),
-      );
-      return;
+        selectedSensorIds.filter((sensorId) => !groupSensorIdSet.has(sensorId)),
+      )
+      return
     }
 
-    onSelectionChange([
-      ...new Set([
-        ...selectedSensorIds,
-        ...groupSensorIds,
-      ]),
-    ]);
-  };
+    onSelectionChange([...new Set([...selectedSensorIds, ...groupSensorIds])])
+  }
 
   const clearSelection = () => {
-    onSelectionChange([]);
-  };
+    onSelectionChange([])
+  }
 
   const handleOpen = (event) => {
-    setAnchorElement(event.currentTarget);
-  };
+    setAnchorElement(event.currentTarget)
+  }
 
   const handleClose = () => {
-    setAnchorElement(null);
-    setSearchQuery('');
-  };
+    setAnchorElement(null)
+    setSearchQuery('')
+  }
 
   const noSearchResults =
-    visibleGroups.length === 0 &&
-    visibleUngroupedSensors.length === 0;
+    visibleGroups.length === 0 && visibleUngroupedSensors.length === 0
 
   return (
     <>
@@ -276,14 +218,8 @@ function GroupSensorSelect({
         onClick={handleOpen}
         disabled={loading || Boolean(error)}
         aria-haspopup="menu"
-        aria-expanded={
-          menuOpen ? 'true' : undefined
-        }
-        aria-controls={
-          menuOpen
-            ? 'group-sensor-select-menu'
-            : undefined
-        }
+        aria-expanded={menuOpen ? 'true' : undefined}
+        aria-controls={menuOpen ? 'group-sensor-select-menu' : undefined}
         sx={{
           width: '100%',
           maxWidth: 600,
@@ -302,12 +238,7 @@ function GroupSensorSelect({
             minWidth: 0,
           }}
         >
-          {loading && (
-            <CircularProgress
-              size={18}
-              sx={{ mr: 1 }}
-            />
-          )}
+          {loading && <CircularProgress size={18} sx={{ mr: 1 }} />}
 
           <Typography
             component="span"
@@ -330,8 +261,7 @@ function GroupSensorSelect({
         open={menuOpen}
         onClose={handleClose}
         MenuListProps={{
-          'aria-labelledby':
-            'group-sensor-select-button',
+          'aria-labelledby': 'group-sensor-select-button',
           disablePadding: true,
         }}
         slotProps={{
@@ -355,9 +285,7 @@ function GroupSensorSelect({
             bgcolor: 'background.paper',
             p: 2,
           }}
-          onKeyDown={(event) =>
-            event.stopPropagation()
-          }
+          onKeyDown={(event) => event.stopPropagation()}
         >
           <TextField
             fullWidth
@@ -365,12 +293,8 @@ function GroupSensorSelect({
             size="small"
             label="Search groups or sensors"
             value={searchQuery}
-            onChange={(event) =>
-              setSearchQuery(event.target.value)
-            }
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onChange={(event) => setSearchQuery(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
           />
 
           {selectedSensorIds.length > 0 && (
@@ -391,180 +315,72 @@ function GroupSensorSelect({
 
         <Divider />
 
-        {visibleGroups.map(
-          ({
-            group,
-            groupSensors,
-            visibleSensors,
-          }) => {
-            const groupSensorIds =
-              groupSensors.map(
-                (sensor) => sensor.uuid,
-              );
+        {visibleGroups.map(({ group, groupSensors, visibleSensors }) => {
+          const groupSensorIds = groupSensors.map((sensor) => sensor.uuid)
 
-            const allSelected =
-              groupSensorIds.length > 0 &&
-              groupSensorIds.every((sensorId) =>
-                selectedSensorIdSet.has(
-                  sensorId,
-                ),
-              );
+          const allSelected =
+            groupSensorIds.length > 0 &&
+            groupSensorIds.every((sensorId) =>
+              selectedSensorIdSet.has(sensorId),
+            )
 
-            const someSelected =
-              groupSensorIds.some((sensorId) =>
-                selectedSensorIdSet.has(
-                  sensorId,
-                ),
-              );
+          const someSelected = groupSensorIds.some((sensorId) =>
+            selectedSensorIdSet.has(sensorId),
+          )
 
-            return (
-              <Box key={group.uuid}>
-                <MenuItem
-                  disabled={
-                    groupSensors.length === 0
-                  }
-                  onClick={() =>
-                    toggleGroup(groupSensors)
-                  }
-                  sx={{
-                    bgcolor:
-                      'rgba(30, 58, 95, 0.06)',
-                  }}
-                >
-                  <Checkbox
-                    checked={allSelected}
-                    indeterminate={
-                      someSelected && !allSelected
-                    }
-                    disabled={
-                      groupSensors.length === 0
-                    }
-                    tabIndex={-1}
-                    disableRipple
-                  />
-
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography
-                      sx={{ fontWeight: 700 }}
-                    >
-                      {group.name}
-                    </Typography>
-
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      component="div"
-                    >
-                      {groupSensors.length === 0
-                        ? 'No sensors'
-                        : `${groupSensors.length} sensor${
-                            groupSensors.length === 1
-                              ? ''
-                              : 's'
-                          }`}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-
-                {visibleSensors.map((sensor) => {
-                  const selected =
-                    selectedSensorIdSet.has(
-                      sensor.uuid,
-                    );
-
-                  return (
-                    <MenuItem
-                      key={sensor.uuid}
-                      onClick={() =>
-                        toggleSensor(sensor.uuid)
-                      }
-                      sx={{ pl: 5 }}
-                    >
-                      <Checkbox
-                        checked={selected}
-                        tabIndex={-1}
-                        disableRipple
-                      />
-
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow:
-                              'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {sensor.name}
-                        </Typography>
-
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          component="div"
-                        >
-                          {sensor.sensor_type}
-                          {' · '}
-                          Logger {sensor.logger_id}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  );
-                })}
-
-                <Divider />
-              </Box>
-            );
-          },
-        )}
-
-        {visibleUngroupedSensors.length > 0 && (
-          <Box>
-            <Box
-              sx={{
-                px: 2,
-                py: 1.5,
-                bgcolor:
-                  'rgba(30, 58, 95, 0.06)',
-              }}
-            >
-              <Typography sx={{ fontWeight: 700 }}>
-                Ungrouped Sensors
-              </Typography>
-
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                component="div"
+          return (
+            <Box key={group.uuid}>
+              <MenuItem
+                disabled={groupSensors.length === 0}
+                onClick={() => toggleGroup(groupSensors)}
+                sx={{
+                  bgcolor: 'rgba(30, 58, 95, 0.06)',
+                }}
               >
-                Sensors that are not assigned to a
-                group
-              </Typography>
-            </Box>
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={someSelected && !allSelected}
+                  disabled={groupSensors.length === 0}
+                  tabIndex={-1}
+                  disableRipple
+                />
 
-            {visibleUngroupedSensors.map(
-              (sensor) => {
-                const selected =
-                  selectedSensorIdSet.has(
-                    sensor.uuid,
-                  );
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700 }}>{group.name}</Typography>
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    component="div"
+                  >
+                    {groupSensors.length === 0
+                      ? 'No sensors'
+                      : `${groupSensors.length} sensor${
+                          groupSensors.length === 1 ? '' : 's'
+                        }`}
+                  </Typography>
+                </Box>
+              </MenuItem>
+
+              {visibleSensors.map((sensor) => {
+                const selected = selectedSensorIdSet.has(sensor.uuid)
 
                 return (
                   <MenuItem
                     key={sensor.uuid}
-                    onClick={() =>
-                      toggleSensor(sensor.uuid)
-                    }
+                    onClick={() => toggleSensor(sensor.uuid)}
                     sx={{ pl: 5 }}
                   >
-                    <Checkbox
-                      checked={selected}
-                      tabIndex={-1}
-                      disableRipple
-                    />
+                    <Checkbox checked={selected} tabIndex={-1} disableRipple />
 
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography>
+                      <Typography
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {sensor.name}
                       </Typography>
 
@@ -579,9 +395,63 @@ function GroupSensorSelect({
                       </Typography>
                     </Box>
                   </MenuItem>
-                );
-              },
-            )}
+                )
+              })}
+
+              <Divider />
+            </Box>
+          )
+        })}
+
+        {visibleUngroupedSensors.length > 0 && (
+          <Box>
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                bgcolor: 'rgba(30, 58, 95, 0.06)',
+              }}
+            >
+              <Typography sx={{ fontWeight: 700 }}>
+                Ungrouped Sensors
+              </Typography>
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                component="div"
+              >
+                Sensors that are not assigned to a group
+              </Typography>
+            </Box>
+
+            {visibleUngroupedSensors.map((sensor) => {
+              const selected = selectedSensorIdSet.has(sensor.uuid)
+
+              return (
+                <MenuItem
+                  key={sensor.uuid}
+                  onClick={() => toggleSensor(sensor.uuid)}
+                  sx={{ pl: 5 }}
+                >
+                  <Checkbox checked={selected} tabIndex={-1} disableRipple />
+
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography>{sensor.name}</Typography>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      component="div"
+                    >
+                      {sensor.sensor_type}
+                      {' · '}
+                      Logger {sensor.logger_id}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              )
+            })}
           </Box>
         )}
 
@@ -600,7 +470,7 @@ function GroupSensorSelect({
         )}
       </Menu>
     </>
-  );
+  )
 }
 
 GroupSensorSelect.propTypes = {
@@ -617,24 +487,15 @@ GroupSensorSelect.propTypes = {
       sensor_type: PropTypes.string.isRequired,
       logger_id: PropTypes.number.isRequired,
       group_id: PropTypes.string,
-      measurements: PropTypes.arrayOf(
-        PropTypes.string,
-      ),
-      panel_ids: PropTypes.arrayOf(
-        PropTypes.string,
-      ),
+      measurements: PropTypes.arrayOf(PropTypes.string),
+      panel_ids: PropTypes.arrayOf(PropTypes.string),
     }),
   ),
-  selectedSensorIds: PropTypes.arrayOf(
-    PropTypes.string,
-  ),
+  selectedSensorIds: PropTypes.arrayOf(PropTypes.string),
   onSelectionChange: PropTypes.func.isRequired,
   loading: PropTypes.bool,
-  error: PropTypes.oneOfType([
-    PropTypes.bool,
-    PropTypes.string,
-  ]),
-};
+  error: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+}
 
 GroupSensorSelect.defaultProps = {
   groups: [],
@@ -642,6 +503,6 @@ GroupSensorSelect.defaultProps = {
   selectedSensorIds: [],
   loading: false,
   error: false,
-};
+}
 
-export default GroupSensorSelect;
+export default GroupSensorSelect

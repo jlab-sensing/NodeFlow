@@ -10,7 +10,7 @@
  * @property {string} [unifiedType] - UnifiedChart `type` when kind === 'unified'
  */
 
-export const LAYOUT_VERSION = 'v1';
+export const LAYOUT_VERSION = 'v1'
 
 /** Built-in top-grid panels (PowerCharts / TerosCharts). */
 export const BUILTIN_CATALOG = [
@@ -42,11 +42,17 @@ export const BUILTIN_CATALOG = [
     category: 'teros',
     kind: 'builtin',
   },
-];
+]
 
 /** Catalog entries backed by UnifiedChart types. */
 export const UNIFIED_CATALOG = [
-  { panelId: 'u:co2', unifiedType: 'co2', label: 'CO₂', description: 'sensor · co2 · ppm', category: 'generic' },
+  {
+    panelId: 'u:co2',
+    unifiedType: 'co2',
+    label: 'CO₂',
+    description: 'sensor · co2 · ppm',
+    category: 'generic',
+  },
   {
     panelId: 'u:presHum',
     unifiedType: 'presHum',
@@ -103,25 +109,25 @@ export const UNIFIED_CATALOG = [
     description: 'bme280 · temperature',
     category: 'generic',
   },
-].map((entry) => ({ ...entry, kind: 'unified' }));
+].map((entry) => ({ ...entry, kind: 'unified' }))
 
-const ALL_ENTRIES = [...BUILTIN_CATALOG, ...UNIFIED_CATALOG];
+const ALL_ENTRIES = [...BUILTIN_CATALOG, ...UNIFIED_CATALOG]
 
-const PANEL_ID_SET = new Set(ALL_ENTRIES.map((e) => e.panelId));
+const PANEL_ID_SET = new Set(ALL_ENTRIES.map((e) => e.panelId))
 
 /**
  * @param {string} panelId
  * @returns {CatalogEntry | undefined}
  */
 export function getCatalogEntry(panelId) {
-  return ALL_ENTRIES.find((e) => e.panelId === panelId);
+  return ALL_ENTRIES.find((e) => e.panelId === panelId)
 }
 
 /**
  * @param {string} panelId
  */
 export function isKnownPanelId(panelId) {
-  return PANEL_ID_SET.has(panelId);
+  return PANEL_ID_SET.has(panelId)
 }
 
 /**
@@ -129,10 +135,14 @@ export function isKnownPanelId(panelId) {
  * @returns {string | null}
  */
 export function panelIdToUnifiedType(panelId) {
-  if (!panelId.startsWith('u:')) return null;
-  return panelId.slice(2);
+  if (!panelId.startsWith('u:')) return null
+  return panelId.slice(2)
 }
 
-export { isLayoutPanelEntry, parseLayoutParam, serializeLayoutParam } from './layoutPanels';
+export {
+  isLayoutPanelEntry,
+  parseLayoutParam,
+  serializeLayoutParam,
+} from './layoutPanels'
 
-export { ALL_ENTRIES as FULL_CATALOG };
+export { ALL_ENTRIES as FULL_CATALOG }

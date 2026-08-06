@@ -1,12 +1,17 @@
-import { Alert, Snackbar } from '@mui/material';
-import { DateTime } from 'luxon';
-import PropTypes from 'prop-types';
+import { Alert, Snackbar } from '@mui/material'
+import { DateTime } from 'luxon'
+import PropTypes from 'prop-types'
 
-function DateRangeNotification({ open, onClose, fallbackStartDate, fallbackEndDate }) {
+function DateRangeNotification({
+  open,
+  onClose,
+  fallbackStartDate,
+  fallbackEndDate,
+}) {
   const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return DateTime.fromJSDate(date).toFormat('MMM dd, yyyy HH:mm');
-  };
+    if (!date) return 'N/A'
+    return DateTime.fromJSDate(date).toFormat('MMM dd, yyyy HH:mm')
+  }
 
   return (
     <Snackbar
@@ -15,12 +20,13 @@ function DateRangeNotification({ open, onClose, fallbackStartDate, fallbackEndDa
       onClose={onClose}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
     >
-      <Alert onClose={onClose} severity='info' sx={{ width: '100%' }}>
-        No recent data available. Showing the most recent data from <strong>{formatDate(fallbackStartDate)}</strong> to{' '}
+      <Alert onClose={onClose} severity="info" sx={{ width: '100%' }}>
+        No recent data available. Showing the most recent data from{' '}
+        <strong>{formatDate(fallbackStartDate)}</strong> to{' '}
         <strong>{formatDate(fallbackEndDate)}</strong>.
       </Alert>
     </Snackbar>
-  );
+  )
 }
 
 DateRangeNotification.propTypes = {
@@ -28,6 +34,6 @@ DateRangeNotification.propTypes = {
   onClose: PropTypes.func.isRequired,
   fallbackStartDate: PropTypes.object,
   fallbackEndDate: PropTypes.object,
-};
+}
 
-export default DateRangeNotification;
+export default DateRangeNotification

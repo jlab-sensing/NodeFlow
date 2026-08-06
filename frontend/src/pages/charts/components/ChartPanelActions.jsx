@@ -1,9 +1,9 @@
-import AddIcon from '@mui/icons-material/Add';
-import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
-import ViewStreamOutlinedIcon from '@mui/icons-material/ViewStreamOutlined';
-import { Box, Button, Stack, Tooltip, Typography } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import PropTypes from 'prop-types';
+import AddIcon from '@mui/icons-material/Add'
+import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined'
+import ViewStreamOutlinedIcon from '@mui/icons-material/ViewStreamOutlined'
+import { Box, Button, Stack, Tooltip, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
+import PropTypes from 'prop-types'
 
 const layoutIconButtonSx = (selected) => ({
   minWidth: 0,
@@ -16,9 +16,11 @@ const layoutIconButtonSx = (selected) => ({
   '&:hover': {
     borderColor: 'primary.main',
     bgcolor: (theme) =>
-      selected ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.04),
+      selected
+        ? alpha(theme.palette.primary.main, 0.12)
+        : alpha(theme.palette.primary.main, 0.04),
   },
-});
+})
 
 function ChartPanelActions({ onAddChart, panelColumns, onPanelColumnsChange }) {
   return (
@@ -37,7 +39,13 @@ function ChartPanelActions({ onAddChart, panelColumns, onPanelColumnsChange }) {
         Hover a chart for ≡ to reorder · × removes a panel
       </Typography>
       <Stack direction="row" spacing={1} alignItems="center">
-        <Stack direction="row" spacing={0.5} alignItems="center" role="group" aria-label="Panel column layout">
+        <Stack
+          direction="row"
+          spacing={0.5}
+          alignItems="center"
+          role="group"
+          aria-label="Panel column layout"
+        >
           <Tooltip title="Two columns" placement="bottom" disableInteractive>
             <Button
               variant="outlined"
@@ -50,7 +58,11 @@ function ChartPanelActions({ onAddChart, panelColumns, onPanelColumnsChange }) {
               <GridViewOutlinedIcon sx={{ fontSize: 18, opacity: 0.85 }} />
             </Button>
           </Tooltip>
-          <Tooltip title="Single column wide" placement="bottom" disableInteractive>
+          <Tooltip
+            title="Single column wide"
+            placement="bottom"
+            disableInteractive
+          >
             <Button
               variant="outlined"
               size="small"
@@ -63,18 +75,23 @@ function ChartPanelActions({ onAddChart, panelColumns, onPanelColumnsChange }) {
             </Button>
           </Tooltip>
         </Stack>
-        <Button variant="outlined" size="small" startIcon={<AddIcon />} onClick={onAddChart}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<AddIcon />}
+          onClick={onAddChart}
+        >
           Add chart
         </Button>
       </Stack>
     </Box>
-  );
+  )
 }
 
 ChartPanelActions.propTypes = {
   onAddChart: PropTypes.func.isRequired,
   panelColumns: PropTypes.oneOf([1, 2]).isRequired,
   onPanelColumnsChange: PropTypes.func.isRequired,
-};
+}
 
-export default ChartPanelActions;
+export default ChartPanelActions

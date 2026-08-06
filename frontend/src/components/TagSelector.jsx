@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'
 import {
   Box,
   Chip,
@@ -10,52 +10,58 @@ import {
   DialogActions,
   Button,
   Typography,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import PropTypes from 'prop-types';
-import { useTags, useCreateTag } from '../services/tag';
-import useAuth from '../auth/hooks/useAuth';
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import PropTypes from 'prop-types'
+import { useTags, useCreateTag } from '../services/tag'
+import useAuth from '../auth/hooks/useAuth'
 
 function TagSelector({ selectedTags, onTagsChange }) {
-  const { auth } = useAuth();
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagDescription, setNewTagDescription] = useState('');
+  const { auth } = useAuth()
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagDescription, setNewTagDescription] = useState('')
 
-  const { data: tags = [], isLoading: tagsLoading } = useTags();
-  const createTagMutation = useCreateTag();
+  const { data: tags = [], isLoading: tagsLoading } = useTags()
+  const createTagMutation = useCreateTag()
 
   const handleTagChange = (event, newValue) => {
-    onTagsChange(newValue);
-  };
+    onTagsChange(newValue)
+  }
 
   const handleCreateTag = async () => {
-    if (!newTagName.trim()) return;
+    if (!newTagName.trim()) return
 
     try {
       const tagData = {
         name: newTagName.trim(),
         description: newTagDescription || null,
-      };
+      }
 
-      await createTagMutation.mutateAsync({ tagData, accessToken: auth?.accessToken });
+      await createTagMutation.mutateAsync({
+        tagData,
+        accessToken: auth?.accessToken,
+      })
 
-      setCreateDialogOpen(false);
-      setNewTagName('');
-      setNewTagDescription('');
+      setCreateDialogOpen(false)
+      setNewTagName('')
+      setNewTagDescription('')
     } catch (error) {
-      console.error('Error creating tag:', error.response?.data?.message || error.message);
+      console.error(
+        'Error creating tag:',
+        error.response?.data?.message || error.message,
+      )
     }
-  };
+  }
 
   const handleCloseCreateDialog = () => {
-    setCreateDialogOpen(false);
-    setNewTagName('');
-    setNewTagDescription('');
-  };
+    setCreateDialogOpen(false)
+    setNewTagName('')
+    setNewTagDescription('')
+  }
 
   if (tagsLoading) {
-    return <Typography>Loading tags...</Typography>;
+    return <Typography>Loading tags...</Typography>
   }
 
   return (
@@ -85,16 +91,16 @@ function TagSelector({ selectedTags, onTagsChange }) {
         renderInput={(params) => (
           <TextField
             {...params}
-            label='Tags'
-            placeholder='Select or search tags'
-            variant='outlined'
+            label="Tags"
+            placeholder="Select or search tags"
+            variant="outlined"
             InputProps={{
               ...params.InputProps,
               endAdornment: (
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   {params.InputProps.endAdornment}
                   <Button
-                    size='small'
+                    size="small"
                     startIcon={<AddIcon />}
                     onClick={() => setCreateDialogOpen(true)}
                     sx={{
@@ -115,21 +121,28 @@ function TagSelector({ selectedTags, onTagsChange }) {
         )}
         isOptionEqualToValue={(option, value) => option.id === value.id}
         filterOptions={(options, { inputValue }) => {
-          const filtered = options.filter((option) => option.name.toLowerCase().includes(inputValue.toLowerCase()));
-          return filtered;
+          const filtered = options.filter((option) =>
+            option.name.toLowerCase().includes(inputValue.toLowerCase()),
+          )
+          return filtered
         }}
       />
 
       {/* Create New Tag Dialog */}
-      <Dialog open={createDialogOpen} onClose={handleCloseCreateDialog} maxWidth='sm' fullWidth>
+      <Dialog
+        open={createDialogOpen}
+        onClose={handleCloseCreateDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Create New Tag</DialogTitle>
         <DialogContent>
           <TextField
             // autoFocus removed for accessibility
-            margin='dense'
-            label='Tag Name'
+            margin="dense"
+            label="Tag Name"
             fullWidth
-            variant='outlined'
+            variant="outlined"
             value={newTagName}
             onChange={(e) => setNewTagName(e.target.value)}
             required
@@ -137,10 +150,10 @@ function TagSelector({ selectedTags, onTagsChange }) {
           />
 
           <TextField
-            margin='dense'
-            label='Description (Optional)'
+            margin="dense"
+            label="Description (Optional)"
             fullWidth
-            variant='outlined'
+            variant="outlined"
             multiline
             rows={3}
             value={newTagDescription}
@@ -148,12 +161,12 @@ function TagSelector({ selectedTags, onTagsChange }) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseCreateDialog} color='inherit'>
+          <Button onClick={handleCloseCreateDialog} color="inherit">
             Cancel
           </Button>
           <Button
             onClick={handleCreateTag}
-            variant='contained'
+            variant="contained"
             disabled={!newTagName.trim() || createTagMutation.isLoading}
             sx={{
               backgroundColor: '#588157',
@@ -167,12 +180,12 @@ function TagSelector({ selectedTags, onTagsChange }) {
         </DialogActions>
       </Dialog>
     </Box>
-  );
+  )
 }
 
 TagSelector.propTypes = {
   selectedTags: PropTypes.array.isRequired,
   onTagsChange: PropTypes.func.isRequired,
-};
+}
 
-export default TagSelector;
+export default TagSelector

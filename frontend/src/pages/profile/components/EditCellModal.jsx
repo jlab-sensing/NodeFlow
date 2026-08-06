@@ -1,74 +1,92 @@
-import { useState } from 'react';
-import { Modal, Box, Typography, Button, IconButton, TextField } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { useOutletContext } from 'react-router-dom';
-import { updateCell } from '../../../services/cell';
-import { useCellTags, useAssignCellTags } from '../../../services/tag';
-import TagSelector from '../../../components/TagSelector';
-import PropTypes from 'prop-types';
-import useAuth from '../../../auth/hooks/useAuth';
+import { useState } from 'react'
+import {
+  Modal,
+  Box,
+  Typography,
+  Button,
+  IconButton,
+  TextField,
+} from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import { useOutletContext } from 'react-router-dom'
+import { updateCell } from '../../../services/cell'
+import { useCellTags, useAssignCellTags } from '../../../services/tag'
+import TagSelector from '../../../components/TagSelector'
+import PropTypes from 'prop-types'
+import useAuth from '../../../auth/hooks/useAuth'
 
 function EditCellModal({ cell }) {
-  const data = useOutletContext();
-  const refetch = data[3];
-  const { auth } = useAuth();
+  const data = useOutletContext()
+  const refetch = data[3]
+  const { auth } = useAuth()
 
-  const [isOpen, setOpen] = useState(false);
-  const [formData, setFormData] = useState({ ...cell });
-  const [editedTags, setEditedTags] = useState(null);
-  const [response, setResponse] = useState(null);
-  const [isSubmitting, setSubmitting] = useState(false);
+  const [isOpen, setOpen] = useState(false)
+  const [formData, setFormData] = useState({ ...cell })
+  const [editedTags, setEditedTags] = useState(null)
+  const [response, setResponse] = useState(null)
+  const [isSubmitting, setSubmitting] = useState(false)
 
-  const { data: cellTags = [] } = useCellTags(cell.id);
-  const assignCellTagsMutation = useAssignCellTags();
-  
-  const selectedTags = editedTags ?? cellTags;
+  const { data: cellTags = [] } = useCellTags(cell.id)
+  const assignCellTagsMutation = useAssignCellTags()
+
+  const selectedTags = editedTags ?? cellTags
 
   const handleOpen = () => {
-    setOpen(true);
-    setResponse(null);
-    setFormData({ ...cell });
-    setEditedTags(null);
-  };
+    setOpen(true)
+    setResponse(null)
+    setFormData({ ...cell })
+    setEditedTags(null)
+  }
 
-  const handleClose = () => setOpen(false);
+  const handleClose = () => setOpen(false)
 
   const handleChange = (field) => (e) => {
-    setFormData({ ...formData, [field]: e.target.value });
-  };
+    setFormData({ ...formData, [field]: e.target.value })
+  }
 
   const handleSubmit = async () => {
-    setSubmitting(true);
+    setSubmitting(true)
 
     try {
       // Update cell data
-      const cellResponse = await updateCell(cell.id, formData, auth?.accessToken);
+      const cellResponse = await updateCell(
+        cell.id,
+        formData,
+        auth?.accessToken,
+      )
 
       // Update cell tags
-      const tagIds = selectedTags.map((tag) => tag.id);
-      await assignCellTagsMutation.mutateAsync({ cellId: cell.id, tagIds });
+      const tagIds = selectedTags.map((tag) => tag.id)
+      await assignCellTagsMutation.mutateAsync({ cellId: cell.id, tagIds })
 
-      setResponse(cellResponse);
-      refetch();
+      setResponse(cellResponse)
+      refetch()
     } catch (err) {
-      console.error('Edit failed:', err);
+      console.error('Edit failed:', err)
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   return (
     <>
       {/* copied account edit profile button styling */}
       <Button
-        variant='contained'
+        variant="contained"
         onClick={handleOpen}
-        sx={{ backgroundColor: '#588157', '&:hover': { backgroundColor: '#3a5a40' } }}
+        sx={{
+          backgroundColor: '#588157',
+          '&:hover': { backgroundColor: '#3a5a40' },
+        }}
       >
         Edit
       </Button>
 
-      <Modal open={isOpen} onClose={handleClose} aria-labelledby='edit-cell-modal-title'>
+      <Modal
+        open={isOpen}
+        onClose={handleClose}
+        aria-labelledby="edit-cell-modal-title"
+      >
         <Box
           sx={{
             position: 'absolute',
@@ -82,10 +100,10 @@ function EditCellModal({ cell }) {
             border: 'none',
             overflow: 'hidden',
           }}
-          component='form'
+          component="form"
           onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
+            e.preventDefault()
+            handleSubmit()
           }}
         >
           {!response ? (
@@ -107,15 +125,15 @@ function EditCellModal({ cell }) {
                     color: 'white',
                     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                   }}
-                  aria-label='close'
-                  size='small'
+                  aria-label="close"
+                  size="small"
                   onClick={handleClose}
                 >
-                  <CloseIcon fontSize='small' />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -125,7 +143,7 @@ function EditCellModal({ cell }) {
                   Edit Cell
                 </Typography>
                 <Typography
-                  variant='body2'
+                  variant="body2"
                   sx={{
                     color: 'rgba(255, 255, 255, 0.8)',
                     mt: 0.5,
@@ -137,15 +155,23 @@ function EditCellModal({ cell }) {
 
               {/* Form Section */}
               <Box sx={{ padding: '2rem' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.25rem',
+                  }}
+                >
                   <TextField
-                    label='Cell Name'
+                    label="Cell Name"
                     value={formData.name || ''}
                     onChange={handleChange('name')}
                     fullWidth
                     required
                     error={!formData.name?.trim()}
-                    helperText={!formData.name?.trim() ? 'Cell name is required' : ''}
+                    helperText={
+                      !formData.name?.trim() ? 'Cell name is required' : ''
+                    }
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -153,14 +179,16 @@ function EditCellModal({ cell }) {
                     }}
                   />
                   <TextField
-                    label='Location'
+                    label="Location"
                     value={formData.location || ''}
                     onChange={handleChange('location')}
                     fullWidth
                     required
                     error={!formData.location?.trim()}
-                    helperText={!formData.location?.trim() ? 'Location is required' : ''}
-                    placeholder='e.g., North Campus Field'
+                    helperText={
+                      !formData.location?.trim() ? 'Location is required' : ''
+                    }
+                    placeholder="e.g., North Campus Field"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -168,20 +196,23 @@ function EditCellModal({ cell }) {
                     }}
                   />
                   <TextField
-                    label='Latitude'
+                    label="Latitude"
                     value={formData.lat ?? ''}
                     onChange={handleChange('lat')}
                     fullWidth
                     required
-                    error={!formData.lat?.toString().trim() || isNaN(Number(formData.lat))}
+                    error={
+                      !formData.lat?.toString().trim() ||
+                      isNaN(Number(formData.lat))
+                    }
                     helperText={
                       !formData.lat?.toString().trim()
                         ? 'Latitude is required'
                         : isNaN(Number(formData.lat))
-                        ? 'Please enter a valid number'
-                        : ''
+                          ? 'Please enter a valid number'
+                          : ''
                     }
-                    placeholder='e.g., 36.9741'
+                    placeholder="e.g., 36.9741"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -189,20 +220,23 @@ function EditCellModal({ cell }) {
                     }}
                   />
                   <TextField
-                    label='Longitude'
+                    label="Longitude"
                     value={formData.long ?? ''}
                     onChange={handleChange('long')}
                     fullWidth
                     required
-                    error={!formData.long?.toString().trim() || isNaN(Number(formData.long))}
+                    error={
+                      !formData.long?.toString().trim() ||
+                      isNaN(Number(formData.long))
+                    }
                     helperText={
                       !formData.long?.toString().trim()
                         ? 'Longitude is required'
                         : isNaN(Number(formData.long))
-                        ? 'Please enter a valid number'
-                        : ''
+                          ? 'Please enter a valid number'
+                          : ''
                     }
-                    placeholder='e.g., -122.0308'
+                    placeholder="e.g., -122.0308"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -210,7 +244,10 @@ function EditCellModal({ cell }) {
                     }}
                   />
 
-                  <TagSelector selectedTags={selectedTags} onTagsChange={setEditedTags} />
+                  <TagSelector
+                    selectedTags={selectedTags}
+                    onTagsChange={setEditedTags}
+                  />
                 </Box>
 
                 {/* Action Buttons */}
@@ -225,7 +262,7 @@ function EditCellModal({ cell }) {
                   }}
                 >
                   <Button
-                    variant='outlined'
+                    variant="outlined"
                     onClick={handleClose}
                     disabled={isSubmitting}
                     sx={{
@@ -240,8 +277,8 @@ function EditCellModal({ cell }) {
                     Cancel
                   </Button>
                   <Button
-                    type='submit'
-                    variant='contained'
+                    type="submit"
+                    variant="contained"
                     disabled={
                       isSubmitting ||
                       !formData.name?.trim() ||
@@ -279,8 +316,8 @@ function EditCellModal({ cell }) {
                 }}
               >
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -290,7 +327,7 @@ function EditCellModal({ cell }) {
                   Cell Updated Successfully!
                 </Typography>
                 <Typography
-                  variant='body2'
+                  variant="body2"
                   sx={{
                     color: 'rgba(255, 255, 255, 0.8)',
                     mt: 0.5,
@@ -303,7 +340,7 @@ function EditCellModal({ cell }) {
               {/* Success Content */}
               <Box sx={{ padding: '2rem' }}>
                 <Button
-                  variant='contained'
+                  variant="contained"
                   onClick={handleClose}
                   sx={{
                     backgroundColor: '#2e7d32',
@@ -323,10 +360,10 @@ function EditCellModal({ cell }) {
         </Box>
       </Modal>
     </>
-  );
+  )
 }
 
-export default EditCellModal;
+export default EditCellModal
 
 // expected prop types for EditCellModal - prop validation
 EditCellModal.propTypes = {
@@ -337,4 +374,4 @@ EditCellModal.propTypes = {
     long: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     lat: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   }).isRequired,
-};
+}

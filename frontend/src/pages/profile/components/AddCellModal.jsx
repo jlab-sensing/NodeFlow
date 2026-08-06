@@ -1,87 +1,95 @@
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import CloseIcon from '@mui/icons-material/Close';
-import { Box, Button, Chip, IconButton, Modal, TextField, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { addCell } from '../../../services/cell';
-import { useAssignCellTags } from '../../../services/tag';
-import TagSelector from '../../../components/TagSelector';
+import AddCircleIcon from '@mui/icons-material/AddCircle'
+import CloseIcon from '@mui/icons-material/Close'
+import {
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Modal,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { useEffect, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import { addCell } from '../../../services/cell'
+import { useAssignCellTags } from '../../../services/tag'
+import TagSelector from '../../../components/TagSelector'
 
 function AddCellModal() {
-  let data = useOutletContext();
-  const refetch = data[3];
-  const user = data[4];
-  const axiosPrivate = data[6];
-  const [isOpen, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
-  const [long, setLong] = useState('');
-  const [lat, setLat] = useState('');
-  const [selectedTags, setSelectedTags] = useState([]);
-  const archive = false;
-  const [response, setResponse] = useState(null);
-  const [error, setError] = useState(null);
-  const [IsSubmitted, setIsSubmitted] = useState(null);
+  let data = useOutletContext()
+  const refetch = data[3]
+  const user = data[4]
+  const axiosPrivate = data[6]
+  const [isOpen, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [location, setLocation] = useState('')
+  const [long, setLong] = useState('')
+  const [lat, setLat] = useState('')
+  const [selectedTags, setSelectedTags] = useState([])
+  const archive = false
+  const [response, setResponse] = useState(null)
+  const [error, setError] = useState(null)
+  const [IsSubmitted, setIsSubmitted] = useState(null)
 
-  const assignCellTagsMutation = useAssignCellTags();
+  const assignCellTagsMutation = useAssignCellTags()
 
   const handleOpen = () => {
-    setOpen(true);
-    setResponse(null);
-    setError(null);
-  };
+    setOpen(true)
+    setResponse(null)
+    setError(null)
+  }
 
   const DoneButtonClose = () => {
     // Close modal and reset all states
-    setOpen(false);
-    setResponse(null);
-    setError(null);
-    setName('');
-    setLocation('');
-    setLong('');
-    setLat('');
-    setSelectedTags([]);
-  };
+    setOpen(false)
+    setResponse(null)
+    setError(null)
+    setName('')
+    setLocation('')
+    setLong('')
+    setLat('')
+    setSelectedTags([])
+  }
 
   const handleClose = () => {
-    setOpen(false);
+    setOpen(false)
     // Reset states when closing via X button
-    setResponse(null);
-    setError(null);
-    setName('');
-    setLocation('');
-    setLong('');
-    setLat('');
-    setSelectedTags([]);
-  };
+    setResponse(null)
+    setError(null)
+    setName('')
+    setLocation('')
+    setLong('')
+    setLat('')
+    setSelectedTags([])
+  }
 
   const getLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
-        setLong(position.coords.latitude.toString());
-        setLat(position.coords.longitude.toString());
-      });
+        setLong(position.coords.latitude.toString())
+        setLat(position.coords.longitude.toString())
+      })
     }
-  };
+  }
 
   useEffect(() => {
-    console.log(response);
-  }, [response]);
+    console.log(response)
+  }, [response])
 
   if (!user) {
-    return <></>;
+    return <></>
   }
 
   return (
     <>
-      <Button sx={{ color: 'black' }} key='prev' onClick={handleOpen}>
+      <Button sx={{ color: 'black' }} key="prev" onClick={handleOpen}>
         <AddCircleIcon />
       </Button>
       <Modal
         open={isOpen}
         onClose={handleClose}
-        aria-labelledby='modal-modal-title'
-        aria-describedby='modal-modal-description'
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
       >
         <Box
           sx={{
@@ -96,7 +104,7 @@ function AddCellModal() {
             border: 'none',
             overflow: 'hidden',
           }}
-          component='form'
+          component="form"
         >
           {error == null && response == null && (
             <>
@@ -117,15 +125,15 @@ function AddCellModal() {
                     color: 'white',
                     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                   }}
-                  aria-label='close'
-                  size='small'
+                  aria-label="close"
+                  size="small"
                   onClick={handleClose}
                 >
-                  <CloseIcon fontSize='small' />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -135,7 +143,7 @@ function AddCellModal() {
                   Add New Cell
                 </Typography>
                 <Typography
-                  variant='body2'
+                  variant="body2"
                   sx={{
                     color: 'rgba(255, 255, 255, 0.8)',
                     mt: 0.5,
@@ -147,17 +155,25 @@ function AddCellModal() {
 
               {/* Form Section */}
               <Box sx={{ padding: '2rem' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.25rem',
+                  }}
+                >
                   <TextField
-                    label='Cell Name'
-                    variant='outlined'
+                    label="Cell Name"
+                    variant="outlined"
                     fullWidth
                     required
                     error={name.length === 0 && IsSubmitted}
-                    helperText={!(name.length) && (IsSubmitted) ? 'Cell name is required' : ''}
+                    helperText={
+                      !name.length && IsSubmitted ? 'Cell name is required' : ''
+                    }
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder='e.g., Forest Station A'
+                    placeholder="e.g., Forest Station A"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -165,15 +181,19 @@ function AddCellModal() {
                     }}
                   />
                   <TextField
-                    label='Location'
-                    variant='outlined'
+                    label="Location"
+                    variant="outlined"
                     fullWidth
                     required
                     error={location.length === 0 && IsSubmitted}
-                    helperText={!(location.length) && (IsSubmitted) ? 'Location is required' : ''}
+                    helperText={
+                      !location.length && IsSubmitted
+                        ? 'Location is required'
+                        : ''
+                    }
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder='e.g., North Campus Field'
+                    placeholder="e.g., North Campus Field"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -181,16 +201,24 @@ function AddCellModal() {
                     }}
                   />
                   <TextField
-                    label='Latitude'
-                    variant='outlined'
+                    label="Latitude"
+                    variant="outlined"
                     fullWidth
                     required
-                    error={(lat.length === 0 && IsSubmitted) || isNaN(Number(lat))}
-                    helperText={!(lat.length) && (IsSubmitted) ? 'Latitude is required' : isNaN(Number(lat)) ? 'Please enter a valid number' : ''}
+                    error={
+                      (lat.length === 0 && IsSubmitted) || isNaN(Number(lat))
+                    }
+                    helperText={
+                      !lat.length && IsSubmitted
+                        ? 'Latitude is required'
+                        : isNaN(Number(lat))
+                          ? 'Please enter a valid number'
+                          : ''
+                    }
 
                     value={lat}
                     onChange={(e) => setLat(e.target.value)}
-                    placeholder='e.g., 36.9741'
+                    placeholder="e.g., 36.9741"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -198,16 +226,24 @@ function AddCellModal() {
                     }}
                   />
                   <TextField
-                    label='Longitude'
-                    variant='outlined'
+                    label="Longitude"
+                    variant="outlined"
                     fullWidth
                     required
-                    error={(long.length === 0 && IsSubmitted) || isNaN(Number(long))}
-                    helperText={!(long.length) && (IsSubmitted) ? 'Longitude is required' : isNaN(Number(long)) ? 'Please enter a valid number' : ''}
+                    error={
+                      (long.length === 0 && IsSubmitted) || isNaN(Number(long))
+                    }
+                    helperText={
+                      !long.length && IsSubmitted
+                        ? 'Longitude is required'
+                        : isNaN(Number(long))
+                          ? 'Please enter a valid number'
+                          : ''
+                    }
 
                     value={long}
                     onChange={(e) => setLong(e.target.value)}
-                    placeholder='e.g., -122.0308'
+                    placeholder="e.g., -122.0308"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -215,7 +251,11 @@ function AddCellModal() {
                     }}
                   />
 
-                  <TagSelector selectedTags={selectedTags} onTagsChange={setSelectedTags} axiosPrivate={axiosPrivate} />
+                  <TagSelector
+                    selectedTags={selectedTags}
+                    onTagsChange={setSelectedTags}
+                    axiosPrivate={axiosPrivate}
+                  />
                 </Box>
 
                 {/* Action Buttons */}
@@ -233,7 +273,7 @@ function AddCellModal() {
                   {/* get location buttion */}
 
                   <Button
-                    variant='outlined'
+                    variant="outlined"
                     onClick={getLocation}
                     sx={{
                       borderColor: '#ddd',
@@ -248,7 +288,7 @@ function AddCellModal() {
                   </Button>
 
                   <Button
-                    variant='outlined'
+                    variant="outlined"
                     onClick={handleClose}
                     sx={{
                       borderColor: '#ddd',
@@ -262,23 +302,33 @@ function AddCellModal() {
                     Cancel
                   </Button>
                   <Button
-                    variant='contained'
+                    variant="contained"
                     onClick={async () => {
-                      setIsSubmitted(true);
+                      setIsSubmitted(true)
                       try {
-                        const res = await addCell(name, location, long, lat, archive, user.email);
+                        const res = await addCell(
+                          name,
+                          location,
+                          long,
+                          lat,
+                          archive,
+                          user.email,
+                        )
 
                         // Assign tags to the newly created cell if any tags are selected
                         if (selectedTags.length > 0 && res.id) {
-                          const tagIds = selectedTags.map((tag) => tag.id);
-                          await assignCellTagsMutation.mutateAsync({ cellId: res.id, tagIds });
+                          const tagIds = selectedTags.map((tag) => tag.id)
+                          await assignCellTagsMutation.mutateAsync({
+                            cellId: res.id,
+                            tagIds,
+                          })
                         }
 
-                        setResponse(res);
-                        refetch();
+                        setResponse(res)
+                        refetch()
                       } catch (error) {
-                        setError(error);
-                        console.error(error);
+                        setError(error)
+                        console.error(error)
                       }
                     }}
                     disabled={
@@ -325,15 +375,15 @@ function AddCellModal() {
                     color: 'white',
                     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                   }}
-                  aria-label='close'
-                  size='small'
+                  aria-label="close"
+                  size="small"
                   onClick={handleClose}
                 >
-                  <CloseIcon fontSize='small' />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -346,11 +396,15 @@ function AddCellModal() {
 
               {/* Error Content */}
               <Box sx={{ padding: '2rem' }}>
-                <Typography variant='body1' sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}>
-                  Duplicate cell names are not allowed. Please try again with a different name.
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}
+                >
+                  Duplicate cell names are not allowed. Please try again with a
+                  different name.
                 </Typography>
                 <Button
-                  variant='contained'
+                  variant="contained"
                   onClick={handleClose}
                   sx={{
                     backgroundColor: '#d32f2f',
@@ -377,8 +431,8 @@ function AddCellModal() {
                   }}
                 >
                   <Typography
-                    variant='h5'
-                    component='h2'
+                    variant="h5"
+                    component="h2"
                     sx={{
                       color: 'white',
                       fontWeight: 600,
@@ -388,7 +442,7 @@ function AddCellModal() {
                     Cell Created Successfully!
                   </Typography>
                   <Typography
-                    variant='body2'
+                    variant="body2"
                     sx={{
                       color: 'rgba(255, 255, 255, 0.8)',
                       mt: 0.5,
@@ -409,24 +463,41 @@ function AddCellModal() {
                       mb: '1.5rem',
                     }}
                   >
-                    <Typography variant='h6' sx={{ mb: 2, color: '#2e7d32', fontWeight: 600 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 2, color: '#2e7d32', fontWeight: 600 }}
+                    >
                       Cell: {response.name}
                     </Typography>
 
                     {/* API Endpoints Section */}
-                    <Typography variant='h6' sx={{ mb: 2, color: '#333', fontSize: '1.1rem' }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 2, color: '#333', fontSize: '1.1rem' }}
+                    >
                       API Endpoints
                     </Typography>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box
+                      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                    >
                       {/* Power Data Endpoint */}
                       <Box>
-                        <Chip label='Power Data' color='primary' variant='outlined' size='small' sx={{ mb: 1 }} />
-                        <Typography variant='body2' sx={{ mb: 1, color: '#666' }}>
+                        <Chip
+                          label="Power Data"
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                          sx={{ mb: 1 }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{ mb: 1, color: '#666' }}
+                        >
                           Endpoint for uploading power data:
                         </Typography>
                         <Typography
-                          variant='body2'
+                          variant="body2"
                           sx={{
                             fontFamily: 'monospace',
                             backgroundColor: '#e8f5e8',
@@ -444,12 +515,21 @@ function AddCellModal() {
 
                       {/* TEROS Data Endpoint */}
                       <Box>
-                        <Chip label='TEROS Data' color='secondary' variant='outlined' size='small' sx={{ mb: 1 }} />
-                        <Typography variant='body2' sx={{ mb: 1, color: '#666' }}>
+                        <Chip
+                          label="TEROS Data"
+                          color="secondary"
+                          variant="outlined"
+                          size="small"
+                          sx={{ mb: 1 }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{ mb: 1, color: '#666' }}
+                        >
                           Endpoint for uploading TEROS data:
                         </Typography>
                         <Typography
-                          variant='body2'
+                          variant="body2"
                           sx={{
                             fontFamily: 'monospace',
                             backgroundColor: '#e8f5e8',
@@ -468,11 +548,11 @@ function AddCellModal() {
                   </Box>
 
                   <Button
-                    variant='contained'
+                    variant="contained"
                     onClick={() => {
-                      DoneButtonClose(); 
-                      setIsSubmitted(false);}
-                    }
+                      DoneButtonClose()
+                      setIsSubmitted(false)
+                    }}
                     sx={{
                       backgroundColor: '#2e7d32',
                       '&:hover': { backgroundColor: '#1b5e20' },
@@ -492,7 +572,7 @@ function AddCellModal() {
         </Box>
       </Modal>
     </>
-  );
+  )
 }
 
-export default AddCellModal;
+export default AddCellModal

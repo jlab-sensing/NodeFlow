@@ -1,10 +1,16 @@
-import Nav from './Nav';
-import useAuth from '../auth/hooks/useAuth';
+import Nav from './Nav'
+import useAuth from '../auth/hooks/useAuth'
 
 function TopNav() {
-  const { user, setUser, loggedIn, setLoggedIn } = useAuth();
-  return <Nav user={user} setUser={setUser} loggedIn={loggedIn} setLoggedIn={setLoggedIn} />;
+  const { user, setUser, loggedIn, setLoggedIn } = useAuth()
+  return (
+    <Nav
+      user={user}
+      setUser={setUser}
+      loggedIn={loggedIn}
+      setLoggedIn={setLoggedIn}
+    />
+  )
 }
 
-export default TopNav;
-
+export default TopNav

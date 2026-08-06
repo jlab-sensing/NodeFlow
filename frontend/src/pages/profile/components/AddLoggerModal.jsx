@@ -1,5 +1,5 @@
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import CloseIcon from '@mui/icons-material/Close';
+import AddCircleIcon from '@mui/icons-material/AddCircle'
+import CloseIcon from '@mui/icons-material/Close'
 import {
   Box,
   Button,
@@ -18,129 +18,131 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
-} from '@mui/material';
-import React, { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { addLogger } from '../../../services/logger';
-import { IMaskInput } from 'react-imask';
-import PropTypes from 'prop-types';
+} from '@mui/material'
+import React, { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import { addLogger } from '../../../services/logger'
+import { IMaskInput } from 'react-imask'
+import PropTypes from 'prop-types'
 
 const LongTextMask = React.forwardRef(function TextMaskCustom(props, ref) {
-  const { onChange, ...other } = props;
+  const { onChange, ...other } = props
   return (
     <IMaskInput
       {...other}
-      mask='**:**:**:**:**:**:**:**:**:**:**:**:**:**:**:**' //AppKey
+      mask="**:**:**:**:**:**:**:**:**:**:**:**:**:**:**:**" //AppKey
       inputRef={ref}
       onAccept={(value) => onChange({ target: { name: props.name, value } })}
       overwrite
     />
-  );
-});
+  )
+})
 
 LongTextMask.propTypes = {
   name: PropTypes.string,
   onChange: PropTypes.func,
-};
+}
 
 ////////////////////////////////////////////
 const ShortTextMask = React.forwardRef(function TextMaskCustom(props, ref) {
-  const { onChange, ...other } = props;
+  const { onChange, ...other } = props
   return (
     <IMaskInput
       {...other}
-      mask='**:**:**:**:**:**:**:**' //DevEUI & AppEui
+      mask="**:**:**:**:**:**:**:**" //DevEUI & AppEui
       inputRef={ref}
       onAccept={(value) => onChange({ target: { name: props.name, value } })}
       overwrite
     />
-  );
-});
+  )
+})
 
 ShortTextMask.propTypes = {
   name: PropTypes.string,
   onChange: PropTypes.func,
-};
+}
 
-const cleanHexLike = (value) => (value || '').replace(/[^a-zA-Z0-9]/g, '');
+const cleanHexLike = (value) => (value || '').replace(/[^a-zA-Z0-9]/g, '')
 
-const isValidEui64 = (value) => /^[0-9a-fA-F]{16}$/.test(value);
-const isValidAppKey = (value) => /^[0-9a-fA-F]{32}$/.test(value);
+const isValidEui64 = (value) => /^[0-9a-fA-F]{16}$/.test(value)
+const isValidAppKey = (value) => /^[0-9a-fA-F]{32}$/.test(value)
 
 function AddLoggerModal() {
-  let data = useOutletContext();
-  const refetch = data[9]; // Logger refetch function from outlet context
-  const user = data[4];
-  const axiosPrivate = data[10];
+  let data = useOutletContext()
+  const refetch = data[9] // Logger refetch function from outlet context
+  const user = data[4]
+  const axiosPrivate = data[10]
 
-  const [isOpen, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [type, setType] = useState('');
-  const [devEui, setDevEui] = useState(''); // Changed to match TTN API
-  const [joinEui, setJoinEui] = useState(''); // Added for TTN integration
-  const [appKey, setAppKey] = useState(''); // TTN App Key (sensitive)
-  const [description, setDescription] = useState('');
-  const [response, setResponse] = useState(null);
-  const [error, setError] = useState(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingSubmit, setPendingSubmit] = useState(null);
+  const [isOpen, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [type, setType] = useState('')
+  const [devEui, setDevEui] = useState('') // Changed to match TTN API
+  const [joinEui, setJoinEui] = useState('') // Added for TTN integration
+  const [appKey, setAppKey] = useState('') // TTN App Key (sensitive)
+  const [description, setDescription] = useState('')
+  const [response, setResponse] = useState(null)
+  const [error, setError] = useState(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingSubmit, setPendingSubmit] = useState(null)
 
   const handleOpen = () => {
-    setOpen(true);
-    setResponse(null);
-    setError(null);
-    setConfirmOpen(false);
-    setPendingSubmit(null);
-  };
+    setOpen(true)
+    setResponse(null)
+    setError(null)
+    setConfirmOpen(false)
+    setPendingSubmit(null)
+  }
 
   const DoneButtonClose = () => {
     // Close modal and reset all states
-    setOpen(false);
-    setResponse(null);
-    setError(null);
-    setName('');
-    setType('');
-    setDevEui('');
-    setJoinEui('');
-    setAppKey('');
-    setDescription('');
-    setConfirmOpen(false);
-    setPendingSubmit(null);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    // Reset states when closing via X button
-    setResponse(null);
-    setError(null);
-    setName('');
-    setType('');
-    setDevEui('');
-    setJoinEui('');
-    setAppKey('');
-    setDescription('');
-    setConfirmOpen(false);
-    setPendingSubmit(null);
-  };
-
-  if (!user) {
-    return <></>;
+    setOpen(false)
+    setResponse(null)
+    setError(null)
+    setName('')
+    setType('')
+    setDevEui('')
+    setJoinEui('')
+    setAppKey('')
+    setDescription('')
+    setConfirmOpen(false)
+    setPendingSubmit(null)
   }
 
-  const cleanDevEui = cleanHexLike(devEui);
-  const cleanJoinEui = cleanHexLike(joinEui);
-  const cleanAppKey = cleanHexLike(appKey);
+  const handleClose = () => {
+    setOpen(false)
+    // Reset states when closing via X button
+    setResponse(null)
+    setError(null)
+    setName('')
+    setType('')
+    setDevEui('')
+    setJoinEui('')
+    setAppKey('')
+    setDescription('')
+    setConfirmOpen(false)
+    setPendingSubmit(null)
+  }
 
-  const devEuiTyped = Boolean(cleanDevEui);
-  const joinEuiTyped = Boolean(cleanJoinEui);
-  const appKeyTyped = Boolean(cleanAppKey);
+  if (!user) {
+    return <></>
+  }
 
-  const devEuiInvalid = devEuiTyped && !isValidEui64(cleanDevEui);
-  const joinEuiInvalid = joinEuiTyped && !isValidEui64(cleanJoinEui);
-  const appKeyInvalid = appKeyTyped && !isValidAppKey(cleanAppKey);
+  const cleanDevEui = cleanHexLike(devEui)
+  const cleanJoinEui = cleanHexLike(joinEui)
+  const cleanAppKey = cleanHexLike(appKey)
+
+  const devEuiTyped = Boolean(cleanDevEui)
+  const joinEuiTyped = Boolean(cleanJoinEui)
+  const appKeyTyped = Boolean(cleanAppKey)
+
+  const devEuiInvalid = devEuiTyped && !isValidEui64(cleanDevEui)
+  const joinEuiInvalid = joinEuiTyped && !isValidEui64(cleanJoinEui)
+  const appKeyInvalid = appKeyTyped && !isValidAppKey(cleanAppKey)
 
   const lorawanCompleteAndValid =
-    isValidEui64(cleanDevEui) && isValidEui64(cleanJoinEui) && isValidAppKey(cleanAppKey);
+    isValidEui64(cleanDevEui) &&
+    isValidEui64(cleanJoinEui) &&
+    isValidAppKey(cleanAppKey)
 
   const submitLogger = ({ submitDevEui, submitJoinEui, submitAppKey }) => {
     addLogger(
@@ -160,51 +162,51 @@ function AddLoggerModal() {
           type,
           devEui: submitDevEui || '',
           description,
-        });
-        refetch();
+        })
+        refetch()
       })
       .catch((error) => {
-        setError(error);
-        console.error(error);
-      });
-  };
+        setError(error)
+        console.error(error)
+      })
+  }
 
   const handleAddLogger = () => {
-    const typeIsEnts = (type || '').toLowerCase() === 'ents';
-    const dbDeviceEui = isValidEui64(cleanDevEui) ? cleanDevEui : undefined;
+    const typeIsEnts = (type || '').toLowerCase() === 'ents'
+    const dbDeviceEui = isValidEui64(cleanDevEui) ? cleanDevEui : undefined
 
     // Only attempt TTN registration when all fields are present and valid.
-    const submitDevEui = dbDeviceEui;
-    const submitJoinEui = lorawanCompleteAndValid ? cleanJoinEui : undefined;
-    const submitAppKey = lorawanCompleteAndValid ? cleanAppKey : undefined;
+    const submitDevEui = dbDeviceEui
+    const submitJoinEui = lorawanCompleteAndValid ? cleanJoinEui : undefined
+    const submitAppKey = lorawanCompleteAndValid ? cleanAppKey : undefined
 
     if (typeIsEnts && !lorawanCompleteAndValid) {
       setPendingSubmit({
         submitDevEui,
         submitJoinEui,
         submitAppKey,
-      });
-      setConfirmOpen(true);
-      return;
+      })
+      setConfirmOpen(true)
+      return
     }
 
     submitLogger({
       submitDevEui,
       submitJoinEui,
       submitAppKey,
-    });
-  };
+    })
+  }
 
   return (
     <>
-      <Button sx={{ color: 'black' }} key='prev' onClick={handleOpen}>
+      <Button sx={{ color: 'black' }} key="prev" onClick={handleOpen}>
         <AddCircleIcon />
       </Button>
       <Modal
         open={isOpen}
         onClose={handleClose}
-        aria-labelledby='modal-modal-title'
-        aria-describedby='modal-modal-description'
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
       >
         <Box
           sx={{
@@ -219,47 +221,54 @@ function AddLoggerModal() {
             border: 'none',
             overflow: 'hidden',
           }}
-          component='form'
+          component="form"
         >
           <Dialog
             open={confirmOpen}
             onClose={() => {
-              setConfirmOpen(false);
-              setPendingSubmit(null);
+              setConfirmOpen(false)
+              setPendingSubmit(null)
             }}
-            aria-labelledby='lorawan-confirm-title'
-            aria-describedby='lorawan-confirm-desc'
+            aria-labelledby="lorawan-confirm-title"
+            aria-describedby="lorawan-confirm-desc"
           >
-            <DialogTitle id='lorawan-confirm-title'>Create Logger Without LoRaWAN?</DialogTitle>
+            <DialogTitle id="lorawan-confirm-title">
+              Create Logger Without LoRaWAN?
+            </DialogTitle>
             <DialogContent>
-              <DialogContentText id='lorawan-confirm-desc'>
-                The LoRaWAN fields (Device EUI, Join EUI, App Key) are missing or invalid. If you continue, the logger
-                will be created in DirtViz but it will not be registered on The Things Network (LoRaWAN).
+              <DialogContentText id="lorawan-confirm-desc">
+                The LoRaWAN fields (Device EUI, Join EUI, App Key) are missing
+                or invalid. If you continue, the logger will be created in
+                DirtViz but it will not be registered on The Things Network
+                (LoRaWAN).
               </DialogContentText>
             </DialogContent>
             <DialogActions>
               <Button
-                variant='outlined'
+                variant="outlined"
                 onClick={() => {
-                  setConfirmOpen(false);
-                  setPendingSubmit(null);
+                  setConfirmOpen(false)
+                  setPendingSubmit(null)
                 }}
               >
                 Go Back
               </Button>
               <Button
-                variant='contained'
+                variant="contained"
                 onClick={() => {
                   const next = pendingSubmit || {
                     submitDevEui: undefined,
                     submitJoinEui: undefined,
                     submitAppKey: undefined,
-                  };
-                  setConfirmOpen(false);
-                  setPendingSubmit(null);
-                  submitLogger(next);
+                  }
+                  setConfirmOpen(false)
+                  setPendingSubmit(null)
+                  submitLogger(next)
                 }}
-                sx={{ backgroundColor: '#588157', '&:hover': { backgroundColor: '#3a5a40' } }}
+                sx={{
+                  backgroundColor: '#588157',
+                  '&:hover': { backgroundColor: '#3a5a40' },
+                }}
               >
                 Continue
               </Button>
@@ -285,15 +294,15 @@ function AddLoggerModal() {
                     color: 'white',
                     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                   }}
-                  aria-label='close'
-                  size='small'
+                  aria-label="close"
+                  size="small"
                   onClick={handleClose}
                 >
-                  <CloseIcon fontSize='small' />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -303,7 +312,7 @@ function AddLoggerModal() {
                   Add New Logger
                 </Typography>
                 <Typography
-                  variant='body2'
+                  variant="body2"
                   sx={{
                     color: 'rgba(255, 255, 255, 0.8)',
                     mt: 0.5,
@@ -315,10 +324,16 @@ function AddLoggerModal() {
 
               {/* Form Section */}
               <Box sx={{ padding: '2rem' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.25rem',
+                  }}
+                >
                   <TextField
-                    label='Logger Name'
-                    variant='outlined'
+                    label="Logger Name"
+                    variant="outlined"
                     fullWidth
                     required
                     error={name.length === 0}
@@ -332,23 +347,23 @@ function AddLoggerModal() {
                     }}
                   />
                   <FormControl required fullWidth>
-                    <InputLabel id='type-label'>Logger Type</InputLabel>
+                    <InputLabel id="type-label">Logger Type</InputLabel>
                     <Select
-                      label='Logger Type'
-                      variant='outlined'
+                      label="Logger Type"
+                      variant="outlined"
                       fullWidth
                       required
                       value={type}
                       onChange={(e) => setType(e.target.value)}
-                      placeholder='Select a logger type'
+                      placeholder="Select a logger type"
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           borderRadius: '8px',
                         },
                       }}
                     >
-                      <MenuItem value='ents'>EnTS</MenuItem>
-                      <MenuItem value='other'>Other</MenuItem>
+                      <MenuItem value="ents">EnTS</MenuItem>
+                      <MenuItem value="other">Other</MenuItem>
                     </Select>
                   </FormControl>
                   {/* Change the following three text fields to follow this format
@@ -369,15 +384,15 @@ function AddLoggerModal() {
                 see https://github.com/jlab-sensing/ENTS-backend/issues/512 for more
                 */}
                   {/* THIS IS WHERE THE Device EUI & Join EUI Code is*/}
-                  <FormControl variant='standard'>
+                  <FormControl variant="standard">
                     <InputLabel>Device EUI</InputLabel>
                     <Input
                       onChange={(e) => setDevEui(e.target.value)}
-                      name='deviceEUI'
-                      variant='outlined'
+                      name="deviceEUI"
+                      variant="outlined"
                       fullWidth
                       value={devEui}
-                      placeholder='e.g., 0080E1150546D093'
+                      placeholder="e.g., 0080E1150546D093"
                       inputComponent={ShortTextMask}
                       sx={{
                         '& .MuiOutlinedInput-root': {
@@ -386,18 +401,19 @@ function AddLoggerModal() {
                       }}
                     />
                     <FormHelperText error={devEuiInvalid}>
-                      Optional. 16 hex characters (EUI64). {devEuiInvalid ? 'Invalid Device EUI.' : ''}
+                      Optional. 16 hex characters (EUI64).{' '}
+                      {devEuiInvalid ? 'Invalid Device EUI.' : ''}
                     </FormHelperText>
                   </FormControl>
-                  <FormControl variant='standard'>
+                  <FormControl variant="standard">
                     <InputLabel>Join EUI</InputLabel>
                     <Input
-                      label='Join EUI'
-                      variant='outlined'
+                      label="Join EUI"
+                      variant="outlined"
                       fullWidth
                       value={joinEui}
                       onChange={(e) => setJoinEui(e.target.value)}
-                      placeholder='e.g., 0101010101010101'
+                      placeholder="e.g., 0101010101010101"
                       inputComponent={ShortTextMask}
                       sx={{
                         '& .MuiOutlinedInput-root': {
@@ -406,18 +422,19 @@ function AddLoggerModal() {
                       }}
                     />
                     <FormHelperText error={joinEuiInvalid}>
-                      Optional. 16 hex characters (EUI64). {joinEuiInvalid ? 'Invalid Join EUI.' : ''}
+                      Optional. 16 hex characters (EUI64).{' '}
+                      {joinEuiInvalid ? 'Invalid Join EUI.' : ''}
                     </FormHelperText>
                   </FormControl>
-                  <FormControl variant='standard'>
+                  <FormControl variant="standard">
                     <InputLabel>App Key</InputLabel>
                     <Input
-                      label='App Key'
-                      variant='outlined'
+                      label="App Key"
+                      variant="outlined"
                       fullWidth
                       value={appKey}
                       onChange={(e) => setAppKey(e.target.value)}
-                      placeholder='Application Key'
+                      placeholder="Application Key"
                       inputComponent={LongTextMask}
                       sx={{
                         '& .MuiOutlinedInput-root': {
@@ -426,18 +443,19 @@ function AddLoggerModal() {
                       }}
                     />
                     <FormHelperText error={appKeyInvalid}>
-                      Optional. 32 hex characters. {appKeyInvalid ? 'Invalid App Key.' : ''}
+                      Optional. 32 hex characters.{' '}
+                      {appKeyInvalid ? 'Invalid App Key.' : ''}
                     </FormHelperText>
                   </FormControl>
                   <TextField
-                    label='Description'
-                    variant='outlined'
+                    label="Description"
+                    variant="outlined"
                     fullWidth
                     multiline
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder='Describe the logger location and purpose'
+                    placeholder="Describe the logger location and purpose"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -458,7 +476,7 @@ function AddLoggerModal() {
                   }}
                 >
                   <Button
-                    variant='outlined'
+                    variant="outlined"
                     onClick={handleClose}
                     sx={{
                       borderColor: '#ddd',
@@ -472,7 +490,7 @@ function AddLoggerModal() {
                     Cancel
                   </Button>
                   <Button
-                    variant='contained'
+                    variant="contained"
                     onClick={handleAddLogger}
                     disabled={!name.trim() || !(type || '').trim()}
                     sx={{
@@ -511,15 +529,15 @@ function AddLoggerModal() {
                     color: 'white',
                     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                   }}
-                  aria-label='close'
-                  size='small'
+                  aria-label="close"
+                  size="small"
                   onClick={handleClose}
                 >
-                  <CloseIcon fontSize='small' />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -532,11 +550,16 @@ function AddLoggerModal() {
 
               {/* Error Content */}
               <Box sx={{ padding: '2rem' }}>
-                <Typography variant='body1' sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}>
-                  {error?.response?.data?.message || error?.message || 'An unknown error occurred. Please try again.'}
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}
+                >
+                  {error?.response?.data?.message ||
+                    error?.message ||
+                    'An unknown error occurred. Please try again.'}
                 </Typography>
                 <Button
-                  variant='contained'
+                  variant="contained"
                   onClick={handleClose}
                   sx={{
                     backgroundColor: '#d32f2f',
@@ -563,8 +586,8 @@ function AddLoggerModal() {
                   }}
                 >
                   <Typography
-                    variant='h5'
-                    component='h2'
+                    variant="h5"
+                    component="h2"
                     sx={{
                       color: 'white',
                       fontWeight: 600,
@@ -574,7 +597,7 @@ function AddLoggerModal() {
                     Logger Created Successfully!
                   </Typography>
                   <Typography
-                    variant='body2'
+                    variant="body2"
                     sx={{
                       color: 'rgba(255, 255, 255, 0.8)',
                       mt: 0.5,
@@ -594,43 +617,84 @@ function AddLoggerModal() {
                       mb: '1.5rem',
                     }}
                   >
-                    <Typography variant='h6' sx={{ mb: 2, color: '#2e7d32', fontWeight: 600 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 2, color: '#2e7d32', fontWeight: 600 }}
+                    >
                       Logger Details
                     </Typography>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem',
+                      }}
+                    >
                       <Box>
-                        <Typography variant='body2' sx={{ color: '#666', fontWeight: 500 }} component='span'>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: '#666', fontWeight: 500 }}
+                          component="span"
+                        >
                           Name:{' '}
                         </Typography>
-                        <Typography variant='body1' sx={{ color: '#333' }} component='span'>
+                        <Typography
+                          variant="body1"
+                          sx={{ color: '#333' }}
+                          component="span"
+                        >
                           {response.name}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant='body2' sx={{ color: '#666', fontWeight: 500 }} component='span'>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: '#666', fontWeight: 500 }}
+                          component="span"
+                        >
                           Type:{' '}
                         </Typography>
-                        <Typography variant='body1' sx={{ color: '#333' }} component='span'>
+                        <Typography
+                          variant="body1"
+                          sx={{ color: '#333' }}
+                          component="span"
+                        >
                           {response.type || 'Not specified'}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant='body2' sx={{ color: '#666', fontWeight: 500 }} component='span'>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: '#666', fontWeight: 500 }}
+                          component="span"
+                        >
                           Device EUI:{' '}
                         </Typography>
-                        <Typography variant='body1' sx={{ color: '#333' }} component='span'>
+                        <Typography
+                          variant="body1"
+                          sx={{ color: '#333' }}
+                          component="span"
+                        >
                           {response.devEui || 'Not set'}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant='body2' sx={{ color: '#666', fontWeight: 500 }} component='span'>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: '#666', fontWeight: 500 }}
+                          component="span"
+                        >
                           Description:{' '}
                         </Typography>
-                        <Typography variant='body1' sx={{ color: '#333' }} component='span'>
+                        <Typography
+                          variant="body1"
+                          sx={{ color: '#333' }}
+                          component="span"
+                        >
                           {response.description || 'No description provided'}
                         </Typography>
                       </Box>
@@ -638,7 +702,7 @@ function AddLoggerModal() {
                   </Box>
 
                   <Button
-                    variant='contained'
+                    variant="contained"
                     onClick={DoneButtonClose}
                     sx={{
                       backgroundColor: '#2e7d32',
@@ -659,7 +723,7 @@ function AddLoggerModal() {
         </Box>
       </Modal>
     </>
-  );
+  )
 }
 
-export default AddLoggerModal;
+export default AddLoggerModal

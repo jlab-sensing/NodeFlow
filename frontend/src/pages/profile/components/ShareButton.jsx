@@ -1,45 +1,45 @@
-import CloseIcon from '@mui/icons-material/Close';
-import ShareIcon from '@mui/icons-material/Send';
-import { Box, Button, IconButton, TextField, Typography } from '@mui/material';
-import { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import Popover from '@mui/material/Popover';
-import { shareCell } from '../../../services/cell';
-import PropTypes from 'prop-types';
-import useAuth from '../../../auth/hooks/useAuth';
+import CloseIcon from '@mui/icons-material/Close'
+import ShareIcon from '@mui/icons-material/Send'
+import { Box, Button, IconButton, TextField, Typography } from '@mui/material'
+import { useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import Popover from '@mui/material/Popover'
+import { shareCell } from '../../../services/cell'
+import PropTypes from 'prop-types'
+import useAuth from '../../../auth/hooks/useAuth'
 
 function ShareButton({ ids }) {
-  const data = useOutletContext();
-  const refetch = data[3];
-  const user = data[4];
-  const { auth } = useAuth();
-  const [response, setResponse] = useState(null);
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [anchorEl, setAnchorEl] = useState(null);
+  const data = useOutletContext()
+  const refetch = data[3]
+  const user = data[4]
+  const { auth } = useAuth()
+  const [response, setResponse] = useState(null)
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [anchorEl, setAnchorEl] = useState(null)
 
   const handleClose = () => {
-    setAnchorEl(null);
-    setResponse(null);
-    setEmail('');
-    setError('');
-  };
+    setAnchorEl(null)
+    setResponse(null)
+    setEmail('')
+    setError('')
+  }
 
-  const open = Boolean(anchorEl);
+  const open = Boolean(anchorEl)
   const handleOpen = (event) => {
     if (ids && ids.length > 0) {
-      setAnchorEl(event.currentTarget);
-      setError('');
-      setResponse(null);
+      setAnchorEl(event.currentTarget)
+      setError('')
+      setResponse(null)
     }
-  };
-  const id = open ? 'simple-popover' : undefined;
+  }
+  const id = open ? 'simple-popover' : undefined
 
   const handleShare = () => {
     // Validate email
     if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address');
-      return;
+      setError('Please enter a valid email address')
+      return
     }
 
     // Share all selected cells
@@ -47,30 +47,38 @@ function ShareButton({ ids }) {
       shareCell(cellId, email, auth?.accessToken)
         .then((res) => res)
         .catch((error) => {
-          console.error(`Error sharing cell ${cellId}:`, error);
-          throw error;
-        })
-    );
+          console.error(`Error sharing cell ${cellId}:`, error)
+          throw error
+        }),
+    )
 
     Promise.all(sharePromises)
       .then(() => {
-        setResponse({ success: true });
-        setError('');
-        refetch();
+        setResponse({ success: true })
+        setError('')
+        refetch()
       })
       .catch((error) => {
-        setError(error.response?.data?.message || 'Failed to share cells. Please try again.');
-      });
-  };
+        setError(
+          error.response?.data?.message ||
+            'Failed to share cells. Please try again.',
+        )
+      })
+  }
 
   if (!user) {
-    return <></>;
+    return <></>
   }
 
   return (
     <>
-      <Button sx={{ color: 'black' }} key='share' onClick={handleOpen} disabled={!ids || ids.length === 0}>
-        <ShareIcon fontSize='large' />
+      <Button
+        sx={{ color: 'black' }}
+        key="share"
+        onClick={handleOpen}
+        disabled={!ids || ids.length === 0}
+      >
+        <ShareIcon fontSize="large" />
       </Button>
       <Popover
         id={id}
@@ -91,10 +99,10 @@ function ShareButton({ ids }) {
             border: 'none',
             overflow: 'hidden',
           }}
-          component='form'
+          component="form"
           onSubmit={(e) => {
-            e.preventDefault();
-            handleShare();
+            e.preventDefault()
+            handleShare()
           }}
         >
           {response == null && (
@@ -116,15 +124,15 @@ function ShareButton({ ids }) {
                     color: 'white',
                     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                   }}
-                  aria-label='close'
-                  size='small'
+                  aria-label="close"
+                  size="small"
                   onClick={handleClose}
                 >
-                  <CloseIcon fontSize='small' />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -134,26 +142,30 @@ function ShareButton({ ids }) {
                   Share Cell{ids && ids.length > 1 ? 's' : ''}
                 </Typography>
                 <Typography
-                  variant='body2'
+                  variant="body2"
                   sx={{
                     color: 'rgba(255, 255, 255, 0.8)',
                     mt: 0.5,
                   }}
                 >
-                  Share {ids && ids.length} cell{ids && ids.length > 1 ? 's' : ''} with another user
+                  Share {ids && ids.length} cell
+                  {ids && ids.length > 1 ? 's' : ''} with another user
                 </Typography>
               </Box>
 
               {/* Content Section */}
               <Box sx={{ padding: '2rem' }}>
-                <Typography variant='body1' sx={{ mb: 2, color: '#666', lineHeight: 1.6 }}>
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 2, color: '#666', lineHeight: 1.6 }}
+                >
                   Enter the email address of the user you want to share with:
                 </Typography>
 
                 <TextField
                   fullWidth
-                  label='Email Address'
-                  type='email'
+                  label="Email Address"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   error={!!error}
@@ -170,10 +182,13 @@ function ShareButton({ ids }) {
                     mb: 3,
                   }}
                 >
-                  <Typography variant='body2' sx={{ color: '#666', fontWeight: 500 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: '#666', fontWeight: 500 }}
+                  >
                     Selected Cell IDs:
                   </Typography>
-                  <Typography variant='body2' sx={{ color: '#333', mt: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: '#333', mt: 0.5 }}>
                     {ids && ids.join(', ')}
                   </Typography>
                 </Box>
@@ -189,7 +204,7 @@ function ShareButton({ ids }) {
                   }}
                 >
                   <Button
-                    variant='outlined'
+                    variant="outlined"
                     onClick={handleClose}
                     sx={{
                       borderColor: '#ddd',
@@ -203,7 +218,7 @@ function ShareButton({ ids }) {
                     Cancel
                   </Button>
                   <Button
-                    variant='contained'
+                    variant="contained"
                     onClick={handleShare}
                     sx={{
                       backgroundColor: '#588157',
@@ -230,8 +245,8 @@ function ShareButton({ ids }) {
                 }}
               >
                 <Typography
-                  variant='h5'
-                  component='h2'
+                  variant="h5"
+                  component="h2"
                   sx={{
                     color: 'white',
                     fontWeight: 600,
@@ -241,13 +256,14 @@ function ShareButton({ ids }) {
                   Cell{ids && ids.length > 1 ? 's' : ''} Shared Successfully!
                 </Typography>
                 <Typography
-                  variant='body2'
+                  variant="body2"
                   sx={{
                     color: 'rgba(255, 255, 255, 0.8)',
                     mt: 0.5,
                   }}
                 >
-                  The cell{ids && ids.length > 1 ? 's have' : ' has'} been shared with {email}
+                  The cell{ids && ids.length > 1 ? 's have' : ' has'} been
+                  shared with {email}
                 </Typography>
               </Box>
 
@@ -261,14 +277,19 @@ function ShareButton({ ids }) {
                     mb: '1.5rem',
                   }}
                 >
-                  <Typography variant='body1' sx={{ color: '#666', lineHeight: 1.6 }}>
-                    Cell{ids && ids.length > 1 ? 's' : ''} <strong>{ids && ids.join(', ')}</strong>{' '}
-                    {ids && ids.length > 1 ? 'have' : 'has'} been successfully shared with <strong>{email}</strong>.
+                  <Typography
+                    variant="body1"
+                    sx={{ color: '#666', lineHeight: 1.6 }}
+                  >
+                    Cell{ids && ids.length > 1 ? 's' : ''}{' '}
+                    <strong>{ids && ids.join(', ')}</strong>{' '}
+                    {ids && ids.length > 1 ? 'have' : 'has'} been successfully
+                    shared with <strong>{email}</strong>.
                   </Typography>
                 </Box>
 
                 <Button
-                  variant='contained'
+                  variant="contained"
                   onClick={handleClose}
                   sx={{
                     backgroundColor: '#2e7d32',
@@ -288,11 +309,11 @@ function ShareButton({ ids }) {
         </Box>
       </Popover>
     </>
-  );
+  )
 }
 
-export default ShareButton;
+export default ShareButton
 
 ShareButton.propTypes = {
   ids: PropTypes.arrayOf(PropTypes.number).isRequired,
-};
+}

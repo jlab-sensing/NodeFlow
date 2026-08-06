@@ -1,4 +1,4 @@
-import PropTypes from 'prop-types';
+import PropTypes from 'prop-types'
 import {
   Dialog,
   DialogTitle,
@@ -8,15 +8,15 @@ import {
   Typography,
   Box,
   IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { signIn } from '../services/auth';
+} from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import { signIn } from '../services/auth'
 
 const LoginPromptModal = ({ open, onClose }) => {
   const handleLogin = () => {
-    signIn();
-    onClose();
-  };
+    signIn()
+    onClose()
+  }
 
   return (
     <Dialog
@@ -45,13 +45,17 @@ const LoginPromptModal = ({ open, onClose }) => {
           </IconButton>
         </Box>
       </DialogTitle>
-      
+
       <DialogContent sx={{ pt: 2 }}>
-        <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
-          Please log in to access live streaming data. This feature is available only to authenticated users.
+        <Typography
+          variant="body1"
+          sx={{ color: 'text.secondary', lineHeight: 1.6 }}
+        >
+          Please log in to access live streaming data. This feature is available
+          only to authenticated users.
         </Typography>
       </DialogContent>
-      
+
       <DialogActions sx={{ p: 3, pt: 2 }}>
         <Button
           onClick={onClose}
@@ -83,12 +87,12 @@ const LoginPromptModal = ({ open, onClose }) => {
         </Button>
       </DialogActions>
     </Dialog>
-  );
-};
+  )
+}
 
 LoginPromptModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-};
+}
 
-export default LoginPromptModal;
+export default LoginPromptModal

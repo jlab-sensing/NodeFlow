@@ -5,24 +5,24 @@ export function getChartTimeDomain(startDate, endDate) {
     typeof startDate.toMillis !== 'function' ||
     typeof endDate.toMillis !== 'function'
   ) {
-    return {};
+    return {}
   }
 
   if (typeof startDate.isValid === 'boolean' && !startDate.isValid) {
-    return {};
+    return {}
   }
   if (typeof endDate.isValid === 'boolean' && !endDate.isValid) {
-    return {};
+    return {}
   }
 
-  const startMillis = startDate.toMillis();
-  const endMillis = endDate.toMillis();
+  const startMillis = startDate.toMillis()
+  const endMillis = endDate.toMillis()
 
   if (!Number.isFinite(startMillis) || !Number.isFinite(endMillis)) {
-    return {};
+    return {}
   }
 
   return startMillis <= endMillis
     ? { min: startMillis, max: endMillis }
-    : { min: endMillis, max: startMillis };
+    : { min: endMillis, max: startMillis }
 }

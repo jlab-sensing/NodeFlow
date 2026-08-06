@@ -1,9 +1,8 @@
-
 import {
   isKnownPanelId,
   LAYOUT_VERSION,
   panelIdToUnifiedType,
-} from './chartsCatalog';
+} from './chartsCatalog'
 
 /**
  * Short URL tokens for built-in panels (internal panel_id may differ).
@@ -17,7 +16,7 @@ export const LAYOUT_NAME_TO_PANEL_ID = {
   'power-vi': 'power-vi',
   power: 'power-p',
   'power-p': 'power-p',
-};
+}
 
 /** Built-in panels → preferred short layout token. */
 export const PANEL_ID_TO_LAYOUT_NAME = {
@@ -25,7 +24,7 @@ export const PANEL_ID_TO_LAYOUT_NAME = {
   temp: 'temp',
   'power-vi': 'vi',
   'power-p': 'power',
-};
+}
 
 /**
  * Split layout body on commas outside parentheses.
@@ -33,24 +32,24 @@ export const PANEL_ID_TO_LAYOUT_NAME = {
  * @returns {string[]}
  */
 export function splitLayoutEntries(body) {
-  const entries = [];
-  let current = '';
-  let depth = 0;
+  const entries = []
+  let current = ''
+  let depth = 0
 
   for (const ch of body) {
-    if (ch === '(') depth += 1;
-    if (ch === ')') depth = Math.max(0, depth - 1);
+    if (ch === '(') depth += 1
+    if (ch === ')') depth = Math.max(0, depth - 1)
 
     if (ch === ',' && depth === 0) {
-      if (current.trim()) entries.push(current.trim());
-      current = '';
+      if (current.trim()) entries.push(current.trim())
+      current = ''
     } else {
-      current += ch;
+      current += ch
     }
   }
 
-  if (current.trim()) entries.push(current.trim());
-  return entries;
+  if (current.trim()) entries.push(current.trim())
+  return entries
 }
 
 /**
@@ -58,16 +57,18 @@ export function splitLayoutEntries(body) {
  * @returns {string | null}
  */
 export function resolveLayoutTokenToPanelId(token) {
-  if (!token) return null;
-  if (isKnownPanelId(token)) return token;
+  if (!token) return null
+  if (isKnownPanelId(token)) return token
 
-  const alias = LAYOUT_NAME_TO_PANEL_ID[token] ?? LAYOUT_NAME_TO_PANEL_ID[token.toLowerCase()];
-  if (alias && isKnownPanelId(alias)) return alias;
+  const alias =
+    LAYOUT_NAME_TO_PANEL_ID[token] ??
+    LAYOUT_NAME_TO_PANEL_ID[token.toLowerCase()]
+  if (alias && isKnownPanelId(alias)) return alias
 
-  const unifiedPanelId = `u:${token}`;
-  if (isKnownPanelId(unifiedPanelId)) return unifiedPanelId;
+  const unifiedPanelId = `u:${token}`
+  if (isKnownPanelId(unifiedPanelId)) return unifiedPanelId
 
-  return null;
+  return null
 }
 
 /**
@@ -76,13 +77,13 @@ export function resolveLayoutTokenToPanelId(token) {
  */
 export function panelIdToLayoutToken(panelId) {
   if (PANEL_ID_TO_LAYOUT_NAME[panelId]) {
-    return PANEL_ID_TO_LAYOUT_NAME[panelId];
+    return PANEL_ID_TO_LAYOUT_NAME[panelId]
   }
 
-  const unifiedType = panelIdToUnifiedType(panelId);
-  if (unifiedType) return unifiedType;
+  const unifiedType = panelIdToUnifiedType(panelId)
+  if (unifiedType) return unifiedType
 
-  return panelId;
+  return panelId
 }
 
 /**
@@ -90,10 +91,10 @@ export function panelIdToLayoutToken(panelId) {
  * @returns {string | null}
  */
 export function parseLayoutEntry(entry) {
-  const trimmed = entry?.trim();
-  if (!trimmed) return null;
+  const trimmed = entry?.trim()
+  if (!trimmed) return null
 
-  return resolveLayoutTokenToPanelId(trimmed);
+  return resolveLayoutTokenToPanelId(trimmed)
 }
 
 /**
@@ -101,7 +102,7 @@ export function parseLayoutEntry(entry) {
  * @returns {boolean}
  */
 export function isLayoutPanelEntry(entry) {
-  return parseLayoutEntry(entry) != null;
+  return parseLayoutEntry(entry) != null
 }
 
 /**
@@ -110,17 +111,17 @@ export function isLayoutPanelEntry(entry) {
  * @returns {string[]}
  */
 export function parseLayoutParam(raw) {
-  if (!raw || typeof raw !== 'string') return [];
+  if (!raw || typeof raw !== 'string') return []
 
-  const trimmed = raw.trim();
-  const legacy = trimmed.match(/^v1:(.+)$/i);
-  const body = legacy ? legacy[1] : trimmed;
+  const trimmed = raw.trim()
+  const legacy = trimmed.match(/^v1:(.+)$/i)
+  const body = legacy ? legacy[1] : trimmed
 
   const resolved = splitLayoutEntries(body)
     .map(parseLayoutEntry)
-    .filter(Boolean);
+    .filter(Boolean)
 
-  return resolved.length > 0 ? resolved : [];
+  return resolved.length > 0 ? resolved : []
 }
 
 /**
@@ -129,7 +130,7 @@ export function parseLayoutParam(raw) {
  * @returns {string | null}
  */
 export function serializeLayoutParam(panelOrder) {
-  const valid = panelOrder.filter((entry) => isKnownPanelId(entry));
-  if (valid.length === 0) return null;
-  return `${LAYOUT_VERSION}:${valid.map(panelIdToLayoutToken).join(',')}`;
+  const valid = panelOrder.filter((entry) => isKnownPanelId(entry))
+  if (valid.length === 0) return null
+  return `${LAYOUT_VERSION}:${valid.map(panelIdToLayoutToken).join(',')}`
 }

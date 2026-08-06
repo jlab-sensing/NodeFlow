@@ -11,4 +11,4 @@ export const getSensorDataAvailability = (axiosPrivate, sensorUuids) =>
         sensor_uuids: sensorUuids.join(','),
       },
     })
-    .then((response) => response.data);
+    .then((response) => response.data)

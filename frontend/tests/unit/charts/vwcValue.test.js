@@ -19,7 +19,7 @@ describe('vwcValue', () => {
 
   it('keeps a value greater than one unchanged', () => {
     const valueGreaterThanOne = 1.01
-    expect(toPercentIfFraction(valueGreaterThanOne).toEqual(valueGreaterThanOne))
+    expect(toPercentIfFraction(valueGreaterThanOne)).toEqual(1.01)
   })
 
 })

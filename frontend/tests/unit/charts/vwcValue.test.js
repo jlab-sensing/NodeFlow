@@ -6,7 +6,7 @@ describe('vwcValue', () => {
     const floatFraction = 0.25
     expect(toPercentIfFraction(floatFraction)).toBe(25)
   })
-  
+
   it('turns a valid fractional integer (1) into a VWC percentage', () => {
     const intFraction = 1
     expect(toPercentIfFraction(intFraction)).toBe(100)
@@ -21,5 +21,4 @@ describe('vwcValue', () => {
     const valueGreaterThanOne = 1.01
     expect(toPercentIfFraction(valueGreaterThanOne)).toEqual(1.01)
   })
-
 })

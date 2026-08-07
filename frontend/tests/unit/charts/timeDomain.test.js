@@ -57,8 +57,8 @@ describe('getChartTimeDomain', () => {
 
   it('returns an empty object when conversion produces NaN', () => {
     const invalidDateValue = {
-        isValid: true,
-        toMillis: () => NaN,
+      isValid: true,
+      toMillis: () => NaN,
     }
     const end = DateTime.fromISO('2026-01-01T10:00:00Z')
     expect(getChartTimeDomain(invalidDateValue, end)).toEqual({})
@@ -67,9 +67,8 @@ describe('getChartTimeDomain', () => {
   it('allows the start and end to represent the same time', () => {
     const start = DateTime.fromISO('2026-01-01T10:00:00Z')
     expect(getChartTimeDomain(start, start)).toEqual({
-        min: start.toMillis(),
-        max: start.toMillis(),
+      min: start.toMillis(),
+      max: start.toMillis(),
     })
   })
 })
-

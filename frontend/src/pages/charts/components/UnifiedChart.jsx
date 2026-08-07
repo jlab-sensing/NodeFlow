@@ -1,32 +1,32 @@
-import { Box } from '@mui/material';
-import { DateTime } from 'luxon';
-import PropTypes from 'prop-types';
-import { useEffect, useState, useRef } from 'react';
-import { getSensorChartData } from '../../../services/chartData';
-import UniversalChart from '../../../charts/UniversalChart';
+import { Box } from '@mui/material'
+import { DateTime } from 'luxon'
+import PropTypes from 'prop-types'
+import { useEffect, useState, useRef } from 'react'
+import { getSensorChartData } from '../../../services/chartData'
+import UniversalChart from '../../../charts/UniversalChart'
 import {
   measurementMatches,
   normalizeUnifiedStreamValue,
-} from './unifiedChartUtils';
-import { CHART_CONFIGS } from './chartConfigs';
-import { buildUnifiedChartDataFromCache } from '../catalog/historicalDataLoader';
-import ChartPanelPlaceholder from './ChartPanelPlaceholder';
+} from './unifiedChartUtils'
+import { CHART_CONFIGS } from './chartConfigs'
+import { buildUnifiedChartDataFromCache } from '../catalog/historicalDataLoader'
+import ChartPanelPlaceholder from './ChartPanelPlaceholder'
 
 function getSensorMeasurementData(sensorData, measurement) {
-  if (!sensorData || !measurement) return null;
-  if (sensorData[measurement]) return sensorData[measurement];
-  const normalized = measurement.toLowerCase();
+  if (!sensorData || !measurement) return null
+  if (sensorData[measurement]) return sensorData[measurement]
+  const normalized = measurement.toLowerCase()
   const matchedKey = Object.keys(sensorData).find(
     (key) => key !== 'name' && key.toLowerCase() === normalized,
-  );
-  return matchedKey ? sensorData[matchedKey] : null;
+  )
+  return matchedKey ? sensorData[matchedKey] : null
 }
 
 function timestampMillis(timestamp) {
-  const httpDate = DateTime.fromHTTP(timestamp);
+  const httpDate = DateTime.fromHTTP(timestamp)
   return httpDate.isValid
     ? httpDate.toMillis()
-    : DateTime.fromISO(timestamp).toMillis();
+    : DateTime.fromISO(timestamp).toMillis()
 }
 function UnifiedChart({
   type,
@@ -39,17 +39,18 @@ function UnifiedChart({
   centralHistoricalActive = false,
   historicalLoading = false,
 }) {
-  const [resample, setResample] = useState('hour');
+  const [resample, setResample] = useState('hour')
   const chartSettings = {
     labels: [],
     datasets: [],
-  };
-  const [sensorChartData, setSensorChartData] = useState(chartSettings);
-  const [isLoading, setIsLoading] = useState(true);
-  const debounceTimer = useRef(null);
-  const fetchGenerationRef = useRef(0);
-  const config = CHART_CONFIGS[type];
-  const { sensor_name, measurements, units, axisIds, chartId, axisPolicy } = config || {};
+  }
+  const [sensorChartData, setSensorChartData] = useState(chartSettings)
+  const [isLoading, setIsLoading] = useState(true)
+  const debounceTimer = useRef(null)
+  const fetchGenerationRef = useRef(0)
+  const config = CHART_CONFIGS[type]
+  const { sensor_name, measurements, units, axisIds, chartId, axisPolicy } =
+    config || {}
 
   const meas_colors = [
     '#26C6DA',
@@ -62,33 +63,43 @@ function UnifiedChart({
     '#9C27B0',
     '#2196F3',
     '#E91E63',
-  ];
+  ]
 
   async function getSelectedSensorChartData() {
     if (centralHistoricalActive && resample === 'hour') {
-      if (historicalLoading || !historicalSensorByKey || Object.keys(historicalSensorByKey).length === 0) {
-        return {};
+      if (
+        historicalLoading ||
+        !historicalSensorByKey ||
+        Object.keys(historicalSensorByKey).length === 0
+      ) {
+        return {}
       }
-      return buildUnifiedChartDataFromCache(sensors, type, historicalSensorByKey);
+      return buildUnifiedChartDataFromCache(
+        sensors,
+        type,
+        historicalSensorByKey,
+      )
     }
 
-    const panelId = `u:${type}`;
+    const panelId = `u:${type}`
     const sensorEntries = await Promise.all(
       sensors.map(async (sensor) => {
         if (!sensor.has_chart_data) {
-          return [sensor.uuid, { name: sensor.name }];
+          return [sensor.uuid, { name: sensor.name }]
         }
 
-        const seenMeasurements = new Set();
-        const measurementsToFetch = (sensor.measurements ?? []).filter((measurement) => {
-          if (!(sensor.panel_ids ?? []).includes(panelId)) return false;
-          if (!measurementMatches(measurement, measurements)) return false;
+        const seenMeasurements = new Set()
+        const measurementsToFetch = (sensor.measurements ?? []).filter(
+          (measurement) => {
+            if (!(sensor.panel_ids ?? []).includes(panelId)) return false
+            if (!measurementMatches(measurement, measurements)) return false
 
-          const key = measurement.toLowerCase();
-          if (seenMeasurements.has(key)) return false;
-          seenMeasurements.add(key);
-          return true;
-        });
+            const key = measurement.toLowerCase()
+            if (seenMeasurements.has(key)) return false
+            seenMeasurements.add(key)
+            return true
+          },
+        )
 
         const measEntries = await Promise.all(
           measurementsToFetch.map(async (measurement) => {
@@ -99,10 +110,10 @@ function UnifiedChart({
               startDate,
               endDate,
               resample,
-            );
-            return [measurement, payload];
+            )
+            return [measurement, payload]
           }),
-        );
+        )
 
         return [
           sensor.uuid,
@@ -110,11 +121,11 @@ function UnifiedChart({
             name: sensor.name,
             ...Object.fromEntries(measEntries),
           },
-        ];
+        ]
       }),
-    );
+    )
 
-    return Object.fromEntries(sensorEntries);
+    return Object.fromEntries(sensorEntries)
   }
 
   function createDataset(x, y) {
@@ -122,72 +133,79 @@ function UnifiedChart({
       return {
         x: x,
         y: y[i],
-      };
-    });
+      }
+    })
   }
 
   function resolveSensorEntry(sensorChartDataById, sensorUuid) {
-    return sensorChartDataById[sensorUuid];
+    return sensorChartDataById[sensorUuid]
   }
 
   function updateCharts() {
     if (centralHistoricalActive && resample === 'hour' && historicalLoading) {
-      setIsLoading(true);
-      return;
+      setIsLoading(true)
+      return
     }
 
-    const fetchGeneration = ++fetchGenerationRef.current;
-    setIsLoading(true);
+    const fetchGeneration = ++fetchGenerationRef.current
+    setIsLoading(true)
     getSelectedSensorChartData()
       .then((sensorDataById) => {
-        if (fetchGeneration !== fetchGenerationRef.current) return;
-        const newSensorChartData = { labels: [], datasets: [] };
-        let selectCounter = 0;
+        if (fetchGeneration !== fetchGenerationRef.current) return
+        const newSensorChartData = { labels: [], datasets: [] }
+        let selectCounter = 0
         for (const sensor of sensors) {
-          const entry = resolveSensorEntry(sensorDataById, sensor.uuid);
+          const entry = resolveSensorEntry(sensorDataById, sensor.uuid)
           if (!entry) {
-            selectCounter += 1;
-            continue;
+            selectCounter += 1
+            continue
           }
-          const name = entry.name ?? sensor.name;
-          const plottedMeasurements = new Set();
+          const name = entry.name ?? sensor.name
+          const plottedMeasurements = new Set()
           for (const [idx, meas] of measurements.entries()) {
-            const normalizedMeas = meas.toLowerCase();
-            if (plottedMeasurements.has(normalizedMeas)) continue;
-            const measPayload = getSensorMeasurementData(entry, meas);
-            const measDataArray = measPayload?.data;
+            const normalizedMeas = meas.toLowerCase()
+            if (plottedMeasurements.has(normalizedMeas)) continue
+            const measPayload = getSensorMeasurementData(entry, meas)
+            const measDataArray = measPayload?.data
             if (Array.isArray(measDataArray) && measDataArray.length > 0) {
-              const timestamp = measPayload.timestamp.map(timestampMillis);
+              const timestamp = measPayload.timestamp.map(timestampMillis)
               const normalizedData =
-                sensor_name === 'TEROS12_VWC_ADJ' && meas === 'Volumetric Water Content'
-                  ? measDataArray.map((value) => normalizeUnifiedStreamValue(sensor_name, meas, value))
-                  : measDataArray;
-              const measData = createDataset(timestamp, normalizedData);
-              newSensorChartData.labels = timestamp;
+                sensor_name === 'TEROS12_VWC_ADJ' &&
+                meas === 'Volumetric Water Content'
+                  ? measDataArray.map((value) =>
+                      normalizeUnifiedStreamValue(sensor_name, meas, value),
+                    )
+                  : measDataArray
+              const measData = createDataset(timestamp, normalizedData)
+              newSensorChartData.labels = timestamp
               newSensorChartData.datasets.push({
                 label: name + ` ${meas} (${units[idx]})`,
                 data: measData,
-                borderColor: meas_colors[(selectCounter * measurements.length + idx) % meas_colors.length],
+                borderColor:
+                  meas_colors[
+                    (selectCounter * measurements.length + idx) %
+                      meas_colors.length
+                  ],
                 borderWidth: 2,
                 fill: false,
                 yAxisID: axisIds[idx],
                 radius: 2,
                 pointRadius: 1,
-              });
-              plottedMeasurements.add(normalizedMeas);
+              })
+              plottedMeasurements.add(normalizedMeas)
             }
           }
-          selectCounter += 1;
+          selectCounter += 1
         }
-        if (fetchGeneration !== fetchGenerationRef.current) return;
-        setSensorChartData(newSensorChartData);
-        setIsLoading(false);
+        if (fetchGeneration !== fetchGenerationRef.current) return
+        setSensorChartData(newSensorChartData)
+        setIsLoading(false)
       })
       .catch((error) => {
-        if (fetchGeneration !== fetchGenerationRef.current) return;
-        console.error('Error updating charts:', error);
-        setIsLoading(false);
-      });
+        if (fetchGeneration !== fetchGenerationRef.current) return
+        console.error('Error updating charts:', error)
+        setIsLoading(false)
+      })
   }
 
   function clearCharts() {
@@ -195,59 +213,69 @@ function UnifiedChart({
       ...sensorChartData,
       labels: [],
       datasets: [],
-    };
-    setSensorChartData(Object.assign({}, newSensorChartData));
-    setIsLoading(false);
+    }
+    setSensorChartData(Object.assign({}, newSensorChartData))
+    setIsLoading(false)
   }
 
   useEffect(() => {
     if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
+      clearTimeout(debounceTimer.current)
     }
     debounceTimer.current = setTimeout(() => {
       if (Array.isArray(sensors) && sensors.length) {
-        updateCharts();
+        updateCharts()
       } else {
-        clearCharts();
+        clearCharts()
       }
-    }, 300);
+    }, 300)
 
     return () => {
       if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
+        clearTimeout(debounceTimer.current)
       }
-    };
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sensors, resample, startDate, endDate, historicalSensorByKey, centralHistoricalActive, historicalLoading]);
+  }, [
+    sensors,
+    resample,
+    startDate,
+    endDate,
+    historicalSensorByKey,
+    centralHistoricalActive,
+    historicalLoading,
+  ])
 
   const handleResampleChange = (newResample) => {
-    setResample(newResample);
-  };
+    setResample(newResample)
+  }
 
-  const hasRenderableData = sensorChartData.datasets.some((ds) => Array.isArray(ds.data) && ds.data.length > 0);
+  const hasRenderableData = sensorChartData.datasets.some(
+    (ds) => Array.isArray(ds.data) && ds.data.length > 0,
+  )
 
   // Notify parent component when data status changes
   useEffect(() => {
     if (onDataStatusChange && !isLoading) {
-      onDataStatusChange(hasRenderableData);
+      onDataStatusChange(hasRenderableData)
     }
-  }, [hasRenderableData, isLoading, onDataStatusChange]);
+  }, [hasRenderableData, isLoading, onDataStatusChange])
 
   if (!config) {
-    console.error(`Unknown chart type: ${type}`);
-    return null;
+    console.error(`Unknown chart type: ${type}`)
+    return null
   }
 
   if (isLoading) {
-    return <ChartPanelPlaceholder loading />;
+    return <ChartPanelPlaceholder loading />
   }
 
   if (!hasRenderableData) {
     if (sensors?.length) {
-      return <ChartPanelPlaceholder />;
+      return <ChartPanelPlaceholder />
     }
-    return null;
+    return null
   }
 
   return (
@@ -264,7 +292,7 @@ function UnifiedChart({
         onResampleChange={handleResampleChange}
       />
     </Box>
-  );
+  )
 }
 
 UnifiedChart.propTypes = {
@@ -277,6 +305,6 @@ UnifiedChart.propTypes = {
   historicalSensorByKey: PropTypes.object,
   centralHistoricalActive: PropTypes.bool,
   historicalLoading: PropTypes.bool,
-};
+}
 
-export default UnifiedChart;
+export default UnifiedChart

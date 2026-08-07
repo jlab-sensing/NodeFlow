@@ -1,12 +1,22 @@
-import 'chartjs-adapter-luxon';
-import PropTypes from 'prop-types';
-import { getAxisBoundsAndStepValues } from '../alignAxis';
-import { getChartTimeDomain } from '../timeDomain';
-import ChartWrapper from '../ChartWrapper';
+import 'chartjs-adapter-luxon'
+import PropTypes from 'prop-types'
+import { getAxisBoundsAndStepValues } from '../alignAxis'
+import { getChartTimeDomain } from '../timeDomain'
+import ChartWrapper from '../ChartWrapper'
 
-export default function PwrChart({ data, startDate, endDate, onResampleChange }) {
-  const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(data.datasets, [], 10, 5);
-  const chartTimeDomain = getChartTimeDomain(startDate, endDate);
+export default function PwrChart({
+  data,
+  startDate,
+  endDate,
+  onResampleChange,
+}) {
+  const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(
+    data.datasets,
+    [],
+    10,
+    5,
+  )
+  const chartTimeDomain = getChartTimeDomain(startDate, endDate)
 
   const chartOptions = {
     maintainAspectRatio: false,
@@ -49,16 +59,16 @@ export default function PwrChart({ data, startDate, endDate, onResampleChange })
         max: leftYMax,
       },
     },
-  };
+  }
 
   return (
     <ChartWrapper
-      id='pwr'
+      id="pwr"
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
     />
-  );
+  )
 }
 
 PwrChart.propTypes = {
@@ -66,4 +76,4 @@ PwrChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
-};
+}

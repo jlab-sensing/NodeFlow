@@ -1,26 +1,39 @@
-import { Box, CircularProgress } from '@mui/material';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import useAuth from '../../auth/hooks/useAuth';
-import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate';
-import Nav from '../../components/Nav';
-import { useUserCells } from '../../services/cell'; import { useUserLoggers } from '../../services/logger'; import SideBar from './components/SideBar'; import { useUserGroups } from '../../services/group';
+import { Box, CircularProgress } from '@mui/material'
+import { Outlet, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import useAuth from '../../auth/hooks/useAuth'
+import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate'
+import Nav from '../../components/Nav'
+import { useUserCells } from '../../services/cell'
+import { useUserLoggers } from '../../services/logger'
+import SideBar from './components/SideBar'
+import { useUserGroups } from '../../services/group'
 
 function Profile() {
-  const axiosPrivate = useAxiosPrivate();
-  const { user, setUser, loggedIn, setLoggedIn, isAuthLoading } = useAuth();
-  const navigate = useNavigate();
+  const axiosPrivate = useAxiosPrivate()
+  const { user, setUser, loggedIn, setLoggedIn, isAuthLoading } = useAuth()
+  const navigate = useNavigate()
 
-  const { data, isLoading, isError, refetch } = useUserCells(axiosPrivate);
-  const { data: groupData, isLoading: groupIsLoading, isError: groupIsError, refetch: groupRefetch} = useUserGroups(axiosPrivate);
-  const { data: loggerData, isLoading: loggerIsLoading, isError: loggerIsError, refetch: loggerRefetch } = useUserLoggers(axiosPrivate);
+  const { data, isLoading, isError, refetch } = useUserCells(axiosPrivate)
+  const {
+    data: groupData,
+    isLoading: groupIsLoading,
+    isError: groupIsError,
+    refetch: groupRefetch,
+  } = useUserGroups(axiosPrivate)
+  const {
+    data: loggerData,
+    isLoading: loggerIsLoading,
+    isError: loggerIsError,
+    refetch: loggerRefetch,
+  } = useUserLoggers(axiosPrivate)
 
   // Redirect to home if not logged in after auth check completes
   useEffect(() => {
     if (!isAuthLoading && !loggedIn) {
-      navigate('/');
+      navigate('/')
     }
-  }, [isAuthLoading, loggedIn, navigate]);
+  }, [isAuthLoading, loggedIn, navigate])
 
   // Show loading spinner while checking authentication
   if (isAuthLoading) {
@@ -37,7 +50,7 @@ function Profile() {
       >
         <CircularProgress />
       </Box>
-    );
+    )
   }
 
   return (
@@ -53,7 +66,12 @@ function Profile() {
         backgroundColor: '#fff',
       }}
     >
-      <Nav user={user} setUser={setUser} loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+      <Nav
+        user={user}
+        setUser={setUser}
+        loggedIn={loggedIn}
+        setLoggedIn={setLoggedIn}
+      />
       <Box
         sx={{
           display: 'flex',
@@ -79,11 +97,29 @@ function Profile() {
             width: '100%',
           }}
         >
-          <Outlet context={[data, isLoading, isError, refetch, user, setUser, loggerData, loggerIsLoading, loggerIsError, loggerRefetch, axiosPrivate, groupData, groupIsLoading, groupIsError, groupRefetch]} />
+          <Outlet
+            context={[
+              data,
+              isLoading,
+              isError,
+              refetch,
+              user,
+              setUser,
+              loggerData,
+              loggerIsLoading,
+              loggerIsError,
+              loggerRefetch,
+              axiosPrivate,
+              groupData,
+              groupIsLoading,
+              groupIsError,
+              groupRefetch,
+            ]}
+          />
         </Box>
       </Box>
     </Box>
-  );
+  )
 }
 
-export default Profile;
+export default Profile

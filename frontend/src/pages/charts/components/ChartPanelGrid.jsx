@@ -4,16 +4,20 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
-import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
-import { Box } from '@mui/material';
-import PropTypes from 'prop-types';
-import { useCallback, useMemo } from 'react';
-import { panelIdToUnifiedType } from '../catalog/chartsCatalog';
-import PowerCharts from './PowerCharts';
-import SortableChartPanel from './SortableChartPanel';
-import TerosCharts from './TerosCharts';
-import UnifiedChart from './UnifiedChart';
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable'
+import { Box } from '@mui/material'
+import PropTypes from 'prop-types'
+import { useCallback, useMemo } from 'react'
+import { panelIdToUnifiedType } from '../catalog/chartsCatalog'
+import PowerCharts from './PowerCharts'
+import SortableChartPanel from './SortableChartPanel'
+import TerosCharts from './TerosCharts'
+import UnifiedChart from './UnifiedChart'
 
 function ChartPanelContent({ panelId, chartProps }) {
   const shared = {
@@ -23,9 +27,9 @@ function ChartPanelContent({ panelId, chartProps }) {
     endDate: chartProps.endDate,
     historicalSensorByKey: chartProps.historicalSensorByKey,
     historicalLoading: chartProps.historicalLoading,
-  };
+  }
 
-  const unifiedType = panelIdToUnifiedType(panelId);
+  const unifiedType = panelIdToUnifiedType(panelId)
   if (unifiedType) {
     return (
       <UnifiedChart
@@ -38,7 +42,7 @@ function ChartPanelContent({ panelId, chartProps }) {
         centralHistoricalActive={chartProps.centralHistoricalActive?.sensors}
         historicalLoading={chartProps.historicalLoading}
       />
-    );
+    )
   }
 
   switch (panelId) {
@@ -46,45 +50,51 @@ function ChartPanelContent({ panelId, chartProps }) {
       return (
         <PowerCharts
           {...shared}
-          variant='voltage'
+          variant="voltage"
           onDataStatusChange={chartProps.onPowerDataStatusChange}
         />
-      );
+      )
     case 'power-p':
       return (
         <PowerCharts
           {...shared}
-          variant='power'
+          variant="power"
           onDataStatusChange={chartProps.onPowerDataStatusChange}
         />
-      );
+      )
     case 'teros':
       return (
         <TerosCharts
           {...shared}
-          variant='vwc'
+          variant="vwc"
           onDataStatusChange={chartProps.onTerosDataStatusChange}
         />
-      );
+      )
     case 'temp':
       return (
         <TerosCharts
           {...shared}
-          variant='temp'
+          variant="temp"
           onDataStatusChange={chartProps.onTerosDataStatusChange}
         />
-      );
+      )
     default:
-      return null;
+      return null
   }
 }
 
 ChartPanelContent.propTypes = {
   panelId: PropTypes.string.isRequired,
   chartProps: PropTypes.object.isRequired,
-};
+}
 
-function SortableChartPagePanel({ panelId, chartProps, onRemovePanel, panelColumns, canRemove }) {
+function SortableChartPagePanel({
+  panelId,
+  chartProps,
+  onRemovePanel,
+  panelColumns,
+  canRemove,
+}) {
   return (
     <SortableChartPanel
       id={panelId}
@@ -93,7 +103,7 @@ function SortableChartPagePanel({ panelId, chartProps, onRemovePanel, panelColum
     >
       <ChartPanelContent panelId={panelId} chartProps={chartProps} />
     </SortableChartPanel>
-  );
+  )
 }
 
 SortableChartPagePanel.propTypes = {
@@ -102,7 +112,7 @@ SortableChartPagePanel.propTypes = {
   onRemovePanel: PropTypes.func.isRequired,
   panelColumns: PropTypes.oneOf([1, 2]).isRequired,
   canRemove: PropTypes.bool.isRequired,
-};
+}
 
 export default function ChartPanelGrid({
   panelOrder,
@@ -115,24 +125,24 @@ export default function ChartPanelGrid({
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
     }),
-  );
+  )
 
   const handleDragEnd = useCallback(
     (event) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
+      const { active, over } = event
+      if (!over || active.id === over.id) return
 
       onPanelOrderChange((items) => {
-        const oldIndex = items.indexOf(active.id);
-        const newIndex = items.indexOf(over.id);
-        if (oldIndex === -1 || newIndex === -1) return items;
-        return arrayMove(items, oldIndex, newIndex);
-      });
+        const oldIndex = items.indexOf(active.id)
+        const newIndex = items.indexOf(over.id)
+        if (oldIndex === -1 || newIndex === -1) return items
+        return arrayMove(items, oldIndex, newIndex)
+      })
     },
     [onPanelOrderChange],
-  );
+  )
 
-  const canRemovePanels = panelOrder.length > 1;
+  const canRemovePanels = panelOrder.length > 1
 
   const visiblePanels = useMemo(
     () =>
@@ -147,19 +157,24 @@ export default function ChartPanelGrid({
         />
       )),
     [panelOrder, chartProps, onRemovePanel, panelColumns, canRemovePanels],
-  );
+  )
 
   if (panelOrder.length === 0) {
-    return null;
+    return null
   }
 
   return (
-    <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={dndSensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
       <SortableContext items={panelOrder} strategy={rectSortingStrategy}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: panelColumns === 1 ? '1fr' : { xs: '1fr', md: '1fr 1fr' },
+            gridTemplateColumns:
+              panelColumns === 1 ? '1fr' : { xs: '1fr', md: '1fr 1fr' },
             gap: 3,
             width: '100%',
             alignItems: 'stretch',
@@ -171,7 +186,7 @@ export default function ChartPanelGrid({
         </Box>
       </SortableContext>
     </DndContext>
-  );
+  )
 }
 
 ChartPanelGrid.propTypes = {
@@ -192,4 +207,4 @@ ChartPanelGrid.propTypes = {
     onPowerDataStatusChange: PropTypes.func,
     onTerosDataStatusChange: PropTypes.func,
   }).isRequired,
-};
+}

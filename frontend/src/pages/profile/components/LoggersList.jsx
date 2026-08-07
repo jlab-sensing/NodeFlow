@@ -1,33 +1,33 @@
-import { Box, Typography } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import { useOutletContext } from 'react-router-dom';
-import AddLoggerModal from './AddLoggerModal';
-import DeleteLoggerModal from './DeleteLoggerModal';
-import EditLoggerModal from './EditLoggerModal';
-import { useState } from 'react';
+import { Box, Typography } from '@mui/material'
+import { DataGrid } from '@mui/x-data-grid'
+import { useOutletContext } from 'react-router-dom'
+import AddLoggerModal from './AddLoggerModal'
+import DeleteLoggerModal from './DeleteLoggerModal'
+import EditLoggerModal from './EditLoggerModal'
+import { useState } from 'react'
 
 function LoggersList() {
-  let data = useOutletContext();
-  const user = data[4];
-  
+  let data = useOutletContext()
+  const user = data[4]
+
   // Logger data will be at index 6 in the outlet context (after cell data)
-  const loggerData = data[6];
-  const loggerIsLoading = data[7];
-  const loggerIsError = data[8];
-  
-  const [selectedRowId, setSelectedRowId] = useState('');
+  const loggerData = data[6]
+  const loggerIsLoading = data[7]
+  const loggerIsError = data[8]
+
+  const [selectedRowId, setSelectedRowId] = useState('')
 
   if (!user) {
-    return <></>;
+    return <></>
   }
   if (loggerData === null) {
-    return;
+    return
   }
   if (loggerIsLoading) {
-    return <Typography>Loading...</Typography>;
+    return <Typography>Loading...</Typography>
   }
   if (loggerIsError) {
-    return <Typography>Error loading loggers.</Typography>;
+    return <Typography>Error loading loggers.</Typography>
   }
 
   const columns = [
@@ -46,9 +46,9 @@ function LoggersList() {
       disableColumnMenu: true,
       renderCell: (params) => <EditLoggerModal logger={params.row} />,
     },
-  ];
+  ]
 
-  let rows = [];
+  let rows = []
   if (loggerData && loggerData.map) {
     rows = loggerData.map((logger) => ({
       id: logger.id,
@@ -56,13 +56,15 @@ function LoggersList() {
       type: logger.type || '',
       device_eui: logger.device_eui || '',
       description: logger.description || '',
-      date_created: logger.date_created ? new Date(logger.date_created).toLocaleDateString() : '',
-    }));
+      date_created: logger.date_created
+        ? new Date(logger.date_created).toLocaleDateString()
+        : '',
+    }))
   }
 
   const handleRowSelection = (newSelection) => {
-    setSelectedRowId(newSelection[0]);
-  };
+    setSelectedRowId(newSelection[0])
+  }
 
   return (
     <Box
@@ -87,7 +89,7 @@ function LoggersList() {
         }}
       >
         <Typography
-          variant='h5'
+          variant="h5"
           sx={{
             textAlign: 'center',
             color: '#1E3A5F',
@@ -119,7 +121,7 @@ function LoggersList() {
         />
       </Box>
     </Box>
-  );
+  )
 }
 
-export default LoggersList;
+export default LoggersList

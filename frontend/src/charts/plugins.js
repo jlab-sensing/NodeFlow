@@ -18,4 +18,4 @@ export const chartPlugins = {
       mode: 'xy',
     },
   },
-};
+}

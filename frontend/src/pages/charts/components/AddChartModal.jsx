@@ -1,4 +1,4 @@
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from '@mui/icons-material/Close'
 import {
   Chip,
   Dialog,
@@ -10,16 +10,22 @@ import {
   ListItemText,
   Stack,
   Typography,
-} from '@mui/material';
-import PropTypes from 'prop-types';
-import { useMemo } from 'react';
-import { FULL_CATALOG } from '../catalog/chartsCatalog';
+} from '@mui/material'
+import PropTypes from 'prop-types'
+import { useMemo } from 'react'
+import { FULL_CATALOG } from '../catalog/chartsCatalog'
 
-function AddChartModal({ open, onClose, selectedSensors, panelOrder, onAddPanel }) {
+function AddChartModal({
+  open,
+  onClose,
+  selectedSensors,
+  panelOrder,
+  onAddPanel,
+}) {
   const availablePanelIds = useMemo(
     () => new Set(selectedSensors.flatMap((sensor) => sensor.panel_ids ?? [])),
     [selectedSensors],
-  );
+  )
   const addableEntries = useMemo(
     () =>
       FULL_CATALOG.filter(
@@ -28,19 +34,19 @@ function AddChartModal({ open, onClose, selectedSensors, panelOrder, onAddPanel 
           !panelOrder.includes(entry.panelId),
       ),
     [availablePanelIds, panelOrder],
-  );
+  )
 
   const handleSelect = (panelId) => {
-    onAddPanel(panelId);
-    onClose();
-  };
+    onAddPanel(panelId)
+    onClose()
+  }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ pr: 6 }}>
         Add sensor chart
         <IconButton
-          aria-label='Close'
+          aria-label="Close"
           onClick={onClose}
           sx={{ position: 'absolute', right: 12, top: 12 }}
         >
@@ -50,8 +56,9 @@ function AddChartModal({ open, onClose, selectedSensors, panelOrder, onAddPanel 
       <DialogContent>
         <Stack spacing={2} sx={{ pb: 1 }}>
           {addableEntries.length === 0 ? (
-            <Typography variant='body2' color='text.secondary' sx={{ py: 2 }}>
-              All charts supported by the selected sensors are already displayed.
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+              All charts supported by the selected sensors are already
+              displayed.
             </Typography>
           ) : (
             <List disablePadding>
@@ -72,7 +79,7 @@ function AddChartModal({ open, onClose, selectedSensors, panelOrder, onAddPanel 
                     primaryTypographyProps={{ fontWeight: 600 }}
                   />
                   <Chip
-                    size='small'
+                    size="small"
                     label={entry.category}
                     sx={{ ml: 1, textTransform: 'capitalize' }}
                   />
@@ -83,7 +90,7 @@ function AddChartModal({ open, onClose, selectedSensors, panelOrder, onAddPanel 
         </Stack>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 AddChartModal.propTypes = {
@@ -97,6 +104,6 @@ AddChartModal.propTypes = {
   ).isRequired,
   panelOrder: PropTypes.arrayOf(PropTypes.string).isRequired,
   onAddPanel: PropTypes.func.isRequired,
-};
+}
 
-export default AddChartModal;
+export default AddChartModal

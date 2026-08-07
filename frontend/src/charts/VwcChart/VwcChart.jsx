@@ -1,20 +1,29 @@
-import 'chartjs-adapter-luxon';
-import PropTypes from 'prop-types';
-import { getAxisBoundsAndStepValues } from '../alignAxis';
-import { getChartTimeDomain } from '../timeDomain';
-import ChartWrapper from '../ChartWrapper';
-import { getVwcAxisBounds } from './vwcAxis';
+import 'chartjs-adapter-luxon'
+import PropTypes from 'prop-types'
+import { getAxisBoundsAndStepValues } from '../alignAxis'
+import { getChartTimeDomain } from '../timeDomain'
+import ChartWrapper from '../ChartWrapper'
+import { getVwcAxisBounds } from './vwcAxis'
 
-export default function VwcChart({ data, startDate, endDate, onResampleChange }) {
-  const vwcDatasets = data.datasets.filter((_, i) => i % 2 == 0);
+export default function VwcChart({
+  data,
+  startDate,
+  endDate,
+  onResampleChange,
+}) {
+  const vwcDatasets = data.datasets.filter((_, i) => i % 2 == 0)
   const { rightYMin, rightYMax, rightYStep } = getAxisBoundsAndStepValues(
     vwcDatasets,
     data.datasets.filter((_, i) => i % 2 == 1),
     10,
     10,
-  );
-  const { min: vwcMin, max: vwcMax, step: vwcStep } = getVwcAxisBounds(vwcDatasets);
-  const chartTimeDomain = getChartTimeDomain(startDate, endDate);
+  )
+  const {
+    min: vwcMin,
+    max: vwcMax,
+    step: vwcStep,
+  } = getVwcAxisBounds(vwcDatasets)
+  const chartTimeDomain = getChartTimeDomain(startDate, endDate)
 
   const chartOptions = {
     maintainAspectRatio: false,
@@ -74,16 +83,16 @@ export default function VwcChart({ data, startDate, endDate, onResampleChange })
         },
       },
     },
-  };
+  }
 
   return (
     <ChartWrapper
-      id='vwc'
+      id="vwc"
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
     />
-  );
+  )
 }
 
 VwcChart.propTypes = {
@@ -91,4 +100,4 @@ VwcChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
-};
+}

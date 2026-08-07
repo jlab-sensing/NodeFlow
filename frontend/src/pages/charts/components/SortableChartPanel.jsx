@@ -1,11 +1,11 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import CloseIcon from '@mui/icons-material/Close';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import PropTypes from 'prop-types';
-import { useCallback, useRef, useState } from 'react';
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import CloseIcon from '@mui/icons-material/Close'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import { Box, IconButton, Tooltip } from '@mui/material'
+import { alpha } from '@mui/material/styles'
+import PropTypes from 'prop-types'
+import { useCallback, useRef, useState } from 'react'
 
 const baseHandleSx = {
   position: 'absolute',
@@ -23,12 +23,14 @@ const baseHandleSx = {
   bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06),
   color: 'text.secondary',
   cursor: 'grab',
-  transition: 'opacity 0.18s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
+  transition:
+    'opacity 0.18s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
   '&:hover': {
     bgcolor: (theme) => alpha(theme.palette.text.primary, 0.1),
     borderColor: 'divider',
     color: 'text.primary',
-    boxShadow: (theme) => `0 1px 3px ${alpha(theme.palette.common.black, 0.12)}`,
+    boxShadow: (theme) =>
+      `0 1px 3px ${alpha(theme.palette.common.black, 0.12)}`,
   },
   '&:focus-visible': {
     outline: '2px solid',
@@ -38,7 +40,7 @@ const baseHandleSx = {
   '&:active': {
     cursor: 'grabbing',
   },
-};
+}
 
 /**
  * Minimal sortable wrapper: hover-revealed ≡ handle top-left (Grafana/Linear-style).
@@ -51,32 +53,34 @@ function SortableChartPanelInner({ id, children, onRemove, panelColumns }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
-  const [hovered, setHovered] = useState(false);
-  const [handleFocused, setHandleFocused] = useState(false);
-  const handleRef = useRef(null);
+  } = useSortable({ id })
+  const [hovered, setHovered] = useState(false)
+  const [handleFocused, setHandleFocused] = useState(false)
+  const handleRef = useRef(null)
 
-  const showHandle = hovered || handleFocused || isDragging;
+  const showHandle = hovered || handleFocused || isDragging
 
-  const handleMouseEnter = useCallback(() => setHovered(true), []);
+  const handleMouseEnter = useCallback(() => setHovered(true), [])
   const handleMouseLeave = useCallback((event) => {
-    setHovered(false);
-    const related = event.relatedTarget;
+    setHovered(false)
+    const related = event.relatedTarget
     const leftPanel =
-      related == null || !(related instanceof Node) || !event.currentTarget.contains(related);
+      related == null ||
+      !(related instanceof Node) ||
+      !event.currentTarget.contains(related)
     if (leftPanel) {
-      setHandleFocused(false);
-      handleRef.current?.blur();
+      setHandleFocused(false)
+      handleRef.current?.blur()
     }
-  }, []);
+  }, [])
 
   const style = {
     transition,
     opacity: isDragging ? 0.92 : 1,
-  };
+  }
 
   if (transform) {
-    style.transform = CSS.Transform.toString(transform);
+    style.transform = CSS.Transform.toString(transform)
   }
 
   return (
@@ -99,7 +103,12 @@ function SortableChartPanelInner({ id, children, onRemove, panelColumns }) {
         boxSizing: 'border-box',
       }}
     >
-      <Tooltip title="Drag to reorder" placement="right" enterDelay={400} disableInteractive>
+      <Tooltip
+        title="Drag to reorder"
+        placement="right"
+        enterDelay={400}
+        disableInteractive
+      >
         <Box
           ref={handleRef}
           component="button"
@@ -132,15 +141,20 @@ function SortableChartPanelInner({ id, children, onRemove, panelColumns }) {
       </Tooltip>
 
       {onRemove && (
-        <Tooltip title="Remove panel" placement="left" enterDelay={400} disableInteractive>
+        <Tooltip
+          title="Remove panel"
+          placement="left"
+          enterDelay={400}
+          disableInteractive
+        >
           <IconButton
             type="button"
             className="panel-remove-btn"
             aria-label="Remove panel"
             size="small"
             onClick={(event) => {
-              event.stopPropagation();
-              onRemove(id);
+              event.stopPropagation()
+              onRemove(id)
             }}
             sx={{
               position: 'absolute',
@@ -175,7 +189,7 @@ function SortableChartPanelInner({ id, children, onRemove, panelColumns }) {
         {children}
       </Box>
     </Box>
-  );
+  )
 }
 
 SortableChartPanelInner.propTypes = {
@@ -183,18 +197,27 @@ SortableChartPanelInner.propTypes = {
   children: PropTypes.node.isRequired,
   onRemove: PropTypes.func,
   panelColumns: PropTypes.oneOf([1, 2]),
-};
+}
 
-export default function SortableChartPanel({ id, children, onRemove, panelColumns = 2 }) {
+export default function SortableChartPanel({
+  id,
+  children,
+  onRemove,
+  panelColumns = 2,
+}) {
   if (children == null) {
-    return null;
+    return null
   }
 
   return (
-    <SortableChartPanelInner id={id} onRemove={onRemove} panelColumns={panelColumns}>
+    <SortableChartPanelInner
+      id={id}
+      onRemove={onRemove}
+      panelColumns={panelColumns}
+    >
       {children}
     </SortableChartPanelInner>
-  );
+  )
 }
 
 SortableChartPanel.propTypes = {
@@ -202,4 +225,4 @@ SortableChartPanel.propTypes = {
   children: PropTypes.node,
   onRemove: PropTypes.func,
   panelColumns: PropTypes.oneOf([1, 2]),
-};
+}

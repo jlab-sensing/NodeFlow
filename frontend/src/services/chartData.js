@@ -15,7 +15,7 @@ export const getSensorChartData = (
         resample,
       },
     })
-    .then((response) => response.data);
+    .then((response) => response.data)
 
 export const getSensorPowerChartData = (
   axiosPrivate,
@@ -32,4 +32,4 @@ export const getSensorPowerChartData = (
         resample,
       },
     })
-    .then((response) => response.data);
+    .then((response) => response.data)

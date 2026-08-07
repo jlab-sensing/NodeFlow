@@ -1,29 +1,29 @@
-import { forwardRef, useEffect, useRef, useState } from 'react';
-import HorizontalRuleRoundedIcon from '@mui/icons-material/HorizontalRuleRounded';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { forwardRef, useEffect, useRef, useState } from 'react'
+import HorizontalRuleRoundedIcon from '@mui/icons-material/HorizontalRuleRounded'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import {
   Box,
   IconButton,
   Typography,
   useMediaQuery,
   useTheme,
-} from '@mui/material';
-import useControlled from '@mui/utils/useControlled';
-import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
+} from '@mui/material'
+import useControlled from '@mui/utils/useControlled'
+import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon'
-import PropTypes from 'prop-types';
+import PropTypes from 'prop-types'
 
 const MobileDateField = forwardRef(function MobileDateField(
-  {onOpen, ariaLabel },
+  { onOpen, ariaLabel },
   ref,
 ) {
   return (
     <IconButton
       ref={ref}
-      type='button'
+      type="button"
       onClick={onOpen}
       aria-label={ariaLabel}
-      size='small'
+      size="small"
       sx={{
         border: '1px solid',
         borderColor: 'divider',
@@ -31,76 +31,67 @@ const MobileDateField = forwardRef(function MobileDateField(
         p: 0.5,
       }}
     >
-      <CalendarMonthIcon fontSize='small' />
+      <CalendarMonthIcon fontSize="small" />
     </IconButton>
-  );
-});
+  )
+})
 
 MobileDateField.propTypes = {
   onOpen: PropTypes.func.isRequired,
   ariaLabel: PropTypes.string.isRequired,
-};
+}
 
 function DateTimePickerWithAccept({
   value: valueProp,
   onAccept,
   ...otherProps
 }) {
-  const timeoutRef = useRef(null);
-  
+  const timeoutRef = useRef(null)
+
   const [value, setValue] = useControlled({
     name: 'FieldAcceptValue',
     state: 'value',
     controlled: valueProp,
     default: null,
-  });
+  })
 
   useEffect(() => {
     return () => {
-      clearTimeout(timeoutRef.current);
-    };
-  }, []);
+      clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   const handleChange = (newValue) => {
-    setValue(newValue);
+    setValue(newValue)
 
-    clearTimeout(timeoutRef.current);
+    clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => {
-      onAccept(newValue);
-    }, 1000);
-  };
+      onAccept(newValue)
+    }, 1000)
+  }
 
   return (
-    <DateTimePicker
-      {...otherProps}
-      value={value}
-      onChange={handleChange}
-    />
-  );
+    <DateTimePicker {...otherProps} value={value} onChange={handleChange} />
+  )
 }
 
 DateTimePickerWithAccept.propTypes = {
   value: PropTypes.any,
   onAccept: PropTypes.func.isRequired,
-};
+}
 
-function DateRangeSel({
-  startDate,
-  endDate,
-  setStartDate,
-  setEndDate,
-}) {
-  const theme = useTheme();
-  const showFullPicker = useMediaQuery(theme.breakpoints.up('md'));
-  const [startOpen, setStartOpen] = useState(false);
-  const [endOpen, setEndOpen] = useState(false);
+function DateRangeSel({ startDate, endDate, setStartDate, setEndDate }) {
+  const theme = useTheme()
+  const showFullPicker = useMediaQuery(theme.breakpoints.up('md'))
+  const [startOpen, setStartOpen] = useState(false)
+  const [endOpen, setEndOpen] = useState(false)
 
   if (!showFullPicker) {
     return (
       <LocalizationProvider dateAdapter={AdapterLuxon}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1}}>
-          <Box sx={{ textAlign: 'center'}}>
-            <Typography variant='caption' sx={{fontSize: '0.7rem'}}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
               Start
             </Typography>
 
@@ -123,59 +114,59 @@ function DateRangeSel({
             />
 
             <Typography
-              variant='caption'
-              sx={{ fontSize: '0.65rem', display: 'block '}}
+              variant="caption"
+              sx={{ fontSize: '0.65rem', display: 'block ' }}
             >
               {startDate.toFormat('MM/dd')}
             </Typography>
           </Box>
 
-          <HorizontalRuleRoundedIcon sx={{ fontSize: 'small'}} />
+          <HorizontalRuleRoundedIcon sx={{ fontSize: 'small' }} />
 
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant='caption' sx={{fontSize: '0.7rem'}}>
+            <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
               End
             </Typography>
 
-              <DateTimePicker
-                value={endDate}
-                open={endOpen}
-                onOpen={() => setEndOpen(true)}
-                onClose={() => setEndOpen(false)}
-                onChange={setEndDate}
-                views={['year', 'month', 'day', 'hours']}
-                slots={{
-                  field: MobileDateField,
-                }}
-                slotProps={{
-                  field: {
-                    onOpen: () => setEndOpen(true),
-                    ariaLabel: 'Open end date picker',
-                  },
-                }}
-              />
+            <DateTimePicker
+              value={endDate}
+              open={endOpen}
+              onOpen={() => setEndOpen(true)}
+              onClose={() => setEndOpen(false)}
+              onChange={setEndDate}
+              views={['year', 'month', 'day', 'hours']}
+              slots={{
+                field: MobileDateField,
+              }}
+              slotProps={{
+                field: {
+                  onOpen: () => setEndOpen(true),
+                  ariaLabel: 'Open end date picker',
+                },
+              }}
+            />
 
-              <Typography
-                variant='caption'
-                sx={{ fontSize: '0.65rem', display: 'block' }}
-              >
-                {endDate.toFormat('MM/dd')}
-              </Typography>
+            <Typography
+              variant="caption"
+              sx={{ fontSize: '0.65rem', display: 'block' }}
+            >
+              {endDate.toFormat('MM/dd')}
+            </Typography>
           </Box>
         </Box>
       </LocalizationProvider>
-    );
+    )
   }
 
   return (
     <LocalizationProvider dateAdapter={AdapterLuxon}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2}}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <DateTimePickerWithAccept
-          label='Start Date'
+          label="Start Date"
           value={startDate}
           onAccept={setStartDate}
           views={['year', 'month', 'day', 'hours']}
-          format='MM/dd HH:mm'
+          format="MM/dd HH:mm"
           slotProps={{
             textField: {
               size: 'small',
@@ -192,17 +183,17 @@ function DateRangeSel({
         <HorizontalRuleRoundedIcon />
 
         <DateTimePickerWithAccept
-          label='End Date'
+          label="End Date"
           value={endDate}
           onAccept={setEndDate}
           views={['year', 'month', 'day', 'hours']}
-          format='MM/dd HH:mm'
+          format="MM/dd HH:mm"
           slotProps={{
             textField: {
               size: 'small',
               sx: {
                 width: '160px',
-                '& .MuiInputBase-input' : {
+                '& .MuiInputBase-input': {
                   fontSize: '0.875rem',
                 },
               },
@@ -211,14 +202,14 @@ function DateRangeSel({
         />
       </Box>
     </LocalizationProvider>
-  );
+  )
 }
 
-DateRangeSel.propTypes ={
+DateRangeSel.propTypes = {
   startDate: PropTypes.any,
   endDate: PropTypes.any,
   setStartDate: PropTypes.func.isRequired,
   setEndDate: PropTypes.func.isRequired,
-};
+}
 
-export default DateRangeSel;
+export default DateRangeSel

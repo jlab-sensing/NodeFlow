@@ -1,7 +1,10 @@
-import { Box, Typography } from '@mui/material';
-import PropTypes from 'prop-types';
+import { Box, Typography } from '@mui/material'
+import PropTypes from 'prop-types'
 
-function ChartPanelPlaceholder({ message = 'No data for the selected sensors or date range.', loading = false }) {
+function ChartPanelPlaceholder({
+  message = 'No data for the selected sensors or date range.',
+  loading = false,
+}) {
   return (
     <Box
       sx={{
@@ -16,16 +19,16 @@ function ChartPanelPlaceholder({ message = 'No data for the selected sensors or 
         textAlign: 'center',
       }}
     >
-      <Typography variant='body2' color='text.secondary'>
+      <Typography variant="body2" color="text.secondary">
         {loading ? 'Loading chart...' : message}
       </Typography>
     </Box>
-  );
+  )
 }
 
 ChartPanelPlaceholder.propTypes = {
   message: PropTypes.string,
   loading: PropTypes.bool,
-};
+}
 
-export default ChartPanelPlaceholder;
+export default ChartPanelPlaceholder

@@ -1,55 +1,55 @@
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { Box, Button, IconButton, Modal, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { deleteLogger } from '../../../services/logger';
-import PropTypes from 'prop-types';
-import useAuth from '../../../auth/hooks/useAuth';
+import CloseIcon from '@mui/icons-material/Close'
+import DeleteIcon from '@mui/icons-material/Delete'
+import { Box, Button, IconButton, Modal, Typography } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import { deleteLogger } from '../../../services/logger'
+import PropTypes from 'prop-types'
+import useAuth from '../../../auth/hooks/useAuth'
 
 function DeleteLoggerModal({ id }) {
-  let data = useOutletContext();
-  const refetch = data[9]; // Logger refetch function from outlet context
-  const user = data[4];
-  const { auth } = useAuth();
+  let data = useOutletContext()
+  const refetch = data[9] // Logger refetch function from outlet context
+  const user = data[4]
+  const { auth } = useAuth()
 
-  const [isOpen, setOpen] = useState(false);
-  const [response, setResponse] = useState(null);
-  const [loggerId, setLoggerId] = useState('');
+  const [isOpen, setOpen] = useState(false)
+  const [response, setResponse] = useState(null)
+  const [loggerId, setLoggerId] = useState('')
 
   const handleOpen = () => {
     if (id != '') {
-      setOpen(true);
-      setLoggerId(id);
+      setOpen(true)
+      setLoggerId(id)
     }
-    setResponse(null);
-  };
+    setResponse(null)
+  }
 
   const handleClose = () => {
-    setOpen(false);
-    setResponse(null);
-    setLoggerId('');
-  };
+    setOpen(false)
+    setResponse(null)
+    setLoggerId('')
+  }
 
   useEffect(() => {
-    console.log(response);
-  }, [response]);
+    console.log(response)
+  }, [response])
 
   if (!user) {
-    return <></>;
+    return <></>
   }
 
   return (
     <>
-      <Button sx={{ color: 'black' }} key='delete' onClick={handleOpen}>
+      <Button sx={{ color: 'black' }} key="delete" onClick={handleOpen}>
         <DeleteIcon />
       </Button>
 
       <Modal
         open={isOpen}
         onClose={handleClose}
-        aria-labelledby='modal-modal-title'
-        aria-describedby='modal-modal-description'
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
       >
         <Box
           sx={{
@@ -68,42 +68,44 @@ function DeleteLoggerModal({ id }) {
           {!response ? (
             <>
               {/* Header Section */}
-              <Box sx={{ 
-                backgroundColor: '#d32f2f', 
-                padding: '1.5rem 2rem',
-                position: 'relative',
-                mb: 0
-              }}>
+              <Box
+                sx={{
+                  backgroundColor: '#d32f2f',
+                  padding: '1.5rem 2rem',
+                  position: 'relative',
+                  mb: 0,
+                }}
+              >
                 <IconButton
-                  sx={{ 
-                    position: 'absolute', 
-                    top: '0.75rem', 
+                  sx={{
+                    position: 'absolute',
+                    top: '0.75rem',
                     right: '0.75rem',
                     color: 'white',
-                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                   }}
-                  aria-label='close'
-                  size='small'
+                  aria-label="close"
+                  size="small"
                   onClick={handleClose}
                 >
-                  <CloseIcon fontSize='small' />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
-                <Typography 
-                  variant='h5' 
-                  component='h2'
-                  sx={{ 
+                <Typography
+                  variant="h5"
+                  component="h2"
+                  sx={{
                     color: 'white',
                     fontWeight: 600,
-                    fontSize: '1.5rem'
+                    fontSize: '1.5rem',
                   }}
                 >
                   Delete Logger
                 </Typography>
-                <Typography 
-                  variant='body2' 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     color: 'rgba(255, 255, 255, 0.8)',
-                    mt: 0.5
+                    mt: 0.5,
                   }}
                 >
                   This action cannot be undone
@@ -112,50 +114,59 @@ function DeleteLoggerModal({ id }) {
 
               {/* Content Section */}
               <Box sx={{ padding: '2rem' }}>
-                <Typography variant='body1' sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}>
-                  Are you sure you want to delete this logger? All associated data and configurations will be permanently removed.
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}
+                >
+                  Are you sure you want to delete this logger? All associated
+                  data and configurations will be permanently removed.
                 </Typography>
 
                 {/* Action Buttons */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: '0.75rem', 
-                  justifyContent: 'flex-end',
-                  pt: '1.5rem',
-                  borderTop: '1px solid #f0f0f0'
-                }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: '0.75rem',
+                    justifyContent: 'flex-end',
+                    pt: '1.5rem',
+                    borderTop: '1px solid #f0f0f0',
+                  }}
+                >
                   <Button
-                    variant='outlined'
+                    variant="outlined"
                     onClick={handleClose}
                     sx={{
                       borderColor: '#ddd',
                       color: '#666',
                       '&:hover': {
                         borderColor: '#bbb',
-                        backgroundColor: '#f5f5f5'
-                      }
+                        backgroundColor: '#f5f5f5',
+                      },
                     }}
                   >
                     Cancel
                   </Button>
                   <Button
-                    variant='contained'
+                    variant="contained"
                     onClick={() => {
                       deleteLogger(loggerId, auth?.accessToken)
                         .then((res) => {
-                          setResponse(res);
-                          refetch();
+                          setResponse(res)
+                          refetch()
                         })
                         .catch((error) => {
-                          console.error('Delete failed:', error);
-                          setResponse({ error: true, message: 'Failed to delete logger' });
-                        });
+                          console.error('Delete failed:', error)
+                          setResponse({
+                            error: true,
+                            message: 'Failed to delete logger',
+                          })
+                        })
                     }}
                     sx={{
                       backgroundColor: '#d32f2f',
                       '&:hover': { backgroundColor: '#b71c1c' },
                       borderRadius: '8px',
-                      px: '1.5rem'
+                      px: '1.5rem',
                     }}
                   >
                     Delete Logger
@@ -168,19 +179,21 @@ function DeleteLoggerModal({ id }) {
               {response.error ? (
                 <>
                   {/* Error Header */}
-                  <Box sx={{ 
-                    backgroundColor: '#d32f2f', 
-                    padding: '1.5rem 2rem',
-                    position: 'relative',
-                    mb: 0
-                  }}>
-                    <Typography 
-                      variant='h5' 
-                      component='h2'
-                      sx={{ 
+                  <Box
+                    sx={{
+                      backgroundColor: '#d32f2f',
+                      padding: '1.5rem 2rem',
+                      position: 'relative',
+                      mb: 0,
+                    }}
+                  >
+                    <Typography
+                      variant="h5"
+                      component="h2"
+                      sx={{
                         color: 'white',
                         fontWeight: 600,
-                        fontSize: '1.5rem'
+                        fontSize: '1.5rem',
                       }}
                     >
                       Error Deleting Logger
@@ -189,18 +202,22 @@ function DeleteLoggerModal({ id }) {
 
                   {/* Error Content */}
                   <Box sx={{ padding: '2rem' }}>
-                    <Typography variant='body1' sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}>
-                      {response.message || 'An error occurred while deleting the logger.'}
+                    <Typography
+                      variant="body1"
+                      sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}
+                    >
+                      {response.message ||
+                        'An error occurred while deleting the logger.'}
                     </Typography>
-                    <Button 
-                      variant='contained'
+                    <Button
+                      variant="contained"
                       onClick={handleClose}
                       sx={{
                         backgroundColor: '#d32f2f',
                         '&:hover': { backgroundColor: '#b71c1c' },
                         borderRadius: '8px',
                         width: '100%',
-                        py: '0.75rem'
+                        py: '0.75rem',
                       }}
                     >
                       Close
@@ -210,28 +227,30 @@ function DeleteLoggerModal({ id }) {
               ) : (
                 <>
                   {/* Success Header */}
-                  <Box sx={{ 
-                    backgroundColor: '#2e7d32', 
-                    padding: '1.5rem 2rem',
-                    position: 'relative',
-                    mb: 0
-                  }}>
-                    <Typography 
-                      variant='h5' 
-                      component='h2'
-                      sx={{ 
+                  <Box
+                    sx={{
+                      backgroundColor: '#2e7d32',
+                      padding: '1.5rem 2rem',
+                      position: 'relative',
+                      mb: 0,
+                    }}
+                  >
+                    <Typography
+                      variant="h5"
+                      component="h2"
+                      sx={{
                         color: 'white',
                         fontWeight: 600,
-                        fontSize: '1.5rem'
+                        fontSize: '1.5rem',
                       }}
                     >
                       Logger Deleted Successfully!
                     </Typography>
-                    <Typography 
-                      variant='body2' 
-                      sx={{ 
+                    <Typography
+                      variant="body2"
+                      sx={{
                         color: 'rgba(255, 255, 255, 0.8)',
-                        mt: 0.5
+                        mt: 0.5,
                       }}
                     >
                       The logger has been removed from your system
@@ -241,7 +260,7 @@ function DeleteLoggerModal({ id }) {
                   {/* Success Content */}
                   <Box sx={{ padding: '2rem' }}>
                     <Button
-                      variant='contained'
+                      variant="contained"
                       onClick={handleClose}
                       sx={{
                         backgroundColor: '#2e7d32',
@@ -263,11 +282,11 @@ function DeleteLoggerModal({ id }) {
         </Box>
       </Modal>
     </>
-  );
+  )
 }
 
 DeleteLoggerModal.propTypes = {
   id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-};
+}
 
-export default DeleteLoggerModal;
+export default DeleteLoggerModal

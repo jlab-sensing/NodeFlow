@@ -1,31 +1,31 @@
-import { Box, Typography } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import { useOutletContext } from 'react-router-dom';
-import AddCellModal from './AddCellModal';
-import DeleteCellModal from './DeleteCellModal';
-import EditCellModal from './EditCellModal';
-import { useState } from 'react';
-import ShareButton from './ShareButton';
+import { Box, Typography } from '@mui/material'
+import { DataGrid } from '@mui/x-data-grid'
+import { useOutletContext } from 'react-router-dom'
+import AddCellModal from './AddCellModal'
+import DeleteCellModal from './DeleteCellModal'
+import EditCellModal from './EditCellModal'
+import { useState } from 'react'
+import ShareButton from './ShareButton'
 
 function CellsList() {
-  let data = useOutletContext();
-  const isLoading = data[1];
-  const isError = data[2];
-  const user = data[4];
-  data = data[0];
-  const [selectedRowsId, setSelectedRowsId] = useState([]);
+  let data = useOutletContext()
+  const isLoading = data[1]
+  const isError = data[2]
+  const user = data[4]
+  data = data[0]
+  const [selectedRowsId, setSelectedRowsId] = useState([])
 
   if (!user) {
-    return <></>;
+    return <></>
   }
   if (data === null) {
-    return;
+    return
   }
   if (isLoading) {
-    return <Typography>Loading...</Typography>;
+    return <Typography>Loading...</Typography>
   }
   if (isError) {
-    return <Typography>Error loading cells.</Typography>;
+    return <Typography>Error loading cells.</Typography>
   }
 
   const columns = [
@@ -43,9 +43,9 @@ function CellsList() {
       disableColumnMenu: true,
       renderCell: (params) => <EditCellModal cell={params.row} />, // edit button in new column
     },
-  ];
+  ]
 
-  let rows = [];
+  let rows = []
   if (data.map) {
     rows = data.map((cell) => ({
       id: cell.id,
@@ -54,12 +54,12 @@ function CellsList() {
       lat: cell.latitude,
       long: cell.longitude,
       archive: cell.archive,
-    }));
+    }))
   }
 
   const handleRowSelection = (newSelection) => {
-    setSelectedRowsId(newSelection);
-  };
+    setSelectedRowsId(newSelection)
+  }
 
   return (
     <Box
@@ -87,7 +87,7 @@ function CellsList() {
         }}
       >
         <Typography
-          variant='h5'
+          variant="h5"
           sx={{
             textAlign: { xs: 'left', sm: 'center' },
             color: '#1E3A5F',
@@ -135,7 +135,7 @@ function CellsList() {
         />
       </Box>
     </Box>
-  );
+  )
 }
 
-export default CellsList;
+export default CellsList

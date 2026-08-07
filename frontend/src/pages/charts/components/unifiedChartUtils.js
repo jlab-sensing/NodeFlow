@@ -1,25 +1,27 @@
-import { toPercentIfFraction } from '../../../charts/VwcChart/vwcValue';
+import { toPercentIfFraction } from '../../../charts/VwcChart/vwcValue'
 
 function normalize(value) {
-  return String(value || '').toLowerCase();
+  return String(value || '').toLowerCase()
 }
 
 export function measurementMatches(sensorMeasurement, configMeasurements) {
-  if (!sensorMeasurement || !Array.isArray(configMeasurements)) return false;
-  const normalized = sensorMeasurement.toLowerCase();
-  return configMeasurements.some((measurement) => measurement.toLowerCase() === normalized);
+  if (!sensorMeasurement || !Array.isArray(configMeasurements)) return false
+  const normalized = sensorMeasurement.toLowerCase()
+  return configMeasurements.some(
+    (measurement) => measurement.toLowerCase() === normalized,
+  )
 }
 
 export function matchesSensorStreamType(measurementType, sensorName) {
-  const measurement = normalize(measurementType);
-  const sensor = normalize(sensorName);
+  const measurement = normalize(measurementType)
+  const sensor = normalize(sensorName)
 
-  if (!measurement || !sensor) return false;
-  if (measurement === sensor) return true;
+  if (!measurement || !sensor) return false
+  if (measurement === sensor) return true
 
-  if (sensor.startsWith('power_')) return measurement === 'power';
-  if (sensor.startsWith('teros12_')) return measurement === 'teros12';
-  return false;
+  if (sensor.startsWith('power_')) return measurement === 'power'
+  if (sensor.startsWith('teros12_')) return measurement === 'teros12'
+  return false
 }
 
 const VALUE_ALIASES = {
@@ -43,24 +45,35 @@ const VALUE_ALIASES = {
   sen0257: ['pressure'],
   D10: ['flow'],
   yfs210c: ['flow'],
-};
+}
 
-export function extractUnifiedStreamValue(sensorName, measurementLabel, measurementData) {
-  if (!measurementData || typeof measurementData !== 'object') return null;
+export function extractUnifiedStreamValue(
+  sensorName,
+  measurementLabel,
+  measurementData,
+) {
+  if (!measurementData || typeof measurementData !== 'object') return null
 
-  const aliases = [measurementLabel, ...(VALUE_ALIASES[sensorName] || [])];
+  const aliases = [measurementLabel, ...(VALUE_ALIASES[sensorName] || [])]
 
   for (const key of aliases) {
     if (Object.prototype.hasOwnProperty.call(measurementData, key)) {
-      return measurementData[key];
+      return measurementData[key]
     }
   }
-  return null;
+  return null
 }
 
-export function normalizeUnifiedStreamValue(sensorName, measurementLabel, value) {
-  if (sensorName === 'TEROS12_VWC_ADJ' && measurementLabel === 'Volumetric Water Content') {
-    return toPercentIfFraction(value);
+export function normalizeUnifiedStreamValue(
+  sensorName,
+  measurementLabel,
+  value,
+) {
+  if (
+    sensorName === 'TEROS12_VWC_ADJ' &&
+    measurementLabel === 'Volumetric Water Content'
+  ) {
+    return toPercentIfFraction(value)
   }
-  return value;
+  return value
 }

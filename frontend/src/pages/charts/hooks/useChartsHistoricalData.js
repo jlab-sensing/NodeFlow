@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { fetchChartsSensorData } from '../catalog/historicalDataLoader';
+import { useEffect, useMemo, useState } from 'react'
+import { fetchChartsSensorData } from '../catalog/historicalDataLoader'
 
-const EMPTY = {};
+const EMPTY = {}
 
 /**
  * Central UUID-keyed historical loader for every measurement-based panel.
@@ -17,19 +17,25 @@ export function useChartsHistoricalData({
   resample = 'hour',
   enabled = true,
 }) {
-  const [historicalSensorByKey, setHistoricalSensorByKey] = useState(EMPTY);
-  const [historicalLoading, setHistoricalLoading] = useState(false);
+  const [historicalSensorByKey, setHistoricalSensorByKey] = useState(EMPTY)
+  const [historicalLoading, setHistoricalLoading] = useState(false)
 
-  const panelOrderKey = useMemo(() => panelOrder.join(','), [panelOrder]);
+  const panelOrderKey = useMemo(() => panelOrder.join(','), [panelOrder])
   const rangeKey = useMemo(
     () => `${startDate.toISO()}|${endDate.toISO()}`,
     [startDate, endDate],
-  );
+  )
   const sensorInputsKey = useMemo(
     () =>
       JSON.stringify(
         sensors.map(
-          ({ uuid, name, has_chart_data: hasChartData, measurements, panel_ids: panelIds }) => ({
+          ({
+            uuid,
+            name,
+            has_chart_data: hasChartData,
+            measurements,
+            panel_ids: panelIds,
+          }) => ({
             uuid,
             name,
             hasChartData,
@@ -39,11 +45,17 @@ export function useChartsHistoricalData({
         ),
       ),
     [sensors],
-  );
+  )
   const sensorSnapshot = useMemo(
     () =>
       sensors.map(
-        ({ uuid, name, has_chart_data: hasChartData, measurements, panel_ids: panelIds }) => ({
+        ({
+          uuid,
+          name,
+          has_chart_data: hasChartData,
+          measurements,
+          panel_ids: panelIds,
+        }) => ({
           uuid,
           name,
           has_chart_data: hasChartData,
@@ -52,20 +64,20 @@ export function useChartsHistoricalData({
         }),
       ),
     [sensors],
-  );
-  const panelOrderSnapshot = useMemo(() => [...panelOrder], [panelOrder]);
+  )
+  const panelOrderSnapshot = useMemo(() => [...panelOrder], [panelOrder])
 
   useEffect(() => {
     if (!enabled || sensors.length === 0 || !panelOrderKey) {
       // Reset the UUID-keyed cache when historical requests are inactive.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setHistoricalLoading(false);
-      setHistoricalSensorByKey(EMPTY);
-      return undefined;
+      setHistoricalLoading(false)
+      setHistoricalSensorByKey(EMPTY)
+      return undefined
     }
 
-    let cancelled = false;
-    setHistoricalLoading(true);
+    let cancelled = false
+    setHistoricalLoading(true)
     fetchChartsSensorData({
       axiosPrivate,
       sensors: sensorSnapshot,
@@ -75,20 +87,20 @@ export function useChartsHistoricalData({
       resample,
     })
       .then(({ historicalSensorByKey: nextCache }) => {
-        if (!cancelled) setHistoricalSensorByKey(nextCache);
+        if (!cancelled) setHistoricalSensorByKey(nextCache)
       })
       .catch((error) => {
-        if (cancelled) return;
-        console.error('Chart sensor historical load failed:', error);
-        setHistoricalSensorByKey(EMPTY);
+        if (cancelled) return
+        console.error('Chart sensor historical load failed:', error)
+        setHistoricalSensorByKey(EMPTY)
       })
       .finally(() => {
-        if (!cancelled) setHistoricalLoading(false);
-      });
+        if (!cancelled) setHistoricalLoading(false)
+      })
 
     return () => {
-      cancelled = true;
-    };
+      cancelled = true
+    }
   }, [
     enabled,
     sensors.length,
@@ -101,7 +113,7 @@ export function useChartsHistoricalData({
     panelOrderSnapshot,
     startDate,
     endDate,
-  ]);
+  ])
 
-  return { historicalSensorByKey, historicalLoading };
+  return { historicalSensorByKey, historicalLoading }
 }

@@ -1,34 +1,34 @@
-import axios from '../api/axios';
+import axios from '../api/axios'
 
 export const signIn = async () => {
   try {
     // Gets authentication url from backend server
     const {
       data: { url },
-    } = await axios.get('/api/oauth/url');
+    } = await axios.get('/api/oauth/url')
     // Navigate to consent screen
-    window.location.assign(url);
+    window.location.assign(url)
   } catch (err) {
-    console.error(err);
+    console.error(err)
   }
-};
+}
 
 export const logout = async () => {
   try {
     // Clear localStorage
-    localStorage.removeItem('auth');
-    localStorage.removeItem('loggedIn');
-    localStorage.removeItem('user');
+    localStorage.removeItem('auth')
+    localStorage.removeItem('loggedIn')
+    localStorage.removeItem('user')
 
     // Gets authentication url from backend server
     await axios.get('/api/auth/logout', {
       withCredentials: true,
-    });
+    })
     // Navigate to landing
-    window.location.assign('/');
+    window.location.assign('/')
   } catch (err) {
-    console.error(err);
+    console.error(err)
     // Even if the logout request fails, still clear local storage and redirect
-    window.location.assign('/');
+    window.location.assign('/')
   }
-};
+}

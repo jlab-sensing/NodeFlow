@@ -9,7 +9,7 @@ class SensorTable(SQLModel, table=True):
     uuid: UUID = Field(default_factory=uuid4, index=True)
     user_id: UUID = Field(index=True)
     name: str
-    legacy_cell_id: Optional[int] = None
+    legacy_cell_id: Optional[int] = Field(default=None, index=True)
     sensor_type: str 
     sensor_id: int
     logger_id: int

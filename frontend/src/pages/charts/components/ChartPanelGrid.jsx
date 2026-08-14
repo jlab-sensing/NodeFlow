@@ -25,6 +25,7 @@ function ChartPanelContent({ panelId, chartProps }) {
     axiosPrivate: chartProps.axiosPrivate,
     startDate: chartProps.startDate,
     endDate: chartProps.endDate,
+    modeResample: chartProps.modeResample,
     historicalSensorByKey: chartProps.historicalSensorByKey,
     historicalLoading: chartProps.historicalLoading,
   }
@@ -38,6 +39,7 @@ function ChartPanelContent({ panelId, chartProps }) {
         axiosPrivate={chartProps.axiosPrivate}
         startDate={chartProps.startDate}
         endDate={chartProps.endDate}
+        modeResample={chartProps.modeResample}
         historicalSensorByKey={chartProps.historicalSensorByKey}
         centralHistoricalActive={chartProps.centralHistoricalActive?.sensors}
         historicalLoading={chartProps.historicalLoading}
@@ -148,7 +150,7 @@ export default function ChartPanelGrid({
     () =>
       panelOrder.map((panelId) => (
         <SortableChartPagePanel
-          key={panelId}
+          key={`${panelId}:${chartProps.modeResample ?? 'hour'}`}
           panelId={panelId}
           chartProps={chartProps}
           onRemovePanel={onRemovePanel}
@@ -199,6 +201,7 @@ ChartPanelGrid.propTypes = {
     axiosPrivate: PropTypes.func,
     startDate: PropTypes.any,
     endDate: PropTypes.any,
+    modeResample: PropTypes.oneOf(['none', 'hour']),
     historicalSensorByKey: PropTypes.object,
     historicalLoading: PropTypes.bool,
     centralHistoricalActive: PropTypes.shape({

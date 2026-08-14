@@ -34,12 +34,13 @@ function UnifiedChart({
   axiosPrivate,
   startDate,
   endDate,
+  modeResample = 'hour',
   onDataStatusChange,
   historicalSensorByKey,
   centralHistoricalActive = false,
   historicalLoading = false,
 }) {
-  const [resample, setResample] = useState('hour')
+  const [resample, setResample] = useState(modeResample)
   const chartSettings = {
     labels: [],
     datasets: [],
@@ -48,6 +49,7 @@ function UnifiedChart({
   const [isLoading, setIsLoading] = useState(true)
   const debounceTimer = useRef(null)
   const fetchGenerationRef = useRef(0)
+  const hasLoadedDataRef = useRef(false)
   const config = CHART_CONFIGS[type]
   const { sensor_name, measurements, units, axisIds, chartId, axisPolicy } =
     config || {}
@@ -143,12 +145,12 @@ function UnifiedChart({
 
   function updateCharts() {
     if (centralHistoricalActive && resample === 'hour' && historicalLoading) {
-      setIsLoading(true)
+      if (!hasLoadedDataRef.current) setIsLoading(true)
       return
     }
 
     const fetchGeneration = ++fetchGenerationRef.current
-    setIsLoading(true)
+    if (!hasLoadedDataRef.current) setIsLoading(true)
     getSelectedSensorChartData()
       .then((sensorDataById) => {
         if (fetchGeneration !== fetchGenerationRef.current) return
@@ -198,8 +200,9 @@ function UnifiedChart({
           selectCounter += 1
         }
         if (fetchGeneration !== fetchGenerationRef.current) return
+        hasLoadedDataRef.current = newSensorChartData.datasets.length > 0
         setSensorChartData(newSensorChartData)
-        setIsLoading(false)
+        if (!hasLoadedDataRef.current) setIsLoading(false)
       })
       .catch((error) => {
         if (fetchGeneration !== fetchGenerationRef.current) return
@@ -215,6 +218,7 @@ function UnifiedChart({
       datasets: [],
     }
     setSensorChartData(Object.assign({}, newSensorChartData))
+    hasLoadedDataRef.current = false
     setIsLoading(false)
   }
 
@@ -301,6 +305,7 @@ UnifiedChart.propTypes = {
   axiosPrivate: PropTypes.func.isRequired,
   startDate: PropTypes.any,
   endDate: PropTypes.any,
+  modeResample: PropTypes.oneOf(['none', 'hour']),
   onDataStatusChange: PropTypes.func,
   historicalSensorByKey: PropTypes.object,
   centralHistoricalActive: PropTypes.bool,

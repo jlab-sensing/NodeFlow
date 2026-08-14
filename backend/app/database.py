@@ -14,17 +14,13 @@ def get_database_url() -> str:
     user = quote_plus(os.getenv("DB_USER", "nodeflow"))
     password = quote_plus(os.getenv("DB_PASS", "nf_password"))
     host = os.getenv("DB_HOST", "postgresql")
-    port = os.getenv("DB_PORT", "5433")
+    port = os.getenv("DB_PORT", "5432")
     database = os.getenv("DB_DATABASE", "nodeflow")
 
     return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
 
 
 engine = create_engine(get_database_url())
-
-def create_db_and_tables():
-    """Initializes the database and creates tables based on schemas."""
-    SQLModel.metadata.create_all(engine)
 
 def get_session() -> Generator:
     """Dependency to provide a database session to routers."""

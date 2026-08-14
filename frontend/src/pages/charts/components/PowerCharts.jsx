@@ -40,15 +40,17 @@ function PowerCharts({
   axiosPrivate,
   startDate,
   endDate,
+  modeResample = 'hour',
   onDataStatusChange,
   variant = 'both',
 }) {
-  const [resample, setResample] = useState('hour')
+  const [resample, setResample] = useState(modeResample)
   const [vChartData, setVChartData] = useState({ labels: [], datasets: [] })
   const [pwrChartData, setPwrChartData] = useState({ labels: [], datasets: [] })
   const [hasData, setHasData] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const fetchGenerationRef = useRef(0)
+  const hasLoadedDataRef = useRef(false)
 
   const powerSources = selectedPowerSources(sensors)
 
@@ -111,23 +113,23 @@ function PowerCharts({
 
     setVChartData(newVChartData)
     setPwrChartData(newPwrChartData)
-    setHasData(
+    const nextHasData =
       variant === 'voltage'
         ? newVChartData.datasets.length > 0
         : variant === 'power'
           ? newPwrChartData.datasets.length > 0
           : newVChartData.datasets.length > 0 ||
-            newPwrChartData.datasets.length > 0,
-    )
+            newPwrChartData.datasets.length > 0
+    hasLoadedDataRef.current = nextHasData
+    setHasData(nextHasData)
   }
 
   useEffect(() => {
     if (powerSources.length === 0) return undefined
 
     const generation = ++fetchGenerationRef.current
-    // This effect owns the asynchronous historical request lifecycle.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsLoading(true)
+    // This effect owns the asynchronous chart request lifecycle.
+    if (!hasLoadedDataRef.current) setIsLoading(true)
     Promise.all(
       powerSources.map(async (sensor) => {
         const powerData = await getSensorPowerChartData(
@@ -147,7 +149,7 @@ function PowerCharts({
       .catch((error) => {
         if (generation !== fetchGenerationRef.current) return
         console.error('Error updating power charts:', error)
-        setHasData(false)
+        if (!hasLoadedDataRef.current) setHasData(false)
       })
       .finally(() => {
         if (generation === fetchGenerationRef.current) setIsLoading(false)
@@ -165,6 +167,7 @@ function PowerCharts({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVChartData({ labels: [], datasets: [] })
       setPwrChartData({ labels: [], datasets: [] })
+      hasLoadedDataRef.current = false
       setHasData(false)
       setIsLoading(false)
     }
@@ -222,6 +225,7 @@ PowerCharts.propTypes = {
   axiosPrivate: PropTypes.func.isRequired,
   startDate: PropTypes.any,
   endDate: PropTypes.any,
+  modeResample: PropTypes.oneOf(['none', 'hour']),
   onDataStatusChange: PropTypes.func,
   variant: PropTypes.oneOf(['both', 'voltage', 'power']),
 }

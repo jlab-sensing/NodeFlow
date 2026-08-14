@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager, suppress
 import asyncio
 import os
 
-from app.database import create_db_and_tables
 from app.routers.solenoid import router as solenoid_router
 from app.routers.sensor import router as sensor_router
 from app.routers.logger import router as logger_router
@@ -25,7 +24,6 @@ from app.routers.chart_data import router as chart_data_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
     activation_task = asyncio.create_task(run_activation_loop())
     reading_collection_task = asyncio.create_task(
         run_sensor_reading_collection_loop()

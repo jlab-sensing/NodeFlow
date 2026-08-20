@@ -76,7 +76,11 @@ function AddChartModal({
                   <ListItemText
                     primary={entry.label}
                     secondary={entry.description}
-                    primaryTypographyProps={{ fontWeight: 600 }}
+                    slotProps={{
+                      primary: {
+                        fontWeight: 600,
+                      },
+                    }}
                   />
                   <Chip
                     size="small"

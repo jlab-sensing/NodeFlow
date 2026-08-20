@@ -51,12 +51,13 @@ function TerosCharts({
   axiosPrivate,
   startDate,
   endDate,
+  modeResample = 'hour',
   onDataStatusChange,
   variant = 'both',
   historicalSensorByKey,
   historicalLoading = false,
 }) {
-  const [resample, setResample] = useState('hour')
+  const [resample, setResample] = useState(modeResample)
   const [vwcChartData, setVwcChartData] = useState({ labels: [], datasets: [] })
   const [tempChartData, setTempChartData] = useState({
     labels: [],
@@ -65,6 +66,7 @@ function TerosCharts({
   const [hasData, setHasData] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const fetchGenerationRef = useRef(0)
+  const hasLoadedDataRef = useRef(false)
 
   const terosSensors = sensors.filter(sensorSupportsTerosPanel)
 
@@ -177,14 +179,15 @@ function TerosCharts({
 
     setVwcChartData(newVwcChartData)
     setTempChartData(newTempChartData)
-    setHasData(
+    const nextHasData =
       variant === 'vwc'
         ? newVwcChartData.datasets.length > 0
         : variant === 'temp'
           ? newTempChartData.datasets.length > 0
           : newVwcChartData.datasets.length > 0 ||
-            newTempChartData.datasets.length > 0,
-    )
+            newTempChartData.datasets.length > 0
+    hasLoadedDataRef.current = nextHasData
+    setHasData(nextHasData)
   }
 
   useEffect(() => {
@@ -197,7 +200,7 @@ function TerosCharts({
     }
 
     const generation = ++fetchGenerationRef.current
-    setIsLoading(true)
+    if (!hasLoadedDataRef.current) setIsLoading(true)
     getTerosChartData(terosSensors)
       .then((sensorDataById) => {
         if (generation !== fetchGenerationRef.current) return
@@ -206,7 +209,7 @@ function TerosCharts({
       .catch((error) => {
         if (generation !== fetchGenerationRef.current) return
         console.error('Error updating TEROS charts:', error)
-        setHasData(false)
+        if (!hasLoadedDataRef.current) setHasData(false)
       })
       .finally(() => {
         if (generation === fetchGenerationRef.current) setIsLoading(false)
@@ -232,6 +235,7 @@ function TerosCharts({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVwcChartData({ labels: [], datasets: [] })
       setTempChartData({ labels: [], datasets: [] })
+      hasLoadedDataRef.current = false
       setHasData(false)
       setIsLoading(false)
     }
@@ -292,6 +296,7 @@ TerosCharts.propTypes = {
   axiosPrivate: PropTypes.func.isRequired,
   startDate: PropTypes.any,
   endDate: PropTypes.any,
+  modeResample: PropTypes.oneOf(['none', 'hour']),
   onDataStatusChange: PropTypes.func,
   variant: PropTypes.oneOf(['both', 'vwc', 'temp']),
   historicalSensorByKey: PropTypes.object,

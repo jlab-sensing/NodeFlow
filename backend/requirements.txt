@@ -1,3 +1,4 @@
+alembic==1.18.5
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
@@ -47,3 +48,5 @@ urllib3==2.7.0
 uvicorn==0.46.0
 watchfiles==1.1.1
 websockets==16.0
+python-socketio==5.16.3
+ents==2.3.11

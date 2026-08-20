@@ -32,9 +32,12 @@ import ChartPanelActions from './components/ChartPanelActions'
 import ChartPanelGrid from './components/ChartPanelGrid'
 import DateRangeSel from './components/DateRangeSel'
 import GroupSensorSelect from './components/GroupSensorSelect'
+import StreamToggle from './components/StreamToggle'
 import { useChartsHistoricalData } from './hooks/useChartsHistoricalData'
+import { useSensorSocket } from '../../realtime_sensors/useSensorSocket'
 
 const CATALOG_PANEL_ORDER = FULL_CATALOG.map((entry) => entry.panelId)
+const LIVE_WINDOW_MINUTES = 30
 
 function Charts() {
   const axiosPrivate = useAxiosPrivate()
@@ -53,13 +56,17 @@ function Charts() {
   const [historicalDatesReady, setHistoricalDatesReady] = useState(false)
   const [manualDateSelection, setManualDateSelection] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isLive, setIsLive] = useState(false)
+  const [liveEndDate, setLiveEndDate] = useState(DateTime.now())
   const smartDateRangeAppliedRef = useRef(false)
   const cancelSmartDateRef = useRef(null)
+  const liveRefreshTimerRef = useRef(null)
 
   const {
     data: chartSources,
     isLoading: chartSourcesLoading,
     isError: chartSourcesError,
+    refetch: refetchChartSources,
   } = useChartSources(axiosPrivate)
   const groups = useMemo(() => chartSources?.groups ?? [], [chartSources])
   const allSensors = useMemo(() => chartSources?.sensors ?? [], [chartSources])
@@ -76,6 +83,11 @@ function Charts() {
     () => panelOrder.filter((panelId) => availablePanelIds.has(panelId)),
     [panelOrder, availablePanelIds],
   )
+  const chartStartDate = isLive
+    ? liveEndDate.minus({ minutes: LIVE_WINDOW_MINUTES })
+    : startDate
+  const chartEndDate = isLive ? liveEndDate : endDate
+  const chartResample = isLive ? 'none' : 'hour'
 
   const layoutParam = searchParams.get('layout')
   const parsedUrlLayout = useMemo(
@@ -96,31 +108,37 @@ function Charts() {
     axiosPrivate,
     sensors: selectedSensors,
     panelOrder: panelOrderForFetch,
-    startDate,
-    endDate,
-    enabled: historicalDatesReady && selectedSensors.length > 0,
+    startDate: chartStartDate,
+    endDate: chartEndDate,
+    resample: chartResample,
+    enabled: !isLive && historicalDatesReady && selectedSensors.length > 0,
   })
 
   const panelChartProps = useMemo(
     () => ({
       sensors: selectedSensors,
       axiosPrivate,
-      startDate,
-      endDate,
+      startDate: chartStartDate,
+      endDate: chartEndDate,
+      modeResample: chartResample,
       historicalSensorByKey,
       historicalLoading,
       centralHistoricalActive: {
-        sensors: panelOrderForFetch.some((panelId) => panelId.startsWith('u:')),
+        sensors:
+          !isLive &&
+          panelOrderForFetch.some((panelId) => panelId.startsWith('u:')),
       },
     }),
     [
       selectedSensors,
       axiosPrivate,
-      startDate,
-      endDate,
+      chartStartDate,
+      chartEndDate,
+      chartResample,
       historicalSensorByKey,
       historicalLoading,
       panelOrderForFetch,
+      isLive,
     ],
   )
 
@@ -131,6 +149,13 @@ function Charts() {
       setPanelOrder(parsedUrlLayout)
     }
   }, [parsedUrlLayout])
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(liveRefreshTimerRef.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     if (selectedSensors.length === 0 || hasUrlLayout) return
@@ -270,6 +295,31 @@ function Charts() {
     },
     [manualDateSelection],
   )
+  const handleSensorCreated = useCallback(() => {
+    refetchChartSources?.()
+  }, [refetchChartSources])
+
+  const handleLiveMeasurement = useCallback(
+    (measurement) => {
+      if (!selectedSensorIds.includes(measurement.sensorUuid)) {
+        return
+      }
+
+      window.clearTimeout(liveRefreshTimerRef.current)
+
+      liveRefreshTimerRef.current = window.setTimeout(() => {
+        setLiveEndDate(DateTime.now())
+      }, 150)
+    },
+    [selectedSensorIds],
+  )
+
+  useSensorSocket({
+    enabled: isLive,
+    sensorUuids: selectedSensorIds,
+    onMeasurement: handleLiveMeasurement,
+    onSensorCreated: handleSensorCreated,
+  })
 
   const handleStartDateChange = (nextStartDate) => {
     setStartDate(nextStartDate)
@@ -283,6 +333,11 @@ function Charts() {
     setManualDateSelection(true)
     setHistoricalDatesReady(true)
     smartDateRangeAppliedRef.current = true
+  }
+
+  const handleStreamToggle = (nextIsLive) => {
+    if (nextIsLive) setLiveEndDate(DateTime.now())
+    setIsLive(nextIsLive)
   }
 
   const handleAddPanel = useCallback((panelId) => {
@@ -316,6 +371,22 @@ function Charts() {
       setEndDate={handleEndDateChange}
     />
   )
+  const liveIndicator = (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Box
+        aria-hidden="true"
+        sx={{
+          width: 10,
+          height: 10,
+          borderRadius: '50%',
+          bgcolor: 'error.main',
+        }}
+      />
+      <Typography variant="body2" fontWeight={600}>
+        Live · raw logger readings · last {LIVE_WINDOW_MINUTES} minutes
+      </Typography>
+    </Stack>
+  )
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -344,7 +415,13 @@ function Charts() {
                   <BackBtn />
                   <Box sx={{ flexGrow: 1 }}>{sensorSelector}</Box>
                 </Stack>
-                {dateSelector}
+                {isLive ? liveIndicator : dateSelector}
+                <Box sx={{ alignSelf: 'flex-end' }}>
+                  <StreamToggle
+                    isStreaming={isLive}
+                    onToggle={handleStreamToggle}
+                  />
+                </Box>
               </Stack>
             </Box>
           ) : (
@@ -356,7 +433,12 @@ function Charts() {
             >
               <BackBtn />
               <Box sx={{ flexGrow: 1, maxWidth: '30%' }}>{sensorSelector}</Box>
-              {dateSelector}
+              {isLive ? liveIndicator : dateSelector}
+              <Box sx={{ flexGrow: 1 }} />
+              <StreamToggle
+                isStreaming={isLive}
+                onToggle={handleStreamToggle}
+              />
             </Stack>
           )}
 

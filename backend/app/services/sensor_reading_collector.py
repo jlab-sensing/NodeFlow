@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlmodel import Session, select
 
 from app.database import engine
+from app.realtime_sensors import sio
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 from app.services.sensor_config import get_native_measurement_name
@@ -43,6 +44,8 @@ async def collect_test_sensor_readings() -> None:
     reading = await request_test_sensor("GET", "/reading")
     timestamp = parse_reading_timestamp(reading["timestamp"])
 
+    pending_events = []
+
     with Session(engine) as session:
         for sensor in sensors:
             measurement = get_native_measurement_name(
@@ -57,17 +60,47 @@ async def collect_test_sensor_readings() -> None:
                 )
                 continue
 
+            value = float(reading["value"])
             session.add(
                 SensorReadingTable(
                     sensor_uuid=sensor.uuid,
                     user_id=sensor.user_id,
                     measurement=measurement,
-                    value=float(reading["value"]),
+                    value=value,
                     unit=reading.get("unit"),
                     timestamp=timestamp,
                 )
             )
+            pending_events.append(
+                (
+                    f"sensor_{sensor.uuid}",
+                    {
+                        "type": sensor.sensor_type,
+                        "sensorUuid": str(sensor.uuid),
+                        "loggerId": sensor.logger_id,
+                        "timestamp": timestamp.timestamp(),
+                        "data": {reading["measurement"]: value},
+                        "obj_count": 1,
+                        "transport": "json",
+                    },
+                )
+            )
         session.commit()
+
+    for room, event in pending_events:
+        try:
+            await sio.emit(
+                "measurement_received",
+                event,
+                room=room,
+            )
+        except Exception:
+            # Readings are already committed; realtime failure must not cause
+            # the collector to duplicate or discard persisted data.
+            logger.exception(
+                "Failed to emit test sensor reading to %s",
+                room,
+            )
 
 
 async def run_sensor_reading_collection_loop() -> None:

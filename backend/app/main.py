@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager, suppress
 import asyncio
 import os
+import socketio
 
-from app.database import create_db_and_tables
+from app.realtime_sensors import sio
 from app.routers.solenoid import router as solenoid_router
 from app.routers.sensor import router as sensor_router
 from app.routers.logger import router as logger_router
@@ -17,15 +18,14 @@ from app.routers.apikey import router as apikey_router
 from app.auth.routes import router as auth_router
 from app.routers.test_solenoid import router as test_solenoid_router
 from app.services.activation_engine import run_activation_loop
-from app.services.sensor_reading_collector import (
-    run_sensor_reading_collection_loop,
-)
+from app.services.sensor_reading_collector import run_sensor_reading_collection_loop
+from app.routers.sensor_data import router as sensor_data_router
+
 from app.routers.chart_sources import router as chart_sources_router
 from app.routers.chart_data import router as chart_data_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
     activation_task = asyncio.create_task(run_activation_loop())
     reading_collection_task = asyncio.create_task(
         run_sensor_reading_collection_loop()
@@ -40,11 +40,18 @@ async def lifespan(app: FastAPI):
             with suppress(asyncio.CancelledError):
                 await task
 
-app = FastAPI(title="NodeFlow API", lifespan=lifespan)
+fastapi_app = FastAPI(title="NodeFlow API", lifespan=lifespan) #fastapi application
 
 # Allow frontend to communicate with backend
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3001").split(",")
-app.add_middleware(
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3001",
+    ).split(",")
+    if origin.strip()
+]
+fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
@@ -52,21 +59,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(solenoid_router)
-app.include_router(sensor_router)
-app.include_router(logger_router)
-app.include_router(groups_router)
-app.include_router(cell_router)
-app.include_router(data_availability_router)
-app.include_router(tag_router)
-app.include_router(user_router)
-app.include_router(apikey_router)
-app.include_router(auth_router)
-app.include_router(test_solenoid_router)
-app.include_router(chart_sources_router)
-app.include_router(chart_data_router)
+fastapi_app.include_router(solenoid_router)
+fastapi_app.include_router(sensor_router)
+fastapi_app.include_router(logger_router)
+fastapi_app.include_router(groups_router)
+fastapi_app.include_router(cell_router)
+fastapi_app.include_router(data_availability_router)
+fastapi_app.include_router(tag_router)
+fastapi_app.include_router(user_router)
+fastapi_app.include_router(apikey_router)
+fastapi_app.include_router(auth_router)
+fastapi_app.include_router(test_solenoid_router)
+fastapi_app.include_router(chart_sources_router)
+fastapi_app.include_router(chart_data_router)
+fastapi_app.include_router(sensor_data_router)
 
 
-@app.get("/")
+@fastapi_app.get("/")
 async def root():
     return {"message": "It's Working!!!"}
+
+app = socketio.ASGIApp(
+    sio,
+    other_asgi_app=fastapi_app,
+)

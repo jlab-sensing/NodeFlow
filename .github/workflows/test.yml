@@ -1,4 +1,4 @@
-name: Frontend CI
+name: NodeFlow CI
 
 on: 
     pull_request:
@@ -11,10 +11,45 @@ permissions:
   contents: read
 
 concurrency:
-  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  group: nodeflow-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
   
 jobs:
+  backend-test:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: nodeflow-ci
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build backend test container
+        run: docker compose --profile ci build backend-test
+
+      - name: Test backend
+        run: >-
+          docker compose --profile ci up
+          --abort-on-container-exit
+          --exit-code-from backend-test
+          backend-test
+
+      - name: Copy backend coverage report
+        run: docker compose --profile ci cp backend-test:/app/coverage.xml ./coverage.xml
+
+      - name: Upload backend coverage report to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: ./coverage.xml
+          flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Stop backend test containers
+        if: always()
+        run: docker compose --profile ci down --volumes
+
   frontend-quality:
     name: Frontend quality
     runs-on: ubuntu-latest

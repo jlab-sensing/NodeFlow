@@ -38,13 +38,13 @@ function ChartPanelActions({ onAddChart, panelColumns, onPanelColumnsChange }) {
       <Typography variant="body2" color="text.secondary">
         Hover a chart for ≡ to reorder · × removes a panel
       </Typography>
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Stack
           direction="row"
           spacing={0.5}
-          alignItems="center"
           role="group"
           aria-label="Panel column layout"
+          sx={{ alignItems: 'center' }}
         >
           <Tooltip title="Two columns" placement="bottom" disableInteractive>
             <Button

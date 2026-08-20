@@ -12,21 +12,36 @@ services:
       SOLENOID_TESTER_URL: http://solenoid-tester:8002
       SENSOR_TESTER_URL: http://sensor-tester:8003
     depends_on:
-      - postgresql
-      - sensor-tester
+      migrate: 
+        condition: service_completed_successfully
+      sensor-tester: 
+        condition: service_started
     volumes:
       - ./backend:/app
 
-  frontend:
+  backend-test:
+    profiles: ["ci"]
     build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      DATABASE_URL: postgresql+psycopg2://nodeflow:nf_password@postgresql-test:5432/nodeflow_test
+      TEST_DATABASE_URL: postgresql+psycopg2://nodeflow:nf_password@postgresql-test:5432/nodeflow_test
+    depends_on:
+      postgresql-test:
+        condition: service_healthy
+
+  frontend:
+    build: 
       context: ./frontend
       dockerfile: Dockerfile
     image: nodeflow-frontend
-    env_file:
+    env_file: 
       - ${ENV_FILE:-.env}
     ports:
       - "3001:81"
-    depends_on:
+    depends_on: 
       - backend
     tty: true
     volumes:
@@ -42,6 +57,26 @@ services:
       - "5433:5432"
     volumes:
       - postgresql-16-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nodeflow -d nodeflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  postgresql-test:
+    profiles: ["ci"]
+    image: postgres:16
+    environment:
+      POSTGRES_DB: nodeflow_test
+      POSTGRES_USER: nodeflow
+      POSTGRES_PASSWORD: nf_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nodeflow -d nodeflow_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
 
   pgadmin:
     image: dpage/pgadmin4
@@ -96,6 +131,22 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: nodeflow-backend
+    env_file:
+      - ${ENV_FILE:-.env}
+    entrypoint: ["alembic"]
+    command: ["upgrade", "head"]
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: "no"
+    volumes:
+      - ./backend:/app
 
 volumes:
   postgresql-16-data:

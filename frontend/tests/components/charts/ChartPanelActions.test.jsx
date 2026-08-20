@@ -54,9 +54,7 @@ describe('ChartPanelActions', () => {
       />,
     )
 
-    await user.click(
-      screen.getByRole('button', { name: /two column grid/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /two column grid/i }))
 
     expect(onPanelColumnsChange).toHaveBeenCalledOnce()
     expect(onPanelColumnsChange).toHaveBeenCalledWith(2)
@@ -64,19 +62,19 @@ describe('ChartPanelActions', () => {
 
   it('identifies the currently selected column layout', () => {
     render(
-        <ChartPanelActions
+      <ChartPanelActions
         onAddChart={vi.fn()}
         panelColumns={2}
         onPanelColumnsChange={vi.fn()}
-        />,
+      />,
     )
 
     expect(
-        screen.getByRole('button', { name: /two column grid/i }),
+      screen.getByRole('button', { name: /two column grid/i }),
     ).toHaveAttribute('aria-pressed', 'true')
 
     expect(
-        screen.getByRole('button', { name: /single column wide/i }),
+      screen.getByRole('button', { name: /single column wide/i }),
     ).toHaveAttribute('aria-pressed', 'false')
   })
 })

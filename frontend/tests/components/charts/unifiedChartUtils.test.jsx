@@ -17,9 +17,9 @@ describe('measurementMatches', () => {
   })
 
   it('returns false when the measurement is unsupported', () => {
-    expect(
-      measurementMatches('Electrical Conductivity', ['Temperature']),
-    ).toBe(false)
+    expect(measurementMatches('Electrical Conductivity', ['Temperature'])).toBe(
+      false,
+    )
   })
 
   it('returns false when the sensor measurement is missing', () => {

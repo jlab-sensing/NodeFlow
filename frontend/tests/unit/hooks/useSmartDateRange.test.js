@@ -125,8 +125,6 @@ describe('useSmartDateRange', () => {
 
     expect(output.isFallback).toBe(false)
     expect(output.endDate.toMillis()).toBe(now.toMillis())
-    expect(output.startDate.toMillis()).toBe(
-      now.minus({ days: 14 }).toMillis(),
-    )
+    expect(output.startDate.toMillis()).toBe(now.minus({ days: 14 }).toMillis())
   })
 })

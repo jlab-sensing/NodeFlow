@@ -5,7 +5,7 @@ from typing import Optional
 class SensorCreate(SQLModel):
     name: str
     sensor_type: str
-    sensor_id: int
+    sensor_id: Optional[int] = None
     logger_id: int
     legacy_cell_id: Optional[int] = None
     group_id: Optional[UUID] = None
@@ -16,7 +16,7 @@ class SensorRead(SQLModel):
     user_id: UUID
     name: str
     sensor_type: str
-    sensor_id: int
+    sensor_id: Optional[int] = None
     logger_id: int
     legacy_cell_id: Optional[int] = None
     group_id: Optional[UUID] = None

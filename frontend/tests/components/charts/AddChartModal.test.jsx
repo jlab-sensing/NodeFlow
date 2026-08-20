@@ -27,9 +27,7 @@ describe('AddChartModal', () => {
       />,
     )
 
-    expect(
-      screen.getByRole('button', { name: /CO₂/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /CO₂/i })).toBeInTheDocument()
 
     expect(screen.queryByText('Voltage & Current')).not.toBeInTheDocument()
 

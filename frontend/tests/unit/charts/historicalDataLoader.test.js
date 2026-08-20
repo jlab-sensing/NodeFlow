@@ -66,13 +66,9 @@ describe('historicalDataLoader', () => {
       },
     ]
 
-    const chartData = buildUnifiedChartDataFromCache(
-      sensors,
-      'co2',
-      {
-        [cacheKey]: payload,
-      },
-    )
+    const chartData = buildUnifiedChartDataFromCache(sensors, 'co2', {
+      [cacheKey]: payload,
+    })
 
     expect(chartData['sensor-1']).toEqual({
       name: 'CO2 Sensor',

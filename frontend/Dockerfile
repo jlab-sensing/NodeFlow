@@ -1,5 +1,5 @@
 # pull official base image
-FROM node:20.19.0-bullseye-slim AS development
+FROM node:22.19.0-bullseye-slim AS development
 
 # set working directory
 WORKDIR /app

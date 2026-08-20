@@ -4,6 +4,7 @@ from typing import List
 from app.database import get_session
 from app.schemas.logger import LoggerTable
 from app.models.logger import LoggerCreate, LoggerRead
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/api/logger", tags=["Loggers"])
 
@@ -13,9 +14,26 @@ def list_loggers(session: Session = Depends(get_session)):
 
 @router.post("/", response_model=LoggerRead, status_code=status.HTTP_201_CREATED)
 def add_new_logger(logger: LoggerCreate, session: Session = Depends(get_session)):
+    existing = session.exec(
+        select(LoggerTable).where(
+            LoggerTable.logger_id == logger.logger_id,
+        )
+    ).first()
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Logger ID {logger.logger_id} is already registered",
+        )
     db_logger = LoggerTable.model_validate(logger)
     session.add(db_logger)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Logger ID {logger.logger_id} is already registered",
+        ) from exc
     session.refresh(db_logger)
     return db_logger
 

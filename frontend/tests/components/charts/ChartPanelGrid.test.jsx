@@ -83,9 +83,7 @@ describe('ChartPanelGrid', () => {
       />,
     )
 
-    await user.click(
-      screen.getByRole('button', { name: 'Remove power-vi' }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Remove power-vi' }))
 
     expect(onRemovePanel).toHaveBeenCalledOnce()
     expect(onRemovePanel).toHaveBeenCalledWith('power-vi')

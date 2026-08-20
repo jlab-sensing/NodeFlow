@@ -1,7 +1,6 @@
 import { DndContext } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import { fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import SortableChartPanel from '../../../src/pages/charts/components/SortableChartPanel'
@@ -32,13 +31,13 @@ describe('SortableChartPanel', () => {
     const onRemove = vi.fn()
 
     renderSortablePanel({
-        id: 'teros',
-        onRemove,
-        panelColumns: 2,
+      id: 'teros',
+      onRemove,
+      panelColumns: 2,
     })
 
     const dragHandle = screen.getByRole('button', {
-        name: /drag to reorder panel/i,
+      name: /drag to reorder panel/i,
     })
     const panel = dragHandle.parentElement
 
@@ -63,16 +62,15 @@ describe('SortableChartPanel', () => {
   })
 
   it('keeps the drag handle keyboard-focusable', () => {
-  renderSortablePanel({
-    id: 'teros',
-    panelColumns: 2,
+    renderSortablePanel({
+      id: 'teros',
+      panelColumns: 2,
+    })
+
+    const dragHandle = screen.getByRole('button', {
+      name: /drag to reorder panel/i,
+    })
+
+    expect(dragHandle).toHaveAttribute('tabindex', '0')
   })
-
-  const dragHandle = screen.getByRole('button', {
-    name: /drag to reorder panel/i,
-  })
-
-  expect(dragHandle).toHaveAttribute('tabindex', '0')
-})
-
 })

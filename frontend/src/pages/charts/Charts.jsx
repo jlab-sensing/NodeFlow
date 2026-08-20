@@ -34,10 +34,10 @@ import DateRangeSel from './components/DateRangeSel'
 import GroupSensorSelect from './components/GroupSensorSelect'
 import StreamToggle from './components/StreamToggle'
 import { useChartsHistoricalData } from './hooks/useChartsHistoricalData'
+import { useSensorSocket } from '../../realtime_sensors/useSensorSocket'
 
 const CATALOG_PANEL_ORDER = FULL_CATALOG.map((entry) => entry.panelId)
 const LIVE_WINDOW_MINUTES = 30
-const LIVE_REFRESH_INTERVAL_MS = 2000
 
 function Charts() {
   const axiosPrivate = useAxiosPrivate()
@@ -60,11 +60,13 @@ function Charts() {
   const [liveEndDate, setLiveEndDate] = useState(DateTime.now())
   const smartDateRangeAppliedRef = useRef(false)
   const cancelSmartDateRef = useRef(null)
+  const liveRefreshTimerRef = useRef(null)
 
   const {
     data: chartSources,
     isLoading: chartSourcesLoading,
     isError: chartSourcesError,
+    refetch: refetchChartSources,
   } = useChartSources(axiosPrivate)
   const groups = useMemo(() => chartSources?.groups ?? [], [chartSources])
   const allSensors = useMemo(() => chartSources?.sensors ?? [], [chartSources])
@@ -141,26 +143,19 @@ function Charts() {
   )
 
   useEffect(() => {
-    if (!isLive) return undefined
-
-    // Poll the owned-reading API at the collector's default cadence. Each
-    // request uses resample=none, so every reading logged in the window is kept.
-    const refreshLiveRange = () => setLiveEndDate(DateTime.now())
-    refreshLiveRange()
-    const intervalId = window.setInterval(
-      refreshLiveRange,
-      LIVE_REFRESH_INTERVAL_MS,
-    )
-    return () => window.clearInterval(intervalId)
-  }, [isLive])
-
-  useEffect(() => {
     if (parsedUrlLayout.length > 0) {
       // Restore a shared/bookmarked layout.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPanelOrder(parsedUrlLayout)
     }
   }, [parsedUrlLayout])
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(liveRefreshTimerRef.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     if (selectedSensors.length === 0 || hasUrlLayout) return
@@ -300,6 +295,31 @@ function Charts() {
     },
     [manualDateSelection],
   )
+  const handleSensorCreated = useCallback(() => {
+    refetchChartSources?.()
+  }, [refetchChartSources])
+
+  const handleLiveMeasurement = useCallback(
+    (measurement) => {
+      if (!selectedSensorIds.includes(measurement.sensorUuid)) {
+        return
+      }
+
+      window.clearTimeout(liveRefreshTimerRef.current)
+
+      liveRefreshTimerRef.current = window.setTimeout(() => {
+        setLiveEndDate(DateTime.now())
+      }, 150)
+    },
+    [selectedSensorIds],
+  )
+
+  useSensorSocket({
+    enabled: isLive,
+    sensorUuids: selectedSensorIds,
+    onMeasurement: handleLiveMeasurement,
+    onSensorCreated: handleSensorCreated,
+  })
 
   const handleStartDateChange = (nextStartDate) => {
     setStartDate(nextStartDate)

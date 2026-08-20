@@ -12,11 +12,7 @@ import {
 
 describe('splitLayoutEntries', () => {
   it('splits comma-separated layout entries', () => {
-    expect(splitLayoutEntries('vwc,temp,co2')).toEqual([
-      'vwc',
-      'temp',
-      'co2',
-    ])
+    expect(splitLayoutEntries('vwc,temp,co2')).toEqual(['vwc', 'temp', 'co2'])
   })
 
   it('does not split commas inside parentheses', () => {
@@ -79,11 +75,7 @@ describe('parseLayoutEntry', () => {
 
 describe('parseLayoutParam', () => {
   it('parses a layout containing short panel names', () => {
-    expect(parseLayoutParam('vwc,temp,co2')).toEqual([
-      'teros',
-      'temp',
-      'u:co2',
-    ])
+    expect(parseLayoutParam('vwc,temp,co2')).toEqual(['teros', 'temp', 'u:co2'])
   })
 
   it('accepts the legacy v1 prefix', () => {
@@ -134,27 +126,18 @@ describe('serializeLayoutParam', () => {
   it('uses the v1 prefix and short panel names', () => {
     const panelOrder = ['power-vi', 'teros', 'temp', 'u:presHum']
 
-    expect(serializeLayoutParam(panelOrder)).toBe(
-      'v1:vi,vwc,temp,presHum',
-    )
+    expect(serializeLayoutParam(panelOrder)).toBe('v1:vi,vwc,temp,presHum')
   })
 
   it('filters unknown and derived panel IDs', () => {
-    const panelOrder = [
-      'power-vi',
-      '1:vwc / 1:temp',
-      'unknown-panel',
-      'teros',
-    ]
+    const panelOrder = ['power-vi', '1:vwc / 1:temp', 'unknown-panel', 'teros']
 
     expect(serializeLayoutParam(panelOrder)).toBe('v1:vi,vwc')
   })
 
   it('returns null when there are no known panels', () => {
     expect(serializeLayoutParam([])).toBeNull()
-    expect(
-      serializeLayoutParam(['unknown-panel', '1:vwc / 1:temp']),
-    ).toBeNull()
+    expect(serializeLayoutParam(['unknown-panel', '1:vwc / 1:temp'])).toBeNull()
   })
 
   it('round-trips a valid catalog panel layout', () => {

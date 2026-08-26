@@ -44,10 +44,11 @@ jobs:
 
             APP_DIR="NodeFlow"
             REPO_URL="https://github.com/jlab-sensing/NodeFlow.git"
+            BRANCH="${{ github.ref_name }}"
 
             echo "::group::Cloning repository"
             sudo rm -rf $APP_DIR
-            git clone "$REPO_URL" "$APP_DIR"
+            git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR"
             cd "$APP_DIR"
             git fetch origin
             git reset --hard ${{ steps.pr.outputs.sha }}

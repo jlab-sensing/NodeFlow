@@ -13,6 +13,7 @@ import CellsList from './pages/profile/components/CellsList'
 import LoggersList from './pages/profile/components/LoggersList'
 import GroupsList from './pages/profile/components/GroupsList'
 import Dashboard from './pages/dashboard/Dashboard'
+import HardwareList from './pages/profile/components/HardwareList'
 import { useContext } from 'react'
 
 const queryClient = new QueryClient()
@@ -84,6 +85,7 @@ function App() {
               }
             >
               <Route path="account" element={<AccountInfo />} />
+              <Route path="hardware" element={<HardwareList />} />
               <Route path="cells" element={<CellsList />} />
               <Route path="loggers" element={<LoggersList />} />
               <Route path="groups" element={<GroupsList />} />

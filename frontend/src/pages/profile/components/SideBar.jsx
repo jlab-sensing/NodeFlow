@@ -10,6 +10,7 @@ import cube from '../../../assets/box.svg'
 import group from '../../../assets/POSSIBLEgroup.svg'
 import logger from '../../../assets/logger.svg'
 import user from '../../../assets/user.svg'
+import HardwareIcon from '@mui/icons-material/DeveloperBoard'
 
 function SideBar() {
   const navigate = useNavigate()
@@ -64,6 +65,34 @@ function SideBar() {
           </ListItemIcon>
           <ListItemText
             primary="Groups"
+            primaryTypographyProps={{
+              fontSize: '1rem',
+              fontWeight: 500,
+              letterSpacing: '0.025em',
+            }}
+          />
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => navigate('/profile/hardware')}
+          sx={{
+            backgroundColor: '#1E3A5F',
+            borderRadius: '10px',
+            padding: '1rem 1.25rem',
+            color: 'white',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: '#2AB0EE',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: '2.5rem' }}>
+            <HardwareIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="Hardware"
             primaryTypographyProps={{
               fontSize: '1rem',
               fontWeight: 500,

@@ -25,8 +25,6 @@ WORKDIR /app
 # copy files from source tree
 COPY . .
 
-EXPOSE 8001
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
 
 # CI image with test-only dependencies and coverage reporting.
 FROM base AS test
@@ -34,3 +32,9 @@ FROM base AS test
 RUN pip install --no-cache-dir -r requirements-dev.txt
 
 CMD ["pytest", "--cov=app", "--cov-report=term-missing", "--cov-report=xml:/app/coverage.xml"]
+
+
+FROM base AS webserver
+
+EXPOSE 8001
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

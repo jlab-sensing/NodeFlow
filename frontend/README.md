@@ -28,7 +28,7 @@ npx eslint --fix
 
 ## Formatting
 
-We use Prettier as the frontend formatter. You can check the formatting of the frontend by running 
+We use Prettier as the frontend formatter. You can check the formatting of the frontend by running
 
 ```
 npm run format:check

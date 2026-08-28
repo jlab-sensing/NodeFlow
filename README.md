@@ -7,7 +7,6 @@ Low Cost, Real-Time Automated Irrigation
 | Python     |
 | Docker     |
 
-test for lint
 
 ## Getting Started
 
@@ -21,3 +20,5 @@ For documentation on the backend, refer to [backend readme](backend/README.md)
 ## Builders
 
 - David Glover [dvdthr5](https://github.com/dvdthr5)
+
+- John Madden [jmadden173](https://github.com/jmadden173)

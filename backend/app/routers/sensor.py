@@ -235,6 +235,10 @@ def add_new_sensor(
     session.refresh(db_sensor)
     return db_sensor
 
+@router.get("/types", response_model=list[str])
+def list_sensor_types(current_user: UserTable = Depends(get_current_user)):
+    return sorted(SENSOR_TYPE_CONFIG_KEYS.keys())
+
 @router.put("/{sensor_id}", response_model=SensorRead)
 async def update_sensor(
     sensor_id: int,
@@ -316,6 +320,3 @@ async def delete_sensor(
     session.commit()
     return {"ok": True}
 
-@router.get("/types", response_model=list[str])
-def list_sensor_types(current_user: UserTable = Depends(get_current_user)):
-    return sorted(SENSOR_TYPE_CONFIG_KEYS.keys())

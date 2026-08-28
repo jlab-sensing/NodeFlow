@@ -25,9 +25,7 @@ def sensor_payload(
     return {
         "name": name,
         "sensor_type": "soil_moisture",
-        "sensor_id": 1,
         "logger_id": logger_id,
-        "legacy_cell_id": None,
         "group_id": None,
     }
 
@@ -44,10 +42,11 @@ def test_create_sensor(authenticated_client, db_session, test_user):
     assert payload["user_id"] == str(test_user.id)
     assert payload["name"] == "Soil Sensor"
     assert payload["sensor_type"] == "soil_moisture"
-    assert payload["sensor_id"] == 1
+    assert payload["sensor_id"] == payload["id"]
     assert payload["logger_id"] == 123
     assert payload["legacy_cell_id"] is None
     assert payload["group_id"] is None
+    assert payload["archived"] is False
     assert "id" in payload
     assert "uuid" in payload
 
@@ -106,7 +105,11 @@ def test_list_sensors_returns_only_current_users_sensors(
 
     assert return_uuid == {owned_sensor_uuid}
 
-def test_update_sensor(authenticated_client, db_session, test_user):
+def test_update_sensor(
+    authenticated_client,
+    db_session,
+    test_user,
+):
     create_logger(
         db_session,
         test_user.id,
@@ -125,15 +128,18 @@ def test_update_sensor(authenticated_client, db_session, test_user):
 
     assert create_response.status_code == 201
 
-    sensor_id = create_response.json()["id"]
+    created_sensor = create_response.json()
+    sensor_id = created_sensor["id"]
+    original_sensor_id = created_sensor["sensor_id"]
+    original_uuid = created_sensor["uuid"]
+    original_user_id = created_sensor["user_id"]
+
     update_response = authenticated_client.put(
         f"/api/sensor/{sensor_id}",
         json={
             "name": "Updated Sensor",
             "sensor_type": "temperature",
-            "sensor_id": 2,
             "logger_id": 456,
-            "legacy_cell_id": 10,
             "group_id": None,
         },
     )
@@ -142,12 +148,19 @@ def test_update_sensor(authenticated_client, db_session, test_user):
 
     payload = update_response.json()
 
+    # Editable fields changed.
     assert payload["id"] == sensor_id
     assert payload["name"] == "Updated Sensor"
     assert payload["sensor_type"] == "temperature"
-    assert payload["sensor_id"] == 2
     assert payload["logger_id"] == 456
-    assert payload["legacy_cell_id"] == 10
+    assert payload["group_id"] is None
+
+    # Backend-owned fields were preserved.
+    assert payload["sensor_id"] == original_sensor_id
+    assert payload["uuid"] == original_uuid
+    assert payload["user_id"] == original_user_id
+    assert payload["legacy_cell_id"] is None
+    assert payload["archived"] is False
 
 def test_update_missing_sensor_returns_not_found(
     authenticated_client, 

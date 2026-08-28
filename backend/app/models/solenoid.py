@@ -8,12 +8,12 @@ class SolenoidCreate(SQLModel):
     logger_id: int
     group_id: Optional[UUID] = None
 
-class SolenoidUpdate(SolenoidBase):
+class SolenoidUpdate(SQLModel):
     name: str
     logger_id: int
     group_id: Optional[UUID] = None
 
-class SolenoidRead(SolenoidBase):
+class SolenoidRead(SQLModel):
     id: int
     uuid: UUID
     user_id: UUID

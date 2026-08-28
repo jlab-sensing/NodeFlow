@@ -6,7 +6,6 @@ class SensorCreate(SQLModel):
     name: str
     sensor_type: str
     logger_id: int
-    legacy_cell_id: Optional[int] = None
     group_id: Optional[UUID] = None
 
 class SensorUpdate(SQLModel):

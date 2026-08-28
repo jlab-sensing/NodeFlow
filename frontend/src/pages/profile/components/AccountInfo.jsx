@@ -239,7 +239,7 @@ function AccountInfo() {
           sx={{
             backgroundColor: '#1E3A5F',
             '&:hover': {
-              backgroundColor: '#3a5a40',
+              backgroundColor: '#2AB0EE',
             },
             borderRadius: '8px',
             px: 3,

@@ -3,17 +3,23 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional
 
-class SolenoidBase(SQLModel):
+class SolenoidCreate(SQLModel):
+    name: str
+    logger_id: int
+    group_id: Optional[UUID] = None
+
+class SolenoidUpdate(SolenoidBase):
+    name: str
+    logger_id: int
+    group_id: Optional[UUID] = None
+
+class SolenoidRead(SolenoidBase):
+    id: int
+    uuid: UUID
     user_id: UUID
     name: str
     active_state: str
     logger_id: int
     group_id: Optional[UUID] = None
-
-class SolenoidCreate(SolenoidBase):
-    pass
-
-class SolenoidRead(SolenoidBase):
-    id: int
-    uuid: UUID
     date_created: datetime
+    archived: bool

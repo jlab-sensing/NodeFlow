@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: webserver
     image: nodeflow-backend
     env_file:
       - ${ENV_FILE:-.env}

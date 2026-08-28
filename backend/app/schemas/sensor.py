@@ -26,3 +26,4 @@ class SensorTable(SQLModel, table=True):
     sensor_id: Optional[int] = Field(default=None, index=True)
     logger_id: int
     group_id: Optional[UUID] = None
+    archived: bool = Field(default=False)

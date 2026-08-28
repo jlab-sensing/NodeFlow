@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
   FormControl,
@@ -10,12 +11,14 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
+import AddCircleIcon from '@mui/icons-material/AddCircle'
 import { DataGrid } from '@mui/x-data-grid'
 import { useMemo, useState } from 'react'
 import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
 import { useUserGroups } from '../../../services/group'
 import { useHardware } from '../../../services/hardware'
 import { useUserLoggers } from '../../../services/logger'
+import AddHardwareModal from './AddHardwareModal'
 
 const formatSubtype = (subtype) => {
   if (!subtype) {
@@ -40,6 +43,7 @@ const getStatusColor = (row) => {
 function HardwareList() {
   const axiosPrivate = useAxiosPrivate()
   const [archiveFilter, setArchiveFilter] = useState('active')
+  const [addHardwareOpen, setAddHardwareOpen] = useState(false)
 
   const {
     data: hardware = [],
@@ -271,9 +275,20 @@ function HardwareList() {
             </Select>
           </FormControl>
 
-          {/*
-                AddHardwareModal will be inserted here.
-            */}
+          <Button
+            variant="contained"
+            startIcon={<AddCircleIcon />}
+            onClick={() => setAddHardwareOpen(true)}
+            sx={{
+              backgroundColor: '#588157',
+              whiteSpace: 'nowrap',
+              '&:hover': {
+                backgroundColor: '#3a5a40',
+              },
+            }}
+          >
+            Add Hardware
+          </Button>
         </Stack>
       </Stack>
 
@@ -316,6 +331,12 @@ function HardwareList() {
           }}
         />
       </Box>
+      <AddHardwareModal
+        open={addHardwareOpen}
+        onClose={() => setAddHardwareOpen(false)}
+        loggers={loggers}
+        groups={groups}
+      />
     </Box>
   )
 }

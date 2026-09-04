@@ -1,28 +1,28 @@
 import CloseIcon from '@mui/icons-material/Close'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { Box, Button, IconButton, Modal, Typography } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { deleteLogger } from '../../../services/logger'
 import PropTypes from 'prop-types'
-import useAuth from '../../../auth/hooks/useAuth'
 
 function DeleteLoggerModal({ id }) {
-  let data = useOutletContext()
-  const refetch = data[9] // Logger refetch function from outlet context
+  const data = useOutletContext()
   const user = data[4]
-  const { auth } = useAuth()
+  const refetch = data[9]
+  const axiosPrivate = data[10]
 
   const [isOpen, setOpen] = useState(false)
   const [response, setResponse] = useState(null)
   const [loggerId, setLoggerId] = useState('')
 
   const handleOpen = () => {
-    if (id != '') {
-      setOpen(true)
-      setLoggerId(id)
-    }
-    setResponse(null)
+   if (id === '' || id == null){
+    return
+   }
+   setLoggerId(id)
+   setResponse(null)
+   setOpen(true)
   }
 
   const handleClose = () => {
@@ -31,9 +31,25 @@ function DeleteLoggerModal({ id }) {
     setLoggerId('')
   }
 
-  useEffect(() => {
-    console.log(response)
-  }, [response])
+  const handleDeleteLogger = async () => {
+    try {
+      const result = await deleteLogger(loggerId, axiosPrivate)
+      setResponse({
+        error: false,
+        ...result,
+      })
+      await refetch()
+    } catch (error) {
+      console.error('Delete failed:', error)
+      setResponse({
+        error: true,
+        message:
+          error?.response?.data?.detail ||
+          error?.response?.data?.message ||
+          error?.message || "Failed to delete logger",
+      })
+    }
+  }
 
   if (!user) {
     return <></>
@@ -41,7 +57,12 @@ function DeleteLoggerModal({ id }) {
 
   return (
     <>
-      <Button sx={{ color: 'black' }} key="delete" onClick={handleOpen}>
+      <Button 
+        sx={{ color: 'black' }} 
+        key="delete" 
+        onClick={handleOpen}
+        disabled={id === '' || id == null}
+      >
         <DeleteIcon />
       </Button>
 
@@ -118,8 +139,9 @@ function DeleteLoggerModal({ id }) {
                   variant="body1"
                   sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}
                 >
-                  Are you sure you want to delete this logger? All associated
-                  data and configurations will be permanently removed.
+                  This logger is shared by all NodeFlow users and stored in dirtViz.
+                  It cannot be deleted while any NodeFlow sensor or actuator is using it.
+                  Are you sure you want to delete it? 
                 </Typography>
 
                 {/* Action Buttons */}
@@ -148,20 +170,7 @@ function DeleteLoggerModal({ id }) {
                   </Button>
                   <Button
                     variant="contained"
-                    onClick={() => {
-                      deleteLogger(loggerId, auth?.accessToken)
-                        .then((res) => {
-                          setResponse(res)
-                          refetch()
-                        })
-                        .catch((error) => {
-                          console.error('Delete failed:', error)
-                          setResponse({
-                            error: true,
-                            message: 'Failed to delete logger',
-                          })
-                        })
-                    }}
+                    onClick={handleDeleteLogger}
                     sx={{
                       backgroundColor: '#d32f2f',
                       '&:hover': { backgroundColor: '#b71c1c' },
@@ -253,7 +262,7 @@ function DeleteLoggerModal({ id }) {
                         mt: 0.5,
                       }}
                     >
-                      The logger has been removed from your system
+                      The shared logger was successfully removed from DirtViz.
                     </Typography>
                   </Box>
 

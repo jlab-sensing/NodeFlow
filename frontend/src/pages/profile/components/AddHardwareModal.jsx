@@ -25,7 +25,6 @@ import {
   useCreateHardware,
   useSensorTypes,
 } from '../../../services/hardware'
-import axios from '../../../api/axios'
 
 const formatSensorType = (sensorType) =>
   sensorType
@@ -34,7 +33,7 @@ const formatSensorType = (sensorType) =>
     .join(' ')
 
 const getErrorMessage = (error) => {
-  const detail = error?.repsonse?.data?.detail
+  const detail = error?.response?.data?.detail
   if (typeof detail === 'string') {
     return detail
   }
@@ -84,7 +83,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
   }
 
   const handleHardwareTypeChange = (event) => {
-    const nextHardwareTypeChange = event.target.value
+    const nextHardwareType = event.target.value
     setHardwareType(nextHardwareType)
 
     if (nextHardwareType === HARDWARE_TYPES.ACTUATOR) {
@@ -108,7 +107,9 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
       })
       resetForm()
       onClose()
-    } catch {}
+    } catch {
+      // empty on purpose
+    }
   }
 
   return (

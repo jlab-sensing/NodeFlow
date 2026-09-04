@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 from app.database import get_session
 from app.schemas.groups import GroupTable
-from app.schemas.logger import LoggerTable
+from app.services.logger_service import get_shared_logger
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 from app.models.sensor import SensorRead, SensorCreate, SensorUpdate
@@ -58,20 +58,6 @@ def validate_owned_group(
     )
     if not session.exec(statement).first():
         raise HTTPException(status_code=404, detail="Group not found")
-
-
-def validate_owned_logger(
-    logger_id: int,
-    session: Session,
-    current_user: UserTable,
-):
-    statement = select(LoggerTable).where(
-        LoggerTable.logger_id == logger_id,
-        LoggerTable.user_id == current_user.id,
-    )
-    if not session.exec(statement).first():
-        raise HTTPException(status_code=404, detail="Logger not found")
-
 
 def get_owned_test_sensor(
     sensor_id: int,
@@ -212,12 +198,12 @@ def list_sensors(
     return session.exec(statement).all()
 
 @router.post("/", response_model=SensorRead, status_code=status.HTTP_201_CREATED)
-def add_new_sensor(
+async def add_new_sensor(
     sensor: SensorCreate,
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
-    validate_owned_logger(sensor.logger_id, session, current_user)
+    await get_shared_logger(sensor.logger_id)
     validate_owned_group(sensor.group_id, session, current_user)
 
     db_sensor = SensorTable(
@@ -247,7 +233,7 @@ async def update_sensor(
     current_user: UserTable = Depends(get_current_user),
 ):
     db_sensor = get_owned_sensor(sensor_id, session, current_user)
-    validate_owned_logger(sensor_update.logger_id, session, current_user)
+    await get_shared_logger(sensor_update.logger_id)
     validate_owned_group(sensor_update.group_id, session, current_user)
 
     sensor_data = sensor_update.model_dump()

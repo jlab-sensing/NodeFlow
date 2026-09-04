@@ -3,7 +3,8 @@ import httpx
 from app.schemas.groups import GroupTable
 from app.schemas.solenoid import SolenoidTable
 from app.schemas.user_schema import UserTable
-from app.schemas.logger import LoggerTable
+import pytest
+from fastapi import HTTPException
 
 def create_user(
     db_session,
@@ -52,20 +53,21 @@ def create_solenoid(
     db_session.refresh(solenoid)
     return solenoid
 
-def create_logger(
-    db_session,
-    user_id,
-    logger_id=123,
-):
-    logger = LoggerTable(
-        user_id=user_id,
-        logger_id=logger_id,
-        update_interval=60,
+@pytest.fixture
+def shared_logger_mock(monkeypatch):
+    logger_mock = AsyncMock(
+        return_value={
+            "id": 123,
+            "logger_id": 123,
+            "name": "Shared Logger",
+            "type": "ents",
+        }
     )
-    db_session.add(logger)
-    db_session.commit()
-    db_session.refresh(logger)
-    return logger
+    monkeypatch.setattr(
+        "app.routers.solenoid.get_shared_logger",
+        logger_mock,
+    )
+    return logger_mock
 
 def mock_successful_close(monkeypatch):
     async def close_and_persist(solenoid, session):
@@ -371,14 +373,9 @@ def test_archive_missing_solenoid_returns_not_found(
 
 def test_create_solenoid_assigns_owner_and_closed_state(
     authenticated_client,
-    db_session,
-    test_user
+    test_user,
+    shared_logger_mock,
 ):
-    create_logger(
-        db_session,
-        test_user.id,
-        logger_id=301,
-    )
     response = authenticated_client.post(
         "/api/solenoid/",
         json={
@@ -393,14 +390,21 @@ def test_create_solenoid_assigns_owner_and_closed_state(
     assert payload["user_id"] == str(test_user.id)
     assert payload["name"] == "Greenhouse Valve"
     assert payload["active_state"] == "closed"
+    assert payload["logger_id"] == 301
     assert payload["archived"] is False
     assert "id" in payload
     assert "uuid" in payload
     assert "date_created" in payload
 
-def test_create_solenoid_requires_owned_logger(
+def test_create_solenoid_requires_shared_logger(
     authenticated_client,
+    shared_logger_mock,
 ):
+    shared_logger_mock.side_effect= HTTPException(
+        status_code=404,
+        detail="Logger not found",
+    )
+
     response = authenticated_client.post(
         "/api/solenoid/",
         json={
@@ -413,22 +417,14 @@ def test_create_solenoid_requires_owned_logger(
     assert response.json() == {
         "detail": "Logger not found",
     }
+    shared_logger_mock.assert_awaited_once_with(999)
 
 def test_update_solenoid_preserves_state_and_owner(
     authenticated_client,
     db_session,
     test_user,
+    shared_logger_mock,
 ): 
-    create_logger(
-        db_session,
-        test_user.id,
-        logger_id=401,
-    )
-    create_logger(
-        db_session,
-        test_user.id,
-        logger_id=402,
-    )
     solenoid = create_solenoid(
         db_session,
         test_user.id,
@@ -453,3 +449,42 @@ def test_update_solenoid_preserves_state_and_owner(
     assert payload["active_state"] == "closed"
     assert payload["logger_id"] == 402
     assert payload["archived"] is False
+    shared_logger_mock.assert_awaited_once_with(402)
+
+def test_update_solenoid_rejects_missing_shared_logger(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+):
+    solenoid = create_solenoid(
+        db_session,
+        test_user.id,
+        name="Original Solenoid",
+        logger_id=401,
+        active_state="closed",
+    )
+    shared_logger_mock.side_effect = HTTPException(
+        status_code=404,
+        detail="Logger not found",
+    )
+    response = authenticated_client.put(
+        f"/api/solenoid/{solenoid.id}",
+        json={
+            "name": "Updated Original",
+            "logger_id": 999,
+            "group_id": None,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Logger not found",
+    }
+    stored_solenoid = reload_solenoid(
+        db_session,
+        solenoid.id,
+    )
+    assert stored_solenoid.name == "Original Solenoid"
+    assert stored_solenoid.logger_id == 401
+    assert stored_solenoid.active_state == "closed"
+    shared_logger_mock.assert_awaited_once_with(999)

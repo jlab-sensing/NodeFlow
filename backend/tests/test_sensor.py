@@ -1,22 +1,28 @@
 from datetime import datetime, timezone
-
 from sqlmodel import select
+from unittest.mock import AsyncMock
+import pytest
+from fastapi import HTTPException
 
-from app.schemas.logger import LoggerTable
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 from app.schemas.user_schema import UserTable
 
-def create_logger(db_session, user_id, logger_id=123):
-    logger = LoggerTable(
-        user_id=user_id,
-        logger_id=logger_id,
-        update_interval=60,
+@pytest.fixture
+def shared_logger_mock(monkeypatch):
+    logger_mock = AsyncMock(
+        return_value={
+            "id": 123,
+            "logger_id": 123,
+            "name": "Shared Logger",
+            "type": "ents",
+        }
     )
-
-    db_session.add(logger)
-    db_session.commit()
-    db_session.refresh(logger)
+    monkeypatch.setattr(
+        "app.routers.sensor.get_shared_logger",
+        logger_mock,
+    )
+    return logger_mock
 
 def sensor_payload(
     logger_id=123,
@@ -29,44 +35,51 @@ def sensor_payload(
         "group_id": None,
     }
 
-def test_create_sensor(authenticated_client, db_session, test_user):
-    create_logger(db_session, test_user.id)
+def test_create_sensor(
+    authenticated_client,
+    test_user,
+    shared_logger_mock,
+):
     response = authenticated_client.post(
         "/api/sensor/",
         json=sensor_payload(),
     )
     assert response.status_code == 201
-
     payload = response.json()
-
     assert payload["user_id"] == str(test_user.id)
     assert payload["name"] == "Soil Sensor"
-    assert payload["sensor_type"] == "soil_moisture"
     assert payload["sensor_id"] == payload["id"]
     assert payload["logger_id"] == 123
     assert payload["legacy_cell_id"] is None
     assert payload["group_id"] is None
     assert payload["archived"] is False
-    assert "id" in payload
     assert "uuid" in payload
+    shared_logger_mock.assert_awaited_once_with(123)
 
-def test_create_sensor_requires_owned_logger(authenticated_client):
+def test_create_sensor_requires_shared_logger(
+    authenticated_client,
+    shared_logger_mock,
+):
+    shared_logger_mock.side_effect = HTTPException(
+        status_code=404,
+        detail="Logger not found",
+    )
     response = authenticated_client.post(
         "/api/sensor/",
         json=sensor_payload(logger_id=999),
     )
-
     assert response.status_code == 404
     assert response.json() == {
         "detail": "Logger not found",
     }
+    shared_logger_mock.assert_awaited_once_with(999)
 
 def test_list_sensors_returns_only_current_users_sensors(
     authenticated_client,
     db_session,
     test_user,
+    shared_logger_mock,
 ):
-    create_logger(db_session, test_user.id, logger_id=123)
     create_response = authenticated_client.post(
         "/api/sensor/",
         json=sensor_payload(logger_id=123),
@@ -104,23 +117,14 @@ def test_list_sensors_returns_only_current_users_sensors(
     }
 
     assert return_uuid == {owned_sensor_uuid}
+    shared_logger_mock.assert_awaited_once_with(123)
 
 def test_update_sensor(
     authenticated_client,
     db_session,
     test_user,
+    shared_logger_mock,
 ):
-    create_logger(
-        db_session,
-        test_user.id,
-        logger_id=123,
-    )
-    create_logger(
-        db_session,
-        test_user.id,
-        logger_id=456,
-    )
-
     create_response = authenticated_client.post(
         "/api/sensor/",
         json=sensor_payload(logger_id=123),
@@ -162,15 +166,13 @@ def test_update_sensor(
     assert payload["legacy_cell_id"] is None
     assert payload["archived"] is False
 
+    assert shared_logger_mock.await_count == 2
+    shared_logger_mock.assert_any_await(123)
+    shared_logger_mock.assert_any_await(456)
+
 def test_update_missing_sensor_returns_not_found(
     authenticated_client, 
-    db_session,
-    test_user,
 ):
-    create_logger(
-        db_session,
-        test_user.id,
-    )
     response = authenticated_client.put(
         "/api/sensor/999",
         json=sensor_payload(),
@@ -185,12 +187,8 @@ def test_delete_sensor_also_deletes_readings(
     authenticated_client,
     db_session,
     test_user,
+    shared_logger_mock,
 ):
-    create_logger(
-        db_session,
-        test_user.id
-    )
-
     create_response = authenticated_client.post(
         "/api/sensor/",
         json=sensor_payload(),
@@ -245,3 +243,44 @@ def test_delete_missing_sensor_returns_not_found(
     assert response.json() == {
         "detail": "Sensor not found",
     }
+
+def test_update_sensor_rejects_missing_shared_logger(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+):
+    sensor = SensorTable(
+        user_id=test_user.id,
+        name="Original Sensor",
+        sensor_type="soil_moisture",
+        sensor_id=1,
+        logger_id=123,
+        group_id=None,
+    )
+    db_session.add(sensor)
+    db_session.commit()
+    db_session.refresh(sensor)
+
+    shared_logger_mock.side_effect = HTTPException(
+        status_code=404,
+        detail="Logger not found",
+    )
+    response = authenticated_client.put(
+        f"/api/sensor/{sensor.id}",
+        json={
+            "name": "Updated Sensor",
+            "sensor_type": "temperature",
+            "logger_id": 999,
+            "group_id": None,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Logger not found",
+    }
+
+    db_session.refresh(sensor)
+    assert sensor.name == "Original Sensor"
+    assert sensor.logger_id == 123
+    shared_logger_mock.assert_awaited_once_with(999)

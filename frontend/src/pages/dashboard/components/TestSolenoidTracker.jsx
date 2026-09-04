@@ -5,25 +5,57 @@ import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
 function TestSolenoidStatus() {
   const axiosPrivate = useAxiosPrivate()
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['test-solenoid-status'],
-
+  const {
+    data: registeredSolenoid,
+    isLoading: isRegistering,
+    isError: isRegistrationError,
+    error: registrationError,
+  } = useQuery({
+    queryKey: ['test-solenoid-registration'],
     queryFn: async () => {
-      const response = await axiosPrivate.get(`/api/test-solenoid/status`)
+      const response = await axiosPrivate.post('/api/solenoid/test/register')
       return response.data
     },
-
-    refetchInterval: 2000,
+    staleTime: Infinity,
+    retry: false,
   })
 
-  if (isLoading) {
+  const {
+    data,
+    isLoading: isStatusLoading,
+    isError: isStatusError,
+    error: statusError,
+  } = useQuery({
+    queryKey: ['test-solenoid-status'],
+    queryFn: async () => {
+      const response = await axiosPrivate.get('/api/test-solenoid/status')
+      return response.data
+    },
+    enabled: Boolean(registeredSolenoid?.id),
+    refetchInterval: 2000,
+    retry: false,
+  })
+
+  if (isRegistering || isStatusLoading) {
     return <CircularProgress size={24} />
   }
 
-  if (isError) {
-    return <Typography color="error">Test Solenoid Unreachable</Typography>
+  if (isRegistrationError) {
+    return (
+      <Typography color="error">
+        {registrationError.response?.data?.detail ||
+          'Unable to register test solenoid'}
+      </Typography>
+    )
   }
 
+if (isStatusError) {
+  return (
+    <Typography color="error">
+      {statusError.response?.data?.detail || 'Test solenoid unreachable'}
+    </Typography>
+  )
+}
   const isOpen = data?.state === 'open'
   const stateNumber = isOpen ? 1 : 0
 

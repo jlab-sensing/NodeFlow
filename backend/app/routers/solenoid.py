@@ -8,7 +8,7 @@ from app.models.hardware import ArchiveUpdate
 from app.models.actions import SolenoidAction
 from app.models.groups import DeviceGroupUpdate
 from app.schemas.groups import GroupTable
-from app.schemas.logger import LoggerTable
+from app.services.logger_service import get_shared_logger
 import httpx
 import os
 from app.auth.auth import get_current_user
@@ -30,18 +30,6 @@ def get_owned_solenoid(
     if not solenoid:
         raise HTTPException(status_code=404, detail="Solenoid not found")
     return solenoid
-
-def validate_owned_logger(
-    logger_id: int,
-    session: Session,
-    current_user: UserTable,
-):
-    statement = select(LoggerTable).where(
-        LoggerTable.logger_id == logger_id,
-        LoggerTable.user_id == current_user.id,
-    )
-    if not session.exec(statement).first():
-        raise HTTPException(status_code=404, detail="Logger not found")
 
 def validate_owned_group(
     group_id,
@@ -94,7 +82,7 @@ def get_specific_solenoid(solenoid_id: int, session: Session = Depends(get_sessi
     )
 
 @router.put("/{solenoid_id}", response_model=SolenoidRead)
-def update_solenoid(
+async def update_solenoid(
     solenoid_id: int,
     update: SolenoidUpdate,
     session: Session = Depends(get_session),
@@ -105,11 +93,7 @@ def update_solenoid(
         session,
         current_user,
     )
-    validate_owned_logger(
-        update.logger_id,
-        session,
-        current_user,
-    )
+    await get_shared_logger(update.logger_id)
     validate_owned_group(
         update.group_id,
         session,
@@ -147,17 +131,13 @@ def update_solenoid_group(
     return solenoid
 
 @router.post("/",response_model=SolenoidRead, status_code=status.HTTP_201_CREATED)
-def add_new_solenoid(
+async def add_new_solenoid(
     solenoid: SolenoidCreate, 
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
     """Registers a new solenoid with user ownership."""
-    validate_owned_logger(
-        solenoid.logger_id,
-        session,
-        current_user,
-    )
+    await get_shared_logger(solenoid.logger_id)
     validate_owned_group(
         solenoid.group_id,
         session,

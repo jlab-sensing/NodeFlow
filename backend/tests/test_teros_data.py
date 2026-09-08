@@ -1,34 +1,45 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
+
 import pytest
 from fastapi import HTTPException
 from sqlmodel import select
 
 from app.routers.chart_data import serialize_native_readings
 from app.routers.sensor_data_util import process_measurement_json
-from app.schemas.logger import LoggerTable
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 
-def create_logger(
+
+def create_configured_sensor(
     db_session,
     user_id,
-    logger_id=123,
-):
-    logger = LoggerTable(
+    *,
+    logger_id: int = 123,
+    sensor_id: int = 10,
+    sensor_type: str = "teros12",
+    archived: bool = False,
+) -> SensorTable:
+    sensor = SensorTable(
         user_id=user_id,
+        name=f"Configured {sensor_type} sensor",
+        legacy_cell_id=None,
+        sensor_type=sensor_type,
+        sensor_id=sensor_id,
         logger_id=logger_id,
-        update_interval=60,
+        group_id=None,
+        archived=archived,
     )
-
-    db_session.add(logger)
+    db_session.add(sensor)
     db_session.commit()
-    db_session.refresh(logger)
-    return logger
+    db_session.refresh(sensor)
+    return sensor
+
 
 def teros_measurement(
     logger_id=123,
+    cell_id=10,
     timestamp=1705176162,
     adjusted_vwc=42.0,
     raw_vwc=2.0,
@@ -38,7 +49,7 @@ def teros_measurement(
     return {
         "type": "teros12",
         "loggerId": logger_id,
-        "cellId": 10,
+        "cellId": cell_id,
         "ts": timestamp,
         "data": {
             "vwcAdj": adjusted_vwc,
@@ -48,15 +59,14 @@ def teros_measurement(
         },
     }
 
+
 def get_sensors(db_session):
-    return db_session.exec(
-        select(SensorTable)
-    ).all()
+    return db_session.exec(select(SensorTable)).all()
+
 
 def get_sensor_readings(db_session):
-    return db_session.exec(
-        select(SensorReadingTable)
-    ).all()
+    return db_session.exec(select(SensorReadingTable)).all()
+
 
 def make_reading(
     timestamp,
@@ -71,13 +81,14 @@ def make_reading(
         timestamp=timestamp,
     )
 
+
 @pytest.mark.anyio
-async def test_teros_measurement_creates_sensor_and_readings(
+async def test_teros_measurement_uses_configured_sensor(
     db_session,
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -98,15 +109,17 @@ async def test_teros_measurement_creates_sensor_and_readings(
     assert response.status_code == 200
 
     assert len(sensors) == 1
+    assert sensors[0].id == sensor.id
+    assert sensors[0].uuid == sensor.uuid
     assert sensors[0].user_id == test_user.id
+    assert sensors[0].sensor_id == 10
+    assert sensors[0].legacy_cell_id is None
     assert sensors[0].sensor_type == "teros12"
     assert sensors[0].logger_id == 123
+
     assert len(readings) == 4
-    
-    readings_by_name = {
-        reading.measurement: reading
-        for reading in readings
-    }
+
+    readings_by_name = {reading.measurement: reading for reading in readings}
 
     assert set(readings_by_name) == {
         "Volumetric Water Content",
@@ -115,12 +128,8 @@ async def test_teros_measurement_creates_sensor_and_readings(
         "Electrical Conductivity",
     }
 
-    adjusted = readings_by_name[
-        "Volumetric Water Content"
-    ]
-    raw = readings_by_name[
-        "Volumetric Water Content (Raw)"
-    ]
+    adjusted = readings_by_name["Volumetric Water Content"]
+    raw = readings_by_name["Volumetric Water Content (Raw)"]
     temperature = readings_by_name["Temperature"]
     conductivity = readings_by_name["Electrical Conductivity"]
 
@@ -132,10 +141,8 @@ async def test_teros_measurement_creates_sensor_and_readings(
     assert temperature.unit == "C"
     assert conductivity.value == pytest.approx(4.0)
     assert conductivity.unit == "uS/cm"
-    assert all(
-        reading.sensor_uuid == sensors[0].uuid
-        for reading in readings
-    )
+    assert all(reading.sensor_uuid == sensor.uuid for reading in readings)
+
 
 @pytest.mark.anyio
 async def test_teros_measurement_preserves_timestamp(
@@ -143,13 +150,14 @@ async def test_teros_measurement_preserves_timestamp(
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
+    emit = AsyncMock()
     monkeypatch.setattr(
         "app.routers.sensor_data_util.sio.emit",
-        AsyncMock(),
+        emit,
     )
     timestamp = 1705176162
     response = await process_measurement_json(
@@ -166,30 +174,29 @@ async def test_teros_measurement_preserves_timestamp(
     )
     readings = get_sensor_readings(db_session)
     assert len(readings) == 4
-    assert all(
-        reading.timestamp == expected_timestamp
-        for reading in readings
-    )
+    assert all(reading.timestamp == expected_timestamp for reading in readings)
+    assert all(reading.sensor_uuid == sensor.uuid for reading in readings)
+
 
 @pytest.mark.anyio
-async def test_teros_measurement_requires_registered_logger(
-    db_session,
-    monkeypatch
-):
+async def test_teros_measurement_requires_configured_sensor(db_session, monkeypatch):
+    emit = AsyncMock()
     monkeypatch.setattr(
         "app.routers.sensor_data_util.sio.emit",
-        AsyncMock(),
+        emit,
     )
     response = await process_measurement_json(
         data=teros_measurement(
             logger_id=999,
         ),
         session=db_session,
-        transport="wifi"
+        transport="wifi",
     )
     assert response.status_code == 501
     assert get_sensor_readings(db_session) == []
     assert get_sensors(db_session) == []
+    emit.assert_not_awaited()
+
 
 @pytest.mark.anyio
 async def test_teros_measurement_rejects_missing_field(
@@ -197,7 +204,7 @@ async def test_teros_measurement_rejects_missing_field(
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -215,7 +222,12 @@ async def test_teros_measurement_rejects_missing_field(
 
     assert response.status_code == 501
     assert get_sensor_readings(db_session) == []
-    assert get_sensors(db_session) == []
+
+    sensors = get_sensors(db_session)
+
+    assert len(sensors) == 1
+    assert sensors[0].id == sensor.id
+
 
 @pytest.mark.anyio
 async def test_teros_measurement_rejects_invalid_number(
@@ -223,7 +235,7 @@ async def test_teros_measurement_rejects_invalid_number(
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -237,12 +249,16 @@ async def test_teros_measurement_rejects_invalid_number(
             temperature="not-a-number",
         ),
         session=db_session,
-        transport="wifi"
+        transport="wifi",
     )
 
     assert response.status_code == 501
     assert get_sensor_readings(db_session) == []
-    assert get_sensors(db_session) == []
+    sensors = get_sensors(db_session)
+
+    assert len(sensors) == 1
+    assert sensors[0].id == sensor.id
+
 
 @pytest.mark.anyio
 async def test_teros_measurement_rejects_none_conductivity(
@@ -250,7 +266,7 @@ async def test_teros_measurement_rejects_none_conductivity(
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -267,7 +283,11 @@ async def test_teros_measurement_rejects_none_conductivity(
     )
     assert response.status_code == 501
     assert get_sensor_readings(db_session) == []
-    assert get_sensors(db_session) == []
+    sensors = get_sensors(db_session)
+
+    assert len(sensors) == 1
+    assert sensors[0].id == sensor.id
+
 
 @pytest.mark.parametrize(
     ("input_value", "stored_value"),
@@ -285,7 +305,7 @@ async def test_teros_vwc_preserves_input_value(
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -307,17 +327,13 @@ async def test_teros_vwc_preserves_input_value(
         for reading in readings
         if reading.measurement == "Volumetric Water Content"
     )
-    assert adjusted_reading.value == pytest.approx(
-        stored_value
-    )
+    assert adjusted_reading.value == pytest.approx(stored_value)
+    assert adjusted_reading.sensor_uuid == sensor.uuid
+
 
 @pytest.mark.anyio
-async def test_teros_measurement_emits_socket_event(
-    db_session,
-    test_user,
-    monkeypatch
-):
-    create_logger(
+async def test_teros_measurement_emits_socket_event(db_session, test_user, monkeypatch):
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -339,17 +355,14 @@ async def test_teros_measurement_emits_socket_event(
     )
 
     assert response.status_code == 200
-    sensors = get_sensors(db_session)
 
-    measurement_call = next(
-        call for call in emit.await_args_list
-        if call.args[0] == "measurement_received"
-    )
+    assert emit.await_count == 1
+    measurement_call = emit.await_args_list[0]
     event = measurement_call.args[1]
+
+    assert measurement_call.args[0] == "measurement_received"
     assert event["type"] == "teros12"
-    assert event["sensorUuid"] == str(
-        sensors[0].uuid
-    )
+    assert event["sensorUuid"] == str(sensor.uuid)
     assert event["loggerId"] == 123
     assert event["data"] == {
         "vwcAdj": 45.0,
@@ -359,9 +372,8 @@ async def test_teros_measurement_emits_socket_event(
     }
     assert event["obj_count"] == 4
     assert event["transport"] == "wifi"
-    assert measurement_call.kwargs["room"] == (
-        f"sensor_{sensors[0].uuid}"
-    )
+    assert measurement_call.kwargs["room"] == f"sensor_{sensor.uuid}"
+
 
 def test_serialize_power_readings_without_resampling():
     first_timestamp = datetime(
@@ -372,10 +384,7 @@ def test_serialize_power_readings_without_resampling():
         0,
         tzinfo=timezone.utc,
     )
-    second_timestamp = (
-        first_timestamp
-        + timedelta(minutes=30)
-    )
+    second_timestamp = first_timestamp + timedelta(minutes=30)
     readings = [
         make_reading(
             first_timestamp,
@@ -402,6 +411,7 @@ def test_serialize_power_readings_without_resampling():
             44.0,
         ],
     }
+
 
 def test_serialize_power_readings_hourly():
     first_timestamp = datetime(
@@ -470,6 +480,7 @@ def test_serialize_power_readings_hourly():
         ],
     }
 
+
 def test_serialize_power_readings_rejects_invalid_resample():
     reading = make_reading(
         datetime.now(timezone.utc),
@@ -480,8 +491,6 @@ def test_serialize_power_readings_rejects_invalid_resample():
             [reading],
             resample="minute",
         )
-    
+
     assert error.value.status_code == 400
-    assert error.value.detail == (
-        "Unsupported resample value"
-    )
+    assert error.value.detail == ("Unsupported resample value")

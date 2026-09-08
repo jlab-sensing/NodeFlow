@@ -1,31 +1,41 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
+
 import pytest
 from fastapi import HTTPException
 from sqlmodel import select
 
 from app.routers.chart_data import serialize_native_readings
 from app.routers.sensor_data_util import process_measurement_json
-from app.schemas.logger import LoggerTable
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 
-def create_logger(
+
+def create_configured_sensor(
     db_session,
     user_id,
-    logger_id=123,
-):
-    logger = LoggerTable(
+    *,
+    logger_id: int = 123,
+    sensor_id: int = 10,
+    sensor_type: str = "power",
+    archived: bool = False,
+) -> SensorTable:
+    sensor = SensorTable(
         user_id=user_id,
+        name=f"Configured {sensor_type} sensor",
+        legacy_cell_id=None,
+        sensor_type=sensor_type,
+        sensor_id=sensor_id,
         logger_id=logger_id,
-        update_interval=60,
+        group_id=None,
+        archived=archived,
     )
-
-    db_session.add(logger)
+    db_session.add(sensor)
     db_session.commit()
-    db_session.refresh(logger)
-    return logger
+    db_session.refresh(sensor)
+    return sensor
+
 
 def power_measurement(
     logger_id=123,
@@ -45,15 +55,14 @@ def power_measurement(
         },
     }
 
+
 def get_sensors(db_session):
-    return db_session.exec(
-        select(SensorTable)
-    ).all()
+    return db_session.exec(select(SensorTable)).all()
+
 
 def get_sensor_readings(db_session):
-    return db_session.exec(
-        select(SensorReadingTable)
-    ).all()
+    return db_session.exec(select(SensorReadingTable)).all()
+
 
 def make_reading(
     timestamp,
@@ -68,13 +77,14 @@ def make_reading(
         timestamp=timestamp,
     )
 
-@pytest.mark.anyio 
-async def test_power_measurement_creates_sensor_and_readings(
+
+@pytest.mark.anyio
+async def test_power_measurement_uses_configured_sensor(
     db_session,
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -91,36 +101,34 @@ async def test_power_measurement_creates_sensor_and_readings(
     readings = get_sensor_readings(db_session)
 
     assert response.status_code == 200
+
     assert len(sensors) == 1
     assert sensors[0].user_id == test_user.id
     assert sensors[0].sensor_type == "power"
     assert sensors[0].logger_id == 123
+    assert sensors[0].id == sensor.id
+    assert sensors[0].uuid == sensor.uuid
+    assert sensors[0].legacy_cell_id is None
+    assert sensors[0].sensor_id == 10
+
     assert len(readings) == 2
 
-    readings_by_name = {
-        reading.measurement: reading
-        for reading in readings
-    }
+    readings_by_name = {reading.measurement: reading for reading in readings}
 
     assert set(readings_by_name) == {
         "Voltage",
         "Current",
     }
-    assert readings_by_name["Voltage"].value == (
-        pytest.approx(3.3)
-    )
+    assert readings_by_name["Voltage"].value == (pytest.approx(3.3))
     assert readings_by_name["Voltage"].unit == "V"
-    assert readings_by_name["Current"].value == (
-        pytest.approx(0.5)
-    )
+    assert readings_by_name["Current"].value == (pytest.approx(0.5))
     assert readings_by_name["Current"].unit == "A"
-    assert all(
-        reading.sensor_uuid == sensors[0].uuid
-        for reading in readings
-    )
+    assert all(reading.sensor_uuid == sensors[0].uuid for reading in readings)
+    assert all(reading.user_id == test_user.id for reading in readings)
+
 
 @pytest.mark.anyio
-async def test_power_measurement_requires_registered_logger(
+async def test_power_measurement_requires_configured_sensor(
     db_session,
     monkeypatch,
 ):
@@ -139,13 +147,14 @@ async def test_power_measurement_requires_registered_logger(
     assert get_sensors(db_session) == []
     assert get_sensor_readings(db_session) == []
 
+
 @pytest.mark.anyio
 async def test_power_measurement_preserves_timestamp(
     db_session,
     test_user,
     monkeypatch,
 ):
-    create_logger(
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
@@ -171,21 +180,17 @@ async def test_power_measurement_preserves_timestamp(
     )
     readings = get_sensor_readings(db_session)
     assert len(readings) == 2
-    assert all(
-        reading.timestamp == expected_timestamp
-        for reading in readings
-    )
+    assert all(reading.timestamp == expected_timestamp for reading in readings)
+    assert all(reading.sensor_uuid == sensor.uuid for reading in readings)
+
 
 @pytest.mark.anyio
-async def test_power_measurement_emits_socket_event(
-    db_session,
-    test_user,
-    monkeypatch
-):
-    create_logger(
+async def test_power_measurement_emits_socket_event(db_session, test_user, monkeypatch):
+    sensor = create_configured_sensor(
         db_session,
         test_user.id,
     )
+
     emit = AsyncMock()
     monkeypatch.setattr(
         "app.routers.sensor_data_util.sio.emit",
@@ -201,28 +206,21 @@ async def test_power_measurement_emits_socket_event(
         transport="wifi",
     )
     assert response.status_code == 200
+    assert emit.await_count == 1
 
-    sensors = get_sensors(db_session)
-
-    measurement_call = next(
-        call
-        for call in emit.await_args_list
-        if call.args[0] == "measurement_received"
-    )
+    measurement_call = emit.await_args_list[0]
     event = measurement_call.args[1]
 
-    assert event["sensorUuid"] == str(
-        sensors[0].uuid
-    )
+    assert measurement_call.args[0] == "measurement_received"
+    assert event["sensorUuid"] == str(sensor.uuid)
     assert event["loggerId"] == 123
     assert event["data"] == {
         "voltage": 4.2,
         "current": 0.75,
     }
     assert event["transport"] == "wifi"
-    assert measurement_call.kwargs["room"] == (
-        f"sensor_{sensors[0].uuid}"
-    )
+    assert measurement_call.kwargs["room"] == f"sensor_{sensor.uuid}"
+
 
 def test_serialize_power_readings_without_resampling():
     first_timestamp = datetime(
@@ -233,10 +231,7 @@ def test_serialize_power_readings_without_resampling():
         0,
         tzinfo=timezone.utc,
     )
-    second_timestamp = (
-        first_timestamp
-        + timedelta(minutes=30)
-    )
+    second_timestamp = first_timestamp + timedelta(minutes=30)
     readings = [
         make_reading(
             first_timestamp,
@@ -263,6 +258,7 @@ def test_serialize_power_readings_without_resampling():
             4.0,
         ],
     }
+
 
 def test_serialize_power_readings_hourly():
     first_timestamp = datetime(
@@ -331,6 +327,7 @@ def test_serialize_power_readings_hourly():
         ],
     }
 
+
 def test_serialize_power_readings_rejects_invalid_resample():
     reading = make_reading(
         datetime.now(timezone.utc),
@@ -341,8 +338,6 @@ def test_serialize_power_readings_rejects_invalid_resample():
             [reading],
             resample="minute",
         )
-    
+
     assert error.value.status_code == 400
-    assert error.value.detail == (
-        "Unsupported resample value"
-    )
+    assert error.value.detail == ("Unsupported resample value")

@@ -12,7 +12,6 @@ from app.database import get_session
 from app.main import fastapi_app
 
 from app.schemas.groups import GroupTable
-from app.schemas.logger import LoggerTable
 from app.schemas.preferences import ActivationPrefTable, NotificationPrefTable
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable

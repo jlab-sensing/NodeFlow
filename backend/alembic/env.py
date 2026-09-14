@@ -1,18 +1,10 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import create_engine, pool
 from sqlmodel import SQLModel
 
+from alembic import context
 from app.database import get_database_url
-
-import app.schemas.groups 
-import app.schemas.preferences  
-import app.schemas.sensor  
-import app.schemas.sensor_reading  
-import app.schemas.solenoid  
-import app.schemas.user_schema  
-
 
 config = context.config
 

@@ -1,8 +1,8 @@
 import os
 from typing import Any
+
 import httpx
 from fastapi import HTTPException, Request, Response
-
 
 DEFAULT_TIMEOUT_SECONDS = 20.0
 AUTH_FORWARD_HEADERS = {"authorization", "cookie", "content-type", "accept"}
@@ -12,7 +12,9 @@ AUTH_RESPONSE_HEADERS = {"content-type"}
 def get_ents_base_url() -> str:
     base_url = os.getenv("ENTS_API_BASE_URL", "").rstrip("/")
     if not base_url:
-        raise HTTPException(status_code=500, detail="ENTS_API_BASE_URL is not configured")
+        raise HTTPException(
+            status_code=500, detail="ENTS_API_BASE_URL is not configured"
+        )
     return base_url
 
 
@@ -34,7 +36,9 @@ def get_forwarded_auth_headers(request: Request) -> dict[str, str]:
     }
 
 
-async def ents_auth_request(request: Request, path: str, method: str = "GET") -> Response:
+async def ents_auth_request(
+    request: Request, path: str, method: str = "GET"
+) -> Response:
     """Forward user auth/session requests to ENTS without JSON coercion.
 
     ENTS auth endpoints return raw access-token bodies and set/clear refresh-token
@@ -101,7 +105,9 @@ async def ents_get(path: str, params: dict[str, Any] | None = None) -> Any:
         ) from exc
 
 
-async def ents_post(path: str, json: Any | None = None, params: dict[str, Any] | None = None) -> Any:
+async def ents_post(
+    path: str, json: Any | None = None, params: dict[str, Any] | None = None
+) -> Any:
     try:
         async with httpx.AsyncClient(
             base_url=get_ents_base_url(),
@@ -124,7 +130,9 @@ async def ents_post(path: str, json: Any | None = None, params: dict[str, Any] |
         ) from exc
 
 
-async def ents_put(path: str, json: Any | None = None, params: dict[str, Any] | None = None) -> Any:
+async def ents_put(
+    path: str, json: Any | None = None, params: dict[str, Any] | None = None
+) -> Any:
     try:
         async with httpx.AsyncClient(
             base_url=get_ents_base_url(),

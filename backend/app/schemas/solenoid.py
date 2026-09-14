@@ -1,11 +1,13 @@
-from sqlmodel import SQLModel, Field
-from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Optional
+from uuid import UUID, uuid4
+
+from sqlmodel import Field, SQLModel
+
 
 class SolenoidTable(SQLModel, table=True):
     __tablename__ = "solenoid"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     uuid: UUID = Field(default_factory=uuid4, index=True)
     user_id: UUID = Field(index=True)

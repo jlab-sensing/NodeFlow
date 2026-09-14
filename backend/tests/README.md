@@ -1,5 +1,9 @@
 # Testing Guide
 
+## Code Quality
+
+To run linting and formatting suite, check [contributing.md](../../CONTRIBUTING.md)
+
 ## Run backend testing suite
 
 To run tests

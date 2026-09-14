@@ -1,18 +1,21 @@
-from sqlmodel import SQLModel
-from uuid import UUID
 from typing import Literal
+
 from pydantic import model_validator
+from sqlmodel import SQLModel
 
 ComparisonOperator = Literal["<", ">"]
 
+
 class SolenoidAction(SQLModel):
-    action: str 
+    action: str
+
 
 class NotificationPref(SQLModel):
     group_id: int
     condition: str
-    notification_frequency_seconds: float 
+    notification_frequency_seconds: float
     enabled: bool
+
 
 class ActivationPref(SQLModel):
     sensor_id: int
@@ -34,27 +37,23 @@ class ActivationPref(SQLModel):
         if not has_operator:
             return self
 
-        expected_operator = (
-            ">"
-            if self.condition_operator == "<"
-            else "<"
-        )
+        expected_operator = ">" if self.condition_operator == "<" else "<"
 
         if self.close_condition_operator != expected_operator:
             raise ValueError("close operator must be opposite")
 
         if (
             self.condition_operator == "<"
-            and self.close_condition_value
-            <= self.condition_value
+            and self.close_condition_value <= self.condition_value
         ):
             raise ValueError("Close threshold must be higher than activation threshold")
 
         if (
             self.condition_operator == ">"
-            and self.close_condition_value
-            >= self.condition_value
+            and self.close_condition_value >= self.condition_value
         ):
-            raise ValueError("Close threshold must be lower than the activation threshold")
+            raise ValueError(
+                "Close threshold must be lower than the activation threshold"
+            )
 
         return self

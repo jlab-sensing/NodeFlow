@@ -1,21 +1,24 @@
+import os
+from typing import List
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
-from typing import List
+
+from app.auth.auth import get_current_user
 from app.database import get_session
-from app.schemas.solenoid import SolenoidTable
-from app.models.solenoid import SolenoidRead, SolenoidCreate, SolenoidUpdate
-from app.models.hardware import ArchiveUpdate
 from app.models.actions import SolenoidAction
 from app.models.groups import DeviceGroupUpdate
+from app.models.hardware import ArchiveUpdate
+from app.models.solenoid import SolenoidCreate, SolenoidRead, SolenoidUpdate
 from app.schemas.groups import GroupTable
-from app.services.logger_service import get_shared_logger
-import httpx
-import os
-from app.auth.auth import get_current_user
+from app.schemas.solenoid import SolenoidTable
 from app.schemas.user_schema import UserTable
+from app.services.logger_service import get_shared_logger
 from app.services.solenoid_control import close_solenoid, open_solenoid
 
 router = APIRouter(prefix="/api/solenoid", tags=["Solenoids"])
+
 
 def get_owned_solenoid(
     solenoid_id: int,
@@ -31,11 +34,8 @@ def get_owned_solenoid(
         raise HTTPException(status_code=404, detail="Solenoid not found")
     return solenoid
 
-def validate_owned_group(
-    group_id,
-    session: Session,
-    current_user: UserTable
-):
+
+def validate_owned_group(group_id, session: Session, current_user: UserTable):
     if group_id is None:
         return
     statement = select(GroupTable).where(
@@ -45,41 +45,40 @@ def validate_owned_group(
     if not session.exec(statement).first():
         raise HTTPException(status_code=404, detail="Group not found")
 
+
 SOLENOID_TESTER_URL = os.getenv(
     "SOLENOID_TESTER_URL",
     "http://solenoid-tester:8002",
 )
 
+
 @router.get("/", response_model=List[SolenoidRead])
 def list_solenoids(
-    available: bool = Query(None), 
+    available: bool = Query(None),
     include_archived: bool = Query(False),
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
     """Lists all solenoids where there is no associated group_id"""
-    statement = select(SolenoidTable).where(
-        SolenoidTable.user_id == current_user.id
-    )
+    statement = select(SolenoidTable).where(SolenoidTable.user_id == current_user.id)
     if not include_archived:
-        statement = statement.where(
-            SolenoidTable.archived.is_(False)
-        )
+        statement = statement.where(SolenoidTable.archived.is_(False))
     if available:
         statement = statement.where(
-            SolenoidTable.group_id.is_(None),
-            SolenoidTable.archived.is_(False)
+            SolenoidTable.group_id.is_(None), SolenoidTable.archived.is_(False)
         )
     return session.exec(statement).all()
 
+
 @router.get("/{solenoid_id}", response_model=SolenoidRead)
-def get_specific_solenoid(solenoid_id: int, session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+def get_specific_solenoid(
+    solenoid_id: int,
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
     """Gets specific solenoid information."""
-    return get_owned_solenoid(
-        solenoid_id,
-        session,
-        current_user
-    )
+    return get_owned_solenoid(solenoid_id, session, current_user)
+
 
 @router.put("/{solenoid_id}", response_model=SolenoidRead)
 async def update_solenoid(
@@ -87,7 +86,7 @@ async def update_solenoid(
     update: SolenoidUpdate,
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
-): 
+):
     solenoid = get_owned_solenoid(
         solenoid_id,
         session,
@@ -107,10 +106,11 @@ async def update_solenoid(
     session.refresh(solenoid)
     return solenoid
 
+
 @router.put("/{solenoid_id}/group", response_model=SolenoidRead)
 def update_solenoid_group(
-    solenoid_id: int, 
-    update: DeviceGroupUpdate, 
+    solenoid_id: int,
+    update: DeviceGroupUpdate,
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
@@ -130,9 +130,10 @@ def update_solenoid_group(
     session.refresh(solenoid)
     return solenoid
 
-@router.post("/",response_model=SolenoidRead, status_code=status.HTTP_201_CREATED)
+
+@router.post("/", response_model=SolenoidRead, status_code=status.HTTP_201_CREATED)
 async def add_new_solenoid(
-    solenoid: SolenoidCreate, 
+    solenoid: SolenoidCreate,
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
@@ -156,17 +157,25 @@ async def add_new_solenoid(
     session.refresh(db_solenoid)
     return db_solenoid
 
+
 @router.post("/action")
 async def post_action_all_solenoids(action: SolenoidAction):
     """Broadcasts an action to all solenoids."""
     return {"status": "broadcast_sent", "action": action.action}
 
-@router.post('/{solenoid_id}/close')
-async def close_specific_solenoid(solenoid_id: int, session: Session=Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+
+@router.post("/{solenoid_id}/close")
+async def close_specific_solenoid(
+    solenoid_id: int,
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
     """Close a specific solenoid"""
-    statement = select(SolenoidTable).where(SolenoidTable.id == solenoid_id, SolenoidTable.user_id == current_user.id)
-    solenoid=session.exec(statement).first()
-    if not solenoid: 
+    statement = select(SolenoidTable).where(
+        SolenoidTable.id == solenoid_id, SolenoidTable.user_id == current_user.id
+    )
+    solenoid = session.exec(statement).first()
+    if not solenoid:
         raise HTTPException(status_code=404, detail="Solenoid not found")
 
     if solenoid.group_id is not None:
@@ -184,7 +193,9 @@ async def close_specific_solenoid(solenoid_id: int, session: Session=Depends(get
     try:
         updated_solenoid = await close_solenoid(solenoid, session)
     except httpx.HTTPError as error:
-        raise HTTPException(status_code=503, detail="Test solenoid unavailable") from error
+        raise HTTPException(
+            status_code=503, detail="Test solenoid unavailable"
+        ) from error
 
     return {
         "solenoid_id": updated_solenoid.id,
@@ -193,8 +204,12 @@ async def close_specific_solenoid(solenoid_id: int, session: Session=Depends(get
     }
 
 
-@router.post("/{solenoid_id}/open")    
-async def open_specific_solenoid(solenoid_id: int, session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+@router.post("/{solenoid_id}/open")
+async def open_specific_solenoid(
+    solenoid_id: int,
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
     """Open a specific solenoid"""
     statement = select(SolenoidTable).where(
         SolenoidTable.id == solenoid_id,
@@ -222,21 +237,29 @@ async def open_specific_solenoid(solenoid_id: int, session: Session = Depends(ge
     try:
         update_solenoid = await open_solenoid(solenoid, session)
     except httpx.HTTPError as error:
-        raise HTTPException(status_code=503, detail = "test solenoid unavailable") from error
+        raise HTTPException(
+            status_code=503, detail="test solenoid unavailable"
+        ) from error
     return {
         "solenoid_id": update_solenoid.id,
         "state": update_solenoid.active_state,
         "mode": "manual" if solenoid.group_id is not None else None,
     }
 
+
 @router.delete("/{solenoid_id}")
-async def delete_solenoid(solenoid_id: int, session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+async def delete_solenoid(
+    solenoid_id: int,
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
     """Deletes a specific solenoid."""
     solenoid = get_owned_solenoid(solenoid_id, session, current_user)
-    
+
     session.delete(solenoid)
     session.commit()
     return {"ok": True}
+
 
 @router.patch("/{solenoid_id}/archive", response_model=SolenoidRead)
 async def set_solenoid_archived(
@@ -257,8 +280,10 @@ async def set_solenoid_archived(
                 session,
             )
         except httpx.HTTPError as error:
-            raise HTTPException(status_code=503, detail="Solenoid unavailable") from error
-        
+            raise HTTPException(
+                status_code=503, detail="Solenoid unavailable"
+            ) from error
+
     solenoid.archived = update.archived
     solenoid.active_state = "closed"
     solenoid.group_id = None
@@ -268,12 +293,17 @@ async def set_solenoid_archived(
     session.refresh(solenoid)
     return solenoid
 
+
 # Register Test Solenoid
 
 TEST_SOLENOID_LOGGER_ID = -1
 
+
 @router.post("/test/register", response_model=SolenoidRead)
-async def register_test_solenoid( session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+async def register_test_solenoid(
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
     existing_statement = select(SolenoidTable).where(
         SolenoidTable.user_id == current_user.id,
         SolenoidTable.logger_id == TEST_SOLENOID_LOGGER_ID,
@@ -281,17 +311,17 @@ async def register_test_solenoid( session: Session = Depends(get_session), curre
     existing = session.exec(existing_statement).first()
     if existing:
         return existing
-    
+
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(
-                f"{SOLENOID_TESTER_URL}/status"
-            )
+            response = await client.get(f"{SOLENOID_TESTER_URL}/status")
             response.raise_for_status()
             tester_status = response.json()
 
     except httpx.HTTPError as error:
-        raise HTTPException(status_code=503, detail="Test solenoid unavailable") from error
+        raise HTTPException(
+            status_code=503, detail="Test solenoid unavailable"
+        ) from error
 
     solenoid = SolenoidTable(
         user_id=current_user.id,

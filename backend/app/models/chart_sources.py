@@ -1,6 +1,7 @@
-from sqlmodel import SQLModel
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
+
+from sqlmodel import SQLModel
 
 
 class ChartGroupRead(SQLModel):

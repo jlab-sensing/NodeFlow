@@ -1,8 +1,10 @@
+from datetime import datetime, timezone
+
 from app.schemas.groups import GroupTable
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 from app.schemas.user_schema import UserTable
-from datetime import datetime, timezone
+
 
 def create_sensor(
     db_session,
@@ -21,13 +23,14 @@ def create_sensor(
         sensor_id=sensor_id,
         logger_id=logger_id,
         legacy_cell_id=legacy_cell_id,
-        group_id=group_id
+        group_id=group_id,
     )
 
     db_session.add(sensor)
     db_session.commit()
     db_session.refresh(sensor)
     return sensor
+
 
 def create_other_user(db_session):
     user = UserTable(
@@ -41,12 +44,14 @@ def create_other_user(db_session):
     db_session.refresh(user)
     return user
 
+
 def test_chart_sources_requires_authentication(client):
     response = client.get("/api/chart-sources/")
     assert response.status_code == 401
     assert response.json() == {
         "detail": "No token provided",
     }
+
 
 def test_chart_sources_empty_for_user(authenticated_client):
     response = authenticated_client.get("/api/chart-sources/")
@@ -55,6 +60,7 @@ def test_chart_sources_empty_for_user(authenticated_client):
         "groups": [],
         "sensors": [],
     }
+
 
 def test_chart_sources_returns_on_current_users_group(
     authenticated_client,
@@ -87,10 +93,9 @@ def test_chart_sources_returns_on_current_users_group(
         }
     ]
 
-def  test_chart_sources_returns_only_current_users_sensors(
-    authenticated_client,
-    db_session,
-    test_user
+
+def test_chart_sources_returns_only_current_users_sensors(
+    authenticated_client, db_session, test_user
 ):
     owned_sensor = create_sensor(
         db_session,
@@ -114,6 +119,7 @@ def  test_chart_sources_returns_only_current_users_sensors(
     assert sensors[0]["uuid"] == str(owned_sensor.uuid)
     assert sensors[0]["name"] == "Owned Sensor"
 
+
 def test_sensor_with_native_readings_has_chart_data(
     authenticated_client,
     db_session,
@@ -124,7 +130,7 @@ def test_sensor_with_native_readings_has_chart_data(
         test_user.id,
     )
     reading = SensorReadingTable(
-        sensor_uuid = sensor.uuid,
+        sensor_uuid=sensor.uuid,
         user_id=test_user.id,
         measurement="Volumetric Water Content",
         value=42.0,
@@ -139,6 +145,7 @@ def test_sensor_with_native_readings_has_chart_data(
 
     assert returned_sensor["uuid"] == str(sensor.uuid)
     assert returned_sensor["has_chart_data"] is True
+
 
 def test_sensor_without_readings_has_no_chart_data(
     authenticated_client,
@@ -157,6 +164,7 @@ def test_sensor_without_readings_has_no_chart_data(
     assert returned_sensor["uuid"] == str(sensor.uuid)
     assert returned_sensor["has_chart_data"] is False
 
+
 def test_legacy_sensor_has_chart_data(
     authenticated_client,
     db_session,
@@ -172,6 +180,7 @@ def test_legacy_sensor_has_chart_data(
     returned_sensor = response.json()["sensors"][0]
     assert returned_sensor["uuid"] == str(sensor.uuid)
     assert returned_sensor["has_chart_data"] is True
+
 
 def test_chart_sources_include_sensor_capabilities(
     authenticated_client,

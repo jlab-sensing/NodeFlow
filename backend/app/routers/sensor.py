@@ -1,16 +1,14 @@
+from datetime import datetime
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, delete, select
-from typing import List, Optional
-from datetime import datetime
+
+from app.auth.auth import get_current_user
 from app.database import get_session
-from app.schemas.groups import GroupTable
-from app.services.logger_service import get_shared_logger
-from app.schemas.sensor import SensorTable
-from app.schemas.sensor_reading import SensorReadingTable
-from app.models.sensor import SensorRead, SensorCreate, SensorUpdate
 from app.models.groups import DeviceGroupUpdate
 from app.models.hardware import ArchiveUpdate
-from app.services.sensor_config import SENSOR_TYPE_CONFIG_KEYS
+from app.models.sensor import SensorCreate, SensorRead, SensorUpdate
 from app.models.test_sensor import (
     TestSensorModeUpdate,
     TestSensorReading,
@@ -18,8 +16,12 @@ from app.models.test_sensor import (
     TestSensorSimulation,
     TestSensorSimulationUpdate,
 )
-from app.auth.auth import get_current_user
+from app.schemas.groups import GroupTable
+from app.schemas.sensor import SensorTable
+from app.schemas.sensor_reading import SensorReadingTable
 from app.schemas.user_schema import UserTable
+from app.services.logger_service import get_shared_logger
+from app.services.sensor_config import SENSOR_TYPE_CONFIG_KEYS
 from app.services.sensor_readings import (
     TEST_SENSOR_ID,
     TEST_SENSOR_LOGGER_ID,
@@ -58,6 +60,7 @@ def validate_owned_group(
     )
     if not session.exec(statement).first():
         raise HTTPException(status_code=404, detail="Group not found")
+
 
 def get_owned_test_sensor(
     sensor_id: int,
@@ -103,6 +106,7 @@ async def register_test_sensor(
     session.commit()
     session.refresh(sensor)
     return sensor
+
 
 @router.get("/test/reading", response_model=TestSensorReading)
 async def get_current_test_sensor_reading(
@@ -181,6 +185,7 @@ async def update_test_sensor_simulation(
         update.model_dump(),
     )
 
+
 @router.get("/", response_model=List[SensorRead])
 def list_sensors(
     available: bool = Query(None),
@@ -194,8 +199,11 @@ def list_sensors(
     if not include_archived:
         statement = statement.where(SensorTable.archived.is_(False))
     if available:
-        statement = statement.where(SensorTable.group_id.is_(None), SensorTable.archived.is_(False))
+        statement = statement.where(
+            SensorTable.group_id.is_(None), SensorTable.archived.is_(False)
+        )
     return session.exec(statement).all()
+
 
 @router.post("/", response_model=SensorRead, status_code=status.HTTP_201_CREATED)
 async def add_new_sensor(
@@ -221,9 +229,11 @@ async def add_new_sensor(
     session.refresh(db_sensor)
     return db_sensor
 
+
 @router.get("/types", response_model=list[str])
 def list_sensor_types(current_user: UserTable = Depends(get_current_user)):
     return sorted(SENSOR_TYPE_CONFIG_KEYS.keys())
+
 
 @router.put("/{sensor_id}", response_model=SensorRead)
 async def update_sensor(
@@ -245,6 +255,7 @@ async def update_sensor(
     session.refresh(db_sensor)
     return db_sensor
 
+
 @router.put("/{sensor_id}/group", response_model=SensorRead)
 def update_sensor_group(
     sensor_id: int,
@@ -261,6 +272,7 @@ def update_sensor_group(
     session.refresh(sensor)
     return sensor
 
+
 @router.get("/data")
 async def get_sensor_plot_data(
     sensor_id: int,
@@ -272,6 +284,7 @@ async def get_sensor_plot_data(
     """Graphing sensor data (Placeholder for DirtViz dynamic integration)."""
     get_owned_sensor(sensor_id, session, current_user)
     return {"sensor_id": sensor_id, "timestamps": [], "values": []}
+
 
 @router.patch("/{sensor_id}/archive", response_model=SensorRead)
 def set_sensor_archived(
@@ -289,6 +302,7 @@ def set_sensor_archived(
     session.refresh(sensor)
     return sensor
 
+
 @router.delete("/{sensor_id}")
 async def delete_sensor(
     sensor_id: int,
@@ -305,4 +319,3 @@ async def delete_sensor(
     session.delete(sensor)
     session.commit()
     return {"ok": True}
-

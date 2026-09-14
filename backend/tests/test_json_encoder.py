@@ -1,6 +1,8 @@
-from app.auth.json_encoder import UUIDSerializer
 from uuid import uuid4
+
 import jwt
+
+from app.auth.json_encoder import UUIDSerializer
 
 
 def test_json_encoder_uuid():

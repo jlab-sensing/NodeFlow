@@ -1,6 +1,8 @@
-from datetime import datetime 
+from datetime import datetime
+
 from pydantic import Field, field_validator
 from sqlmodel import SQLModel
+
 
 class LoggerCreate(SQLModel):
     name: str = Field(min_length=1, max_length=255)
@@ -14,8 +16,9 @@ class LoggerCreate(SQLModel):
         cleaned = value.strip()
         if not cleaned:
             raise ValueError("Logger name cannot be blank")
-        
+
         return cleaned
+
 
 class LoggerUpdate(SQLModel):
     name: str = Field(min_length=1, max_length=255)
@@ -27,8 +30,9 @@ class LoggerUpdate(SQLModel):
         cleaned = value.strip()
         if not cleaned:
             raise ValueError("Logger name cannot be blank")
-        
+
         return cleaned
+
 
 class LoggerRead(SQLModel):
     id: int

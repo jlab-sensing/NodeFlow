@@ -1,7 +1,10 @@
 from unittest.mock import AsyncMock
+
 from fastapi import HTTPException
+
 from app.schemas.sensor import SensorTable
 from app.schemas.solenoid import SolenoidTable
+
 
 def shared_logger(
     logger_id: int = 123,
@@ -17,6 +20,7 @@ def shared_logger(
         "date_created": None,
     }
 
+
 def logger_payload() -> dict:
     return {
         "name": "Greenhouse Logger",
@@ -25,9 +29,11 @@ def logger_payload() -> dict:
         "description": "Greenhouse Logger",
     }
 
+
 def test_logger_routes_reques_authenication(client):
     response = client.get("/api/logger/")
     assert response.status_code == 401
+
 
 def test_list_loggers_returns_shared_loggers(
     authenticated_client,
@@ -36,7 +42,7 @@ def test_list_loggers_returns_shared_loggers(
     list_mock = AsyncMock(
         return_value=[
             shared_logger(123),
-            shared_logger(456, name = "Field Logger"),
+            shared_logger(456, name="Field Logger"),
         ]
     )
     monkeypatch.setattr(
@@ -45,20 +51,16 @@ def test_list_loggers_returns_shared_loggers(
     )
     response = authenticated_client.get("/api/logger/")
     assert response.status_code == 200
-    returned_ids = {
-        logger["logger_id"]
-        for logger in response.json()
-    }
+    returned_ids = {logger["logger_id"] for logger in response.json()}
     assert returned_ids == {123, 456}
     list_mock.assert_awaited_once_with()
+
 
 def test_create_logger_uses_shared_logger_service(
     authenticated_client,
     monkeypatch,
 ):
-    create_mock = AsyncMock(
-        return_value=shared_logger()
-    )
+    create_mock = AsyncMock(return_value=shared_logger())
     monkeypatch.setattr(
         "app.routers.logger.create_shared_logger",
         create_mock,
@@ -82,6 +84,7 @@ def test_create_logger_uses_shared_logger_service(
     assert submitted.type == "ents"
     assert submitted.device_eui == "0080E1150546D093"
     assert submitted.description == "Greenhouse Logger"
+
 
 def test_create_logger_preserves_dirtviz_conflict(
     authenticated_client,
@@ -108,13 +111,12 @@ def test_create_logger_preserves_dirtviz_conflict(
         "detail": "Logger already exists",
     }
 
+
 def test_get_specific_shared_logger(
     authenticated_client,
     monkeypatch,
 ):
-    get_mock = AsyncMock(
-        return_value=shared_logger()
-    )
+    get_mock = AsyncMock(return_value=shared_logger())
     monkeypatch.setattr(
         "app.routers.logger.get_shared_logger",
         get_mock,
@@ -125,6 +127,7 @@ def test_get_specific_shared_logger(
     assert response.status_code == 200
     assert response.json()["logger_id"] == 123
     get_mock.assert_awaited_once_with(123)
+
 
 def test_get_missing_shared_logger_returns_not_found(
     authenticated_client,
@@ -148,6 +151,7 @@ def test_get_missing_shared_logger_returns_not_found(
         "detail": "Logger not found",
     }
 
+
 def test_update_shared_logger(
     authenticated_client,
     monkeypatch,
@@ -170,7 +174,7 @@ def test_update_shared_logger(
             "description": "Updated description",
         },
     )
-    
+
     assert response.status_code == 200
     assert response.json()["name"] == "Updated Logger"
     assert response.json()["description"] == "Updated description"
@@ -182,6 +186,7 @@ def test_update_shared_logger(
     assert logger_id == 123
     assert submitted.name == "Updated Logger"
     assert submitted.description == "Updated description"
+
 
 def test_delete_shared_logger(
     authenticated_client,
@@ -214,6 +219,7 @@ def test_delete_shared_logger(
     get_mock.assert_awaited_once_with(123)
     delete_mock.assert_awaited_once_with(123)
 
+
 def test_delete_missing_shared_logger_returns_not_found(
     authenticated_client,
     monkeypatch,
@@ -242,6 +248,7 @@ def test_delete_missing_shared_logger_returns_not_found(
     }
     delete_mock.assert_not_awaited()
 
+
 def test_delete_logger_used_by_sensor_returns_conflict(
     authenticated_client,
     db_session,
@@ -259,9 +266,7 @@ def test_delete_logger_used_by_sensor_returns_conflict(
     db_session.add(sensor)
     db_session.commit()
 
-    get_mock = AsyncMock(
-        return_value=shared_logger()
-    )
+    get_mock = AsyncMock(return_value=shared_logger())
     delete_mock = AsyncMock()
 
     monkeypatch.setattr(
@@ -282,6 +287,7 @@ def test_delete_logger_used_by_sensor_returns_conflict(
             "Reassign or remove that hardware before deleting the logger"
         )
     }
+
 
 def test_delete_logger_used_by_solenoid_returns_conflict(
     authenticated_client,

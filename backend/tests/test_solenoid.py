@@ -1,10 +1,13 @@
 from unittest.mock import AsyncMock
+
 import httpx
+import pytest
+from fastapi import HTTPException
+
 from app.schemas.groups import GroupTable
 from app.schemas.solenoid import SolenoidTable
 from app.schemas.user_schema import UserTable
-import pytest
-from fastapi import HTTPException
+
 
 def create_user(
     db_session,
@@ -21,6 +24,7 @@ def create_user(
     db_session.refresh(user)
     return user
 
+
 def create_group(db_session, user_id, name="Test group"):
     group = GroupTable(
         name=name,
@@ -30,6 +34,7 @@ def create_group(db_session, user_id, name="Test group"):
     db_session.commit()
     db_session.refresh(group)
     return group
+
 
 def create_solenoid(
     db_session,
@@ -53,6 +58,7 @@ def create_solenoid(
     db_session.refresh(solenoid)
     return solenoid
 
+
 @pytest.fixture
 def shared_logger_mock(monkeypatch):
     logger_mock = AsyncMock(
@@ -69,6 +75,7 @@ def shared_logger_mock(monkeypatch):
     )
     return logger_mock
 
+
 def mock_successful_close(monkeypatch):
     async def close_and_persist(solenoid, session):
         solenoid.active_state = "closed"
@@ -76,6 +83,7 @@ def mock_successful_close(monkeypatch):
         session.commit()
         session.refresh(solenoid)
         return solenoid
+
     close_mock = AsyncMock(side_effect=close_and_persist)
     monkeypatch.setattr(
         "app.routers.solenoid.close_solenoid",
@@ -83,9 +91,11 @@ def mock_successful_close(monkeypatch):
     )
     return close_mock
 
+
 def reload_solenoid(db_session, solenoid_id):
     db_session.expire_all()
     return db_session.get(SolenoidTable, solenoid_id)
+
 
 def test_list_solenoids_returns_only_current_users_active_solenoids(
     authenticated_client,
@@ -114,11 +124,9 @@ def test_list_solenoids_returns_only_current_users_active_solenoids(
     )
     response = authenticated_client.get("/api/solenoid/")
     assert response.status_code == 200
-    returned_ids = {
-        solenoid["id"]
-        for solenoid in response.json()
-    }
+    returned_ids = {solenoid["id"] for solenoid in response.json()}
     assert returned_ids == {active_solenoid.id}
+
 
 def test_list_solenoids_can_include_archived_solenoids(
     authenticated_client,
@@ -144,18 +152,17 @@ def test_list_solenoids_can_include_archived_solenoids(
         params={"include_archived": True},
     )
     assert response.status_code == 200
-    returned_ids = {
-        solenoid["id"]
-        for solenoid in response.json()
-    }
+    returned_ids = {solenoid["id"] for solenoid in response.json()}
     assert returned_ids == {
         active_solenoid.id,
         archived_solenoid.id,
     }
 
+
 def test_list_solenoids_require_authentication(client):
     response = client.get("/api/solenoid/")
     assert response.status_code == 401
+
 
 def test_archive_open_solenoid_closes_it_first(
     authenticated_client,
@@ -168,7 +175,7 @@ def test_archive_open_solenoid_closes_it_first(
         test_user.id,
         active_state="open",
     )
-    close_mock= mock_successful_close(monkeypatch)
+    close_mock = mock_successful_close(monkeypatch)
     response = authenticated_client.patch(
         f"/api/solenoid/{solenoid.id}/archive",
         json={"archived": True},
@@ -184,11 +191,9 @@ def test_archive_open_solenoid_closes_it_first(
     assert stored_solenoid.active_state == "closed"
     assert stored_solenoid.archived is True
 
-def  test_archive_closed_solenoid_does_not_close_it_again(
-    authenticated_client,
-    db_session,
-    test_user,
-    monkeypatch
+
+def test_archive_closed_solenoid_does_not_close_it_again(
+    authenticated_client, db_session, test_user, monkeypatch
 ):
     solenoid = create_solenoid(
         db_session,
@@ -215,6 +220,7 @@ def  test_archive_closed_solenoid_does_not_close_it_again(
     assert stored_solenoid.active_state == "closed"
     assert stored_solenoid.archived is True
 
+
 def test_archive_solenoid_clears_group(
     authenticated_client,
     db_session,
@@ -226,10 +232,7 @@ def test_archive_solenoid_clears_group(
         test_user.id,
     )
     solenoid = create_solenoid(
-        db_session,
-        test_user.id,
-        active_state="open",
-        group_id=group.uuid
+        db_session, test_user.id, active_state="open", group_id=group.uuid
     )
     mock_successful_close(monkeypatch)
     response = authenticated_client.patch(
@@ -246,6 +249,7 @@ def test_archive_solenoid_clears_group(
     assert stored_solenoid is not None
     assert stored_solenoid.group_id is None
     assert stored_solenoid.archived is True
+
 
 def test_archive_solenoid_aborts_when_close_fails(
     authenticated_client,
@@ -285,6 +289,7 @@ def test_archive_solenoid_aborts_when_close_fails(
     assert stored_solenoid.archived is False
     assert stored_solenoid.group_id == group.uuid
 
+
 def test_restore_solenoid_keeps_it_closed_and_ungrouped(
     authenticated_client,
     db_session,
@@ -317,6 +322,7 @@ def test_restore_solenoid_keeps_it_closed_and_ungrouped(
     assert stored_solenoid.archived is False
     assert stored_solenoid.active_state == "closed"
     assert stored_solenoid.group_id is None
+
 
 def test_cannot_archive_another_users_solenoid(
     authenticated_client,
@@ -351,6 +357,7 @@ def test_cannot_archive_another_users_solenoid(
     assert stored_solenoid.archived is False
     assert stored_solenoid.active_state == "open"
 
+
 def test_archive_missing_solenoid_returns_not_found(
     authenticated_client,
     monkeypatch,
@@ -371,6 +378,7 @@ def test_archive_missing_solenoid_returns_not_found(
     }
     close_mock.assert_not_awaited()
 
+
 def test_create_solenoid_assigns_owner_and_closed_state(
     authenticated_client,
     test_user,
@@ -380,7 +388,7 @@ def test_create_solenoid_assigns_owner_and_closed_state(
         "/api/solenoid/",
         json={
             "name": "Greenhouse Valve",
-            "logger_id":301,
+            "logger_id": 301,
             "group_id": None,
         },
     )
@@ -396,11 +404,12 @@ def test_create_solenoid_assigns_owner_and_closed_state(
     assert "uuid" in payload
     assert "date_created" in payload
 
+
 def test_create_solenoid_requires_shared_logger(
     authenticated_client,
     shared_logger_mock,
 ):
-    shared_logger_mock.side_effect= HTTPException(
+    shared_logger_mock.side_effect = HTTPException(
         status_code=404,
         detail="Logger not found",
     )
@@ -419,12 +428,13 @@ def test_create_solenoid_requires_shared_logger(
     }
     shared_logger_mock.assert_awaited_once_with(999)
 
+
 def test_update_solenoid_preserves_state_and_owner(
     authenticated_client,
     db_session,
     test_user,
     shared_logger_mock,
-): 
+):
     solenoid = create_solenoid(
         db_session,
         test_user.id,
@@ -450,6 +460,7 @@ def test_update_solenoid_preserves_state_and_owner(
     assert payload["logger_id"] == 402
     assert payload["archived"] is False
     shared_logger_mock.assert_awaited_once_with(402)
+
 
 def test_update_solenoid_rejects_missing_shared_logger(
     authenticated_client,

@@ -1,11 +1,12 @@
 name: NodeFlow CI
 
-on: 
-    pull_request:
-    push: 
-      branches:
-        - main
-    merge_group:
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read

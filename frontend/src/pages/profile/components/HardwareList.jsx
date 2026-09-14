@@ -19,6 +19,8 @@ import { useUserGroups } from '../../../services/group'
 import { useHardware } from '../../../services/hardware'
 import { useUserLoggers } from '../../../services/logger'
 import AddHardwareModal from './AddHardwareModal'
+import EditHardwareModal from './EditHardwareModal'
+import DeleteHardwareButton from './DeleteHardwareButton'
 
 const formatSubtype = (subtype) => {
   if (!subtype) {
@@ -44,6 +46,7 @@ function HardwareList() {
   const axiosPrivate = useAxiosPrivate()
   const [archiveFilter, setArchiveFilter] = useState('active')
   const [addHardwareOpen, setAddHardwareOpen] = useState(false)
+  const [editingHardware, setEditingHardware] = useState(null)
 
   const {
     data: hardware = [],
@@ -99,12 +102,7 @@ function HardwareList() {
         headerName: 'Category',
         width: 125,
         renderCell: ({ row }) => (
-          <Chip
-            label={row.category}
-            color={row.hardwareType === 'sensor' ? 'primary' : 'secondary'}
-            variant="outlined"
-            size="small"
-          />
+          row.category
         ),
       },
       {
@@ -159,10 +157,22 @@ function HardwareList() {
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
-        renderCell: () => (
-          <Typography variant="body2" color="text.secondary">
-            Coming next
-          </Typography>
+        renderCell: ({ row }) => (
+          <Stack 
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center', height: '100%'}}
+          >
+            <Button
+              variant='contained'
+              sx={{ p: 0.7, minWidth: 0}}
+              onClick={() => setEditingHardware(row)}
+            >
+              Edit
+            </Button>
+
+            <DeleteHardwareButton hardware={row} />
+          </Stack>
         ),
       },
     ],
@@ -280,10 +290,10 @@ function HardwareList() {
             startIcon={<AddCircleIcon />}
             onClick={() => setAddHardwareOpen(true)}
             sx={{
-              backgroundColor: '#588157',
+              backgroundColor: '#1E3A5F',
               whiteSpace: 'nowrap',
               '&:hover': {
-                backgroundColor: '#3a5a40',
+                backgroundColor: '#2AB0EE',
               },
             }}
           >
@@ -315,6 +325,11 @@ function HardwareList() {
         <DataGrid
           rows={filteredHardware}
           columns={columns}
+          getRowClassName={({ row }) =>
+            row.hardwareType === 'sensor'
+              ? 'hardware-row--sensor'
+              : 'hardware-row--actuator'
+          }
           disableRowSelectionOnClick
           pageSizeOptions={[5, 10, 25]}
           initialState={{
@@ -328,6 +343,18 @@ function HardwareList() {
           sx={{
             border: 0,
             minHeight: 500,
+            '& .hardware-row--sensor': {
+              backgroundColor: '#fafafa',
+            },
+            '& .hardware-row--actuator': {
+              backgroundColor: '#f2f2f2',
+            },
+            '& .hardware-row--sensor:hover': {
+              backgroundColor: '#f5f5f5',
+            },
+            '& .hardware-row--actuator:hover': {
+              backgroundColor: '#e8e8e8',
+            },
           }}
         />
       </Box>
@@ -337,7 +364,20 @@ function HardwareList() {
         loggers={loggers}
         groups={groups}
       />
+
+      {editingHardware && (
+        <EditHardwareModal
+          key={editingHardware.id}
+          open
+          hardware={editingHardware}
+          onClose={() => setEditingHardware(null)}
+          loggers={loggers}
+          groups={groups}
+        />
+      )}
+
     </Box>
+  
   )
 }
 

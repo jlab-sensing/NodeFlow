@@ -22,7 +22,7 @@ import { useState } from 'react'
 import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
 import {
   HARDWARE_TYPES,
-  useCreateHardware,
+  useUpdateHardware,
   useSensorTypes,
 } from '../../../services/hardware'
 
@@ -38,12 +38,12 @@ const getErrorMessage = (error) => {
     return detail
   }
 
-  return error?.message || 'Hardware could not be added.'
+  return error?.message || 'Hardware could not be edited.'
 }
 
-function AddHardwareModal({ open, onClose, loggers, groups }) {
+function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
   const axiosPrivate = useAxiosPrivate()
-  const createHardwareMutation = useCreateHardware(axiosPrivate)
+  const updateHardwareMutation = useUpdateHardware(axiosPrivate)
   const {
     data: sensorTypes = [],
     isLoading: sensorTypesAreLoading,
@@ -51,64 +51,47 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
     error: sensorTypesError,
   } = useSensorTypes(axiosPrivate)
 
-  const [hardwareType, setHardwareType] = useState(HARDWARE_TYPES.SENSOR)
-  const [name, setName] = useState('')
-  const [loggerId, setLoggerId] = useState('')
-  const [groupId, setGroupId] = useState('')
-  const [sensorType, setSensorType] = useState('')
+  const hardwareType = hardware.hardwareType
+  const isSensor = hardwareType === HARDWARE_TYPES.SENSOR
+
+  const [name, setName] = useState(hardware.name ?? '')
+  const [loggerId, setLoggerId] = useState(hardware.loggerId ?? '')
+  const [groupId, setGroupId] = useState(hardware.groupId ?? '')
+  const [sensorType, setSensorType] = useState( isSensor ? hardware.subtype ?? '' : '')
   const [submitted, setSubmitted] = useState(false)
 
-  const isSensor = hardwareType === HARDWARE_TYPES.SENSOR
-  const formIsValid =
-    name.trim().length > 0 &&
-    loggerId !== '' &&
-    (!isSensor || sensorType !== '')
+  const formIsValid = name.trim().length > 0 &&
+    loggerId !== '' && (!isSensor || sensorType !== '')
 
-  const resetForm = () => {
-    setHardwareType(HARDWARE_TYPES.SENSOR)
-    setName('')
-    setLoggerId('')
-    setGroupId('')
-    setSensorType('')
-    setSubmitted(false)
-    createHardwareMutation.reset()
-  }
-
+  
   const handleClose = () => {
-    if (createHardwareMutation.isPending) {
+    if (updateHardwareMutation.isPending){
       return
     }
-    resetForm()
     onClose()
-  }
-
-  const handleHardwareTypeChange = (event) => {
-    const nextHardwareType = event.target.value
-    setHardwareType(nextHardwareType)
-
-    if (nextHardwareType === HARDWARE_TYPES.ACTUATOR) {
-      setSensorType('')
-    }
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (updateHardwareMutation.isPending){
+      return
+    }
     setSubmitted(true)
-    if (!formIsValid) {
+    if (!formIsValid){
       return
     }
     try {
-      await createHardwareMutation.mutateAsync({
+      await updateHardwareMutation.mutateAsync({
         hardwareType,
+        backendId: hardware.backendId,
         name: name.trim(),
         loggerId,
         groupId: groupId || null,
         sensorType: isSensor ? sensorType : undefined,
       })
-      resetForm()
       onClose()
     } catch {
-      // empty on purpose
+      //empty on purpose
     }
   }
 
@@ -118,7 +101,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
-      aria-labelledby="add-hardware-title"
+      aria-labelledby="edit-hardware-title"
     >
       <Box component="form" onSubmit={handleSubmit}>
         <Box
@@ -131,9 +114,9 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
         >
           <IconButton
             type="button"
-            aria-label="Close add hardware dialog"
+            aria-label="Close edit hardware dialog"
             onClick={handleClose}
-            disabled={createHardwareMutation.isPending}
+            disabled={updateHardwareMutation.isPending}
             size="small"
             sx={{
               position: 'absolute',
@@ -149,7 +132,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
           </IconButton>
 
           <Typography
-            id="add-hardware-title"
+            id="edit-hardware-title"
             variant="h5"
             component="h2"
             sx={{
@@ -157,7 +140,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
               fontWeight: 600,
             }}
           >
-            Add Hardware
+            Edit Hardware
           </Typography>
 
           <Typography
@@ -167,33 +150,26 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
               mt: 0.5,
             }}
           >
-            Register a sensor or actuator.
+            Update this sensor or actuator
           </Typography>
         </Box>
 
         <DialogContent dividers>
           <Stack spacing={2.5}>
-            {createHardwareMutation.isError && (
+            {updateHardwareMutation.isError && (
               <Alert severity="error">
-                {getErrorMessage(createHardwareMutation.error)}
+                {getErrorMessage(updateHardwareMutation.error)}
               </Alert>
             )}
 
-            <FormControl fullWidth required>
-              <InputLabel id="hardware-category-label">Category</InputLabel>
-
-              <Select
-                labelId="hardware-category-label"
+              <TextField
                 label="Category"
-                value={hardwareType}
-                onChange={handleHardwareTypeChange}
-                disabled={createHardwareMutation.isPending}
-              >
-                <MenuItem value={HARDWARE_TYPES.SENSOR}>Sensor</MenuItem>
-
-                <MenuItem value={HARDWARE_TYPES.ACTUATOR}>Actuator</MenuItem>
-              </Select>
-            </FormControl>
+                value={isSensor ? 'Sensor' : 'Actuator'}
+                fullWidth
+                slotProps={{ input: {readOnly: true }
+              }}
+                helperText="Category cannot be changed after registration."
+              />
 
             <TextField
               label="Hardware Name"
@@ -202,7 +178,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
               required
               fullWidth
               autoFocus
-              disabled={createHardwareMutation.isPending}
+              disabled={updateHardwareMutation.isPending}
               error={submitted && !name.trim()}
               helperText={
                 submitted && !name.trim()
@@ -224,7 +200,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
                 value={loggerId}
                 onChange={(event) => setLoggerId(event.target.value)}
                 disabled={
-                  createHardwareMutation.isPending || loggers.length === 0
+                  updateHardwareMutation.isPending || loggers.length === 0
                 }
               >
                 {loggers.map((logger) => (
@@ -236,7 +212,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
 
               <FormHelperText>
                 {loggers.length === 0
-                  ? 'Register a logger before adding hardware.'
+                  ? 'No loggers are available'
                   : submitted && loggerId === ''
                     ? 'A logger is required.'
                     : 'The logger that owns this hardware.'}
@@ -251,7 +227,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
                 label="Group"
                 value={groupId}
                 onChange={(event) => setGroupId(event.target.value)}
-                disabled={createHardwareMutation.isPending}
+                disabled={updateHardwareMutation.isPending}
               >
                 <MenuItem value="">
                   <em>No Group</em>
@@ -283,7 +259,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
                   value={sensorType}
                   onChange={(event) => setSensorType(event.target.value)}
                   disabled={
-                    createHardwareMutation.isPending ||
+                    updateHardwareMutation.isPending ||
                     sensorTypesAreLoading ||
                     sensorTypesHaveError
                   }
@@ -325,10 +301,12 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
             )}
 
             {!isSensor && (
-              <Alert severity="info">
-                Actuators are currently registered as solenoids and begin in the
-                Closed state.
-              </Alert>
+              <TextField
+                label="Actuator Type"
+                value="Solenoid"
+                fullWidth
+                slotProps={{ input: {readOnly: true }}}
+              />
             )}
           </Stack>
         </DialogContent>
@@ -338,7 +316,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
             type="button"
             variant="outlined"
             onClick={handleClose}
-            disabled={createHardwareMutation.isPending}
+            disabled={updateHardwareMutation.isPending}
           >
             Cancel
           </Button>
@@ -347,9 +325,8 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
             type="submit"
             variant="contained"
             disabled={
-              createHardwareMutation.isPending ||
-              sensorTypesAreLoading ||
-              (isSensor && sensorTypesHaveError)
+              updateHardwareMutation.isPending ||
+              (isSensor && (sensorTypesAreLoading || sensorTypesHaveError))
             }
             sx={{
               backgroundColor: '#1E3A5F',
@@ -358,7 +335,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
               },
             }}
           >
-            {createHardwareMutation.isPending ? 'Adding...' : 'Add Hardware'}
+            {updateHardwareMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogActions>
       </Box>
@@ -366,9 +343,20 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
   )
 }
 
-AddHardwareModal.propTypes = {
+EditHardwareModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  hardware: PropTypes.shape({
+    backendId: PropTypes.number.isRequired,
+    hardwareType: PropTypes.oneOf([
+      HARDWARE_TYPES.SENSOR,
+      HARDWARE_TYPES.ACTUATOR,
+    ]).isRequired,
+    name: PropTypes.string,
+    loggerId: PropTypes.number,
+    groupId: PropTypes.string,
+    subtype: PropTypes.string,
+  }).isRequired,
   loggers: PropTypes.arrayOf(
     PropTypes.shape({
       logger_id: PropTypes.number.isRequired,
@@ -383,4 +371,4 @@ AddHardwareModal.propTypes = {
   ).isRequired,
 }
 
-export default AddHardwareModal
+export default EditHardwareModal

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { axiosPrivate } from '../api/axios'
 
 export const HARDWARE_QUERY_KEY = ['hardware']
 export const SENSOR_TYPES_QUERY_KEY = ['sensor-types']
@@ -52,7 +53,7 @@ export const normalizeActuator = (solenoid) => ({
   id: `${HARDWARE_TYPES.ACTUATOR}:${solenoid.id}`,
   backendId: solenoid.id,
   hardwareType: HARDWARE_TYPES.ACTUATOR,
-  category: 'Actuator',
+  category: 'Solenoid',
   subtype: 'Solenoid',
   name: solenoid.name,
   hardwareId: solenoid.id,
@@ -138,6 +139,16 @@ export const updateHardware = (
     .then((response) => response.data)
 }
 
+export const deleteHardware = (
+  axiosPrivate,
+  { hardwareType, backendId},
+) => {
+  const endpoint = getHardwareEndpoint(hardwareType)
+  return axiosPrivate
+    .delete(`${endpoint}/${backendId}`)
+    .then((response) => response.data)
+}
+
 export const setHardwareArchived = (
   axiosPrivate,
   { hardwareType, backendId, archived },
@@ -191,6 +202,15 @@ export const useUpdateHardware = (axiosPrivate) => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (hardware) => updateHardware(axiosPrivate, hardware),
+    onSuccess: () => invalidateHardwareData(queryClient),
+  })
+}
+
+export const useDeleteHardware = (axiosPrivate) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (hardware) => deleteHardware(axiosPrivate, hardware),
     onSuccess: () => invalidateHardwareData(queryClient),
   })
 }

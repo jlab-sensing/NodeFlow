@@ -86,7 +86,6 @@ function App() {
             >
               <Route path="account" element={<AccountInfo />} />
               <Route path="hardware" element={<HardwareList />} />
-              <Route path="cells" element={<CellsList />} />
               <Route path="loggers" element={<LoggersList />} />
               <Route path="groups" element={<GroupsList />} />
             </Route>

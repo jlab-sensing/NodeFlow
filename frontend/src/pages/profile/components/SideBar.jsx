@@ -89,46 +89,10 @@ function SideBar() {
           }}
         >
           <ListItemIcon sx={{ minWidth: '2.5rem' }}>
-            <HardwareIcon />
+            <HardwareIcon sx={{color:"white"}}/>
           </ListItemIcon>
           <ListItemText
             primary="Hardware"
-            primaryTypographyProps={{
-              fontSize: '1rem',
-              fontWeight: 500,
-              letterSpacing: '0.025em',
-            }}
-          />
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => navigate('/profile/cells')}
-          sx={{
-            backgroundColor: '#1E3A5F',
-            borderRadius: '10px',
-            padding: '1rem 1.25rem',
-            color: 'white',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-              backgroundColor: '#2AB0EE',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            },
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: '2.5rem' }}>
-            <Box
-              component="img"
-              src={cube}
-              sx={{
-                width: '1.5rem',
-                height: '1.5rem',
-                filter: 'brightness(0) invert(1)',
-              }}
-            />
-          </ListItemIcon>
-          <ListItemText
-            primary="Cells"
             primaryTypographyProps={{
               fontSize: '1rem',
               fontWeight: 500,

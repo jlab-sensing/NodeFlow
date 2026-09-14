@@ -56,27 +56,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
-    defaults: 
+    defaults:
       run:
         working-directory: backend
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements-quality.txt
 
-      - name: Install backend dependencies
-        run: python -m pip install -r requirements.txt
+      - name: Install backend quality dependencies
+        run: python -m pip install -r requirements-quality.txt
 
       - name: Check backend formatting
         run: python -m ruff format --check .
-      
+
       - name: Lint backend
         run: python -m ruff check --output-format=github .
 

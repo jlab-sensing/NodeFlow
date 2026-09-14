@@ -2,28 +2,44 @@
 
 ## Introduction
 
-The NodeFlow backend is built using the [FastAPI](https://fastapi.tiangolo.com/) factory app pattern. All modules revolve around the running FastAPI context.
+The NodeFlow backend uses [FastAPI](https://fastapi.tiangolo.com/), SQLModel, and
+PostgreSQL. A Socket.IO ASGI application wraps FastAPI to serve realtime updates.
 
 ## Authentication
 
-The NodeFlow API handles users authentication using a [refresh token flow](https://cloudentity.com/developers/basics/oauth-grant-types/refresh-token-flow/). Users are given an access token to the API and a refresh token to designate access time. Currently, still under construction
+The NodeFlow API uses access and refresh tokens for user authentication. The
+authentication implementation is in `app/auth/`.
 
-The authentication module is located under `auth`
+## Getting started
 
+Follow the [root README](../README.md#getting-started) to start the application
+with Docker Compose. The backend is available at <http://localhost:8001>, and
+interactive API documentation is at <http://localhost:8001/docs>.
 
+## Local development and quality checks
 
-1. Start by cloning the repository to your local machine
+Use Python 3.11. From the repository root, create a virtual environment and
+install development dependencies:
 
-2. Create a virtual environment and install requirements.txt using pip, see [this guide](https://github.com/pypa/packaging.python.org/blob/main/source/guides/installing-using-pip-and-virtual-environments.rst) for help
-
-3. Once installed, run FastAPI in developer mode to view documents and calls.
 ```bash
-#Runs FastAPI in developer mode
-fastapi dev app/main.py --port 8001
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend/requirements-dev.txt
 ```
 
-4. To check if it is running, you can view at:
-http://127.0.0.1:8001
+This installs application dependencies, pytest tooling, and Ruff. To install only
+Ruff, use `python -m pip install -r backend/requirements-quality.txt` instead.
 
-5. To view all the interactive API docs, you can go to:
- http://127.0.0.1:8001/docs
+Run quality checks from `backend/`:
+
+```bash
+python -m ruff format --check .
+python -m ruff check .
+```
+
+Apply fixes with `python -m ruff check --fix .`, then format with
+`python -m ruff format .`. Configuration is in `pyproject.toml`.
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for the complete development workflow
+and [the testing guide](tests/README.md) for backend tests. CI reports **Backend
+tests** and **Backend quality** as separate checks.

@@ -15,7 +15,13 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-For documentation on the backend, refer to [backend readme](backend/README.md)
+For backend setup and API documentation, see the [backend README](backend/README.md).
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for Python 3.11 environment setup, backend
+Ruff formatting and linting, backend tests, frontend checks, and the merge queue
+workflow. Backend quality dependencies are separate from runtime dependencies.
 
 ## Builders
 

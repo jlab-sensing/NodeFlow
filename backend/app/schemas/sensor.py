@@ -1,7 +1,9 @@
-from sqlmodel import SQLModel, Field
-from uuid import UUID, uuid4
 from typing import Optional
+from uuid import UUID, uuid4
+
 from sqlalchemy import Index, text
+from sqlmodel import Field, SQLModel
+
 
 class SensorTable(SQLModel, table=True):
     __tablename__ = "sensor"
@@ -16,13 +18,13 @@ class SensorTable(SQLModel, table=True):
             postgresql_where=text("legacy_cell_id IS NOT NULL"),
         ),
     )
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     uuid: UUID = Field(default_factory=uuid4, index=True)
     user_id: UUID = Field(index=True)
     name: str
     legacy_cell_id: Optional[int] = Field(default=None, index=True)
-    sensor_type: str 
+    sensor_type: str
     sensor_id: Optional[int] = Field(default=None, index=True)
     logger_id: int
     group_id: Optional[UUID] = None

@@ -1,22 +1,17 @@
 import os
+from urllib.parse import quote_plus
+
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
 from pytest_postgresql.janitor import DatabaseJanitor
-
-from urllib.parse import quote_plus
 from sqlalchemy.engine import make_url
-from app.auth.auth import get_current_user
+from sqlmodel import Session, SQLModel, create_engine
 
+from app.auth.auth import get_current_user
 from app.database import get_session
 from app.main import fastapi_app
+from app.schemas.user_schema import UserTable
 
-from app.schemas.groups import GroupTable
-from app.schemas.preferences import ActivationPrefTable, NotificationPrefTable
-from app.schemas.sensor import SensorTable
-from app.schemas.sensor_reading import SensorReadingTable
-from app.schemas.solenoid import SolenoidTable
-from app.schemas.user_schema import UserTable, OAuthTokenTable
 
 @pytest.fixture(autouse=True)
 def test_environment(monkeypatch):
@@ -32,6 +27,7 @@ def test_environment(monkeypatch):
         "REFRESH_COOKIE_SECURE",
         "false",
     )
+
 
 @pytest.fixture(scope="session")
 def database_url(request):
@@ -56,11 +52,7 @@ def database_url(request):
     port = postgres.port
     database = postgres.dbname
 
-    url = (
-        f"postgresql+psycopg2://"
-        f"{username}:{password}@"
-        f"{host}:{port}/{database}"
-    )
+    url = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}"
     database_name = make_url(url).database or ""
 
     if "test" not in database_name.lower():
@@ -94,6 +86,7 @@ def test_engine(database_url):
     SQLModel.metadata.drop_all(engine)
     engine.dispose()
 
+
 @pytest.fixture
 def db_session(test_engine):
     with Session(test_engine) as session:
@@ -101,15 +94,16 @@ def db_session(test_engine):
             yield session
         finally:
             session.rollback()
-    
+
     SQLModel.metadata.drop_all(test_engine)
     SQLModel.metadata.create_all(test_engine)
+
 
 @pytest.fixture
 def client(db_session):
     def override_get_session():
         yield db_session
-    
+
     fastapi_app.dependency_overrides[get_session] = override_get_session
 
     test_client = TestClient(fastapi_app)
@@ -122,6 +116,7 @@ def client(db_session):
             get_session,
             None,
         )
+
 
 @pytest.fixture
 def test_user(db_session):
@@ -138,6 +133,7 @@ def test_user(db_session):
 
     return user
 
+
 @pytest.fixture
 def authenticated_client(client, test_user):
     fastapi_app.dependency_overrides[get_current_user] = lambda: test_user
@@ -148,6 +144,7 @@ def authenticated_client(client, test_user):
             get_current_user,
             None,
         )
+
 
 @pytest.fixture
 def anyio_backend():

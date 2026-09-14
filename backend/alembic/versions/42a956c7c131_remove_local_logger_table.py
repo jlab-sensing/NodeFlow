@@ -5,15 +5,16 @@ Revises: 1f70c345a7f8
 Create Date: 2026-09-04 21:29:20.262995
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '42a956c7c131'
-down_revision: Union[str, Sequence[str], None] = '1f70c345a7f8'
+revision: str = "42a956c7c131"
+down_revision: Union[str, Sequence[str], None] = "1f70c345a7f8"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

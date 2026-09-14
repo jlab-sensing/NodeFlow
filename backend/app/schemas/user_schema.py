@@ -10,7 +10,9 @@ class UserTable(SQLModel, table=True):
     __tablename__ = "users"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    email: str = Field(sa_column=Column(String, unique=True, index=True, nullable=False))
+    email: str = Field(
+        sa_column=Column(String, unique=True, index=True, nullable=False)
+    )
     first_name: str = ""
     last_name: str = ""
     password: str = ""

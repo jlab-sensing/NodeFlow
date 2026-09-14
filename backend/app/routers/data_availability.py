@@ -13,7 +13,6 @@ from app.schemas.sensor_reading import SensorReadingTable
 from app.schemas.user_schema import UserTable
 from app.services.ents_client import ents_get
 
-
 router = APIRouter(prefix="/api/data-availability", tags=["data"])
 
 EMPTY_AVAILABILITY = {

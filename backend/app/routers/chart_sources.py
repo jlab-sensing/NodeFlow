@@ -15,7 +15,6 @@ from app.schemas.user_schema import UserTable
 from app.services.sensor_config import get_sensor_capabilities
 from app.services.sensor_readings import TEST_SENSOR_ID, TEST_SENSOR_LOGGER_ID
 
-
 router = APIRouter(
     prefix="/api/chart-sources",
     tags=["Chart Sources"],
@@ -50,12 +49,15 @@ def get_chart_sources(
     sensor_rows = []
     for sensor in sensors:
         capabilities = get_sensor_capabilities(sensor.sensor_type)
-        has_native_readings = session.exec(
-            select(SensorReadingTable.id).where(
-                SensorReadingTable.sensor_uuid == sensor.uuid,
-                SensorReadingTable.user_id == current_user.id,
-            )
-        ).first() is not None
+        has_native_readings = (
+            session.exec(
+                select(SensorReadingTable.id).where(
+                    SensorReadingTable.sensor_uuid == sensor.uuid,
+                    SensorReadingTable.user_id == current_user.id,
+                )
+            ).first()
+            is not None
+        )
         is_test_sensor = (
             sensor.sensor_id == TEST_SENSOR_ID
             and sensor.logger_id == TEST_SENSOR_LOGGER_ID

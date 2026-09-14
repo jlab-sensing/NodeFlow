@@ -16,7 +16,6 @@ from app.services.sensor_readings import (
     request_test_sensor,
 )
 
-
 logger = logging.getLogger(__name__)
 COLLECTION_INTERVAL_SECONDS = float(
     os.getenv("SENSOR_READING_INTERVAL_SECONDS", "2"),

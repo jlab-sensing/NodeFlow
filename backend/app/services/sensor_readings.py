@@ -1,5 +1,6 @@
-import httpx
 import os
+
+import httpx
 from fastapi import HTTPException
 
 SENSOR_TESTER_URL = os.getenv(
@@ -40,11 +41,9 @@ async def request_test_sensor(
             detail="Test sensor unavailable",
         ) from error
 
+
 async def get_sensor_reading(sensor):
-    if (
-        sensor.sensor_id != TEST_SENSOR_ID
-        or sensor.logger_id != TEST_SENSOR_LOGGER_ID
-    ):
+    if sensor.sensor_id != TEST_SENSOR_ID or sensor.logger_id != TEST_SENSOR_LOGGER_ID:
         raise NotImplementedError(
             f"Reading source is not implemented for sensor {sensor.id}"
         )

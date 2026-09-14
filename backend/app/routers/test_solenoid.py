@@ -1,4 +1,5 @@
 import os
+
 import httpx
 from fastapi import APIRouter, HTTPException
 
@@ -12,13 +13,12 @@ SOLENOID_TESTER_URL = os.getenv(
     "http://solenoid-tester:8002",
 )
 
+
 @router.get("/status")
 async def get_test_solenoid_status():
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(
-                f"{SOLENOID_TESTER_URL}/status"
-            )
+            response = await client.get(f"{SOLENOID_TESTER_URL}/status")
             response.raise_for_status()
             return response.json()
     except httpx.HTTPError as error:

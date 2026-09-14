@@ -1,6 +1,8 @@
-from sqlmodel import SQLModel
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
+
+from sqlmodel import SQLModel
+
 
 class SensorCreate(SQLModel):
     name: str
@@ -8,11 +10,13 @@ class SensorCreate(SQLModel):
     logger_id: int
     group_id: Optional[UUID] = None
 
+
 class SensorUpdate(SQLModel):
     name: str
     sensor_type: str
     logger_id: int
     group_id: Optional[UUID] = None
+
 
 class SensorRead(SQLModel):
     id: int

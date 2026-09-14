@@ -17,6 +17,14 @@ __pycache__/
 backend/.coverage
 backend/coverage.xml
 
+# Python quality output
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Logs
 logs
 *.log

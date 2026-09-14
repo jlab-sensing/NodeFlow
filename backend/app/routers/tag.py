@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Request
 from typing import Any
+
+from fastapi import APIRouter, Request
+
 from app.services.ents_client import ents_delete, ents_get, ents_post, ents_put
 
 router = APIRouter(tags=["Tags"])
 
+
 async def get_json_body(request: Request) -> Any:
     return await request.json()
+
 
 @router.get("/api/tag/")
 async def get_tags(request: Request) -> list[dict[str, Any]]:
@@ -14,6 +18,7 @@ async def get_tags(request: Request) -> list[dict[str, Any]]:
         params=dict(request.query_params),
     )
 
+
 @router.post("/api/tag/")
 async def create_tag(request: Request) -> dict[str, Any]:
     return await ents_post(
@@ -21,6 +26,7 @@ async def create_tag(request: Request) -> dict[str, Any]:
         json=await get_json_body(request),
         params=dict(request.query_params),
     )
+
 
 @router.get("/api/tag/{tag_id}")
 async def get_tag(tag_id: int, request: Request) -> dict[str, Any]:
@@ -65,7 +71,9 @@ async def assign_cell_tags(cell_id: int, request: Request) -> dict[str, Any]:
 
 
 @router.put("/api/cell/{cell_id}/tags/{tag_id}")
-async def add_tag_to_cell(cell_id: int, tag_id: int, request: Request) -> dict[str, Any]:
+async def add_tag_to_cell(
+    cell_id: int, tag_id: int, request: Request
+) -> dict[str, Any]:
     return await ents_put(
         f"/api/cell/{cell_id}/tags/{tag_id}",
         params=dict(request.query_params),
@@ -73,7 +81,9 @@ async def add_tag_to_cell(cell_id: int, tag_id: int, request: Request) -> dict[s
 
 
 @router.delete("/api/cell/{cell_id}/tags/{tag_id}")
-async def remove_tag_from_cell(cell_id: int, tag_id: int, request: Request) -> dict[str, Any]:
+async def remove_tag_from_cell(
+    cell_id: int, tag_id: int, request: Request
+) -> dict[str, Any]:
     return await ents_delete(
         f"/api/cell/{cell_id}/tags/{tag_id}",
         params=dict(request.query_params),

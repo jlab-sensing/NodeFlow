@@ -1,31 +1,62 @@
-# Testing Guide
+# Backend testing guide
 
-## Run backend testing suite
+## Run the CI test suite
 
-To run tests
+From the repository root, use the dedicated Compose test project. If `.env` does
+not exist, create it with `cp .env.example .env` first.
 
-```console
-$pytest
+```bash
+docker compose --project-name nodeflow-ci-local --profile ci build backend-test
+docker compose --project-name nodeflow-ci-local --profile ci up \
+  --abort-on-container-exit \
+  --exit-code-from backend-test \
+  backend-test
 ```
 
-To run tests with coverage
+This starts a dedicated PostgreSQL test service and runs pytest with coverage.
+The command exits with the test container's status. To export its coverage report
+before cleanup:
 
-```console
-$pytest --cov
+```bash
+docker compose --project-name nodeflow-ci-local --profile ci cp \
+  backend-test:/app/coverage.xml ./coverage.xml
 ```
 
-## Infrastructure
+Clean up the test containers and volumes after the run:
 
-This is ENTS backend current API testing suite
+```bash
+docker compose --project-name nodeflow-ci-local --profile ci down --volumes
+```
 
-- [pytest](https://docs.pytest.org/en/stable/) as testing framework
+The explicit project name keeps cleanup separate from your development stack.
 
-- [pytest-postgresql](https://github.com/ClearcodeHQ/pytest-postgresql) as a postgres fixtures library
+## Run pytest locally
 
-## Configuration
+Install `backend/requirements-dev.txt` in your Python 3.11 virtual environment as
+described in [CONTRIBUTING.md](../../CONTRIBUTING.md). Local runs require
+PostgreSQL server binaries for `pytest-postgresql`, or a `TEST_DATABASE_URL`
+pointing to a disposable PostgreSQL database whose name contains `test`.
+The fixtures create and drop application tables in that database.
 
-The testing pipeline is configured from `conftest.py`. In the file there's various fixtures for different contexts within the application itself. Check out Flask docs on [fixtures](https://flask.palletsprojects.com/en/3.0.x/testing/) for more information.
+From `backend/`, run:
 
-## Structure
+```bash
+python -m pytest
+python -m pytest --cov=app --cov-report=term-missing
+```
 
-Tests are denoted by `test_NAME_OF_TEST.py` as defined by [pytest practices](https://docs.pytest.org/en/stable/explanation/goodpractices.html). At the moment, with the low volume of tests, tests reside in the `backend/tests` folder.
+## Fixtures and test discovery
+
+NodeFlow uses pytest and FastAPI's `TestClient`. Fixtures in `conftest.py` provide
+database sessions, API clients, and test users. `pytest-postgresql` manages a
+local database process when `TEST_DATABASE_URL` is unset.
+
+`backend/pytest.ini` discovers `test_*.py` files in `backend/tests/`. See the
+[pytest fixture guide](https://docs.pytest.org/en/stable/how-to/fixtures.html)
+for fixture patterns.
+
+## Formatting and linting
+
+The **Backend quality** CI job checks Ruff formatting and linting separately from
+the **Backend tests** job. For installation, checks, and automatic fixes, see
+[the contributing guide](../../CONTRIBUTING.md#backend-formatting-and-linting).

@@ -1,8 +1,7 @@
+from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
@@ -73,7 +72,9 @@ async def get_token(
             clock_skew_in_seconds=10,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail="Google token verification failed") from exc
+        raise HTTPException(
+            status_code=401, detail="Google token verification failed"
+        ) from exc
 
     email = idinfo["email"]
     user = session.exec(select(UserTable).where(UserTable.email == email)).first()
@@ -102,5 +103,10 @@ async def logout(response: Response = Depends(logout_user)) -> Response:
 
 
 @router.get("/auth/logged_in")
-async def check_logged_in(user: UserTable = Depends(get_current_user)) -> dict[str, Any]:
-    return {"loggedIn": True, "user": UserRead.model_validate(user, from_attributes=True)}
+async def check_logged_in(
+    user: UserTable = Depends(get_current_user),
+) -> dict[str, Any]:
+    return {
+        "loggedIn": True,
+        "user": UserRead.model_validate(user, from_attributes=True),
+    }

@@ -17,7 +17,6 @@ from app.services.sensor_config import (
     get_sensor_query_name,
 )
 
-
 router = APIRouter(
     prefix="/api/chart-data",
     tags=["Chart Data"],
@@ -77,9 +76,7 @@ def serialize_native_readings(
 
     buckets: dict[datetime, list[float]] = defaultdict(list)
     for reading in readings:
-        buckets[reading_bucket(reading.timestamp, resample)].append(
-            reading.value
-        )
+        buckets[reading_bucket(reading.timestamp, resample)].append(reading.value)
 
     return {
         "timestamp": [timestamp.isoformat() for timestamp in buckets],
@@ -193,11 +190,7 @@ async def get_sensor_power_chart_data(
         timestamps = next(iter(native_series.values()))["timestamp"]
         voltage = native_series.get("v", {}).get("data", [])
         current = native_series.get("i", {}).get("data", [])
-        power = (
-            [v * i for v, i in zip(voltage, current)]
-            if voltage and current
-            else []
-        )
+        power = [v * i for v, i in zip(voltage, current)] if voltage and current else []
         return {
             "timestamp": timestamps,
             "v": voltage,

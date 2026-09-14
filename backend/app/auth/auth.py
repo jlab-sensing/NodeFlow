@@ -51,7 +51,9 @@ def create_refresh_token(user: UserTable) -> str:
     )
 
 
-def persist_tokens(session: Session, user: UserTable, access_token: str, refresh_token: str) -> None:
+def persist_tokens(
+    session: Session, user: UserTable, access_token: str, refresh_token: str
+) -> None:
     token = session.exec(
         select(OAuthTokenTable).where(OAuthTokenTable.user_id == user.id)
     ).first()
@@ -131,7 +133,9 @@ def decode_refresh_token(token: str) -> UUID:
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=403, detail="Invalid refresh token") from exc
     except (KeyError, ValueError) as exc:
-        raise HTTPException(status_code=403, detail="Invalid refresh token payload") from exc
+        raise HTTPException(
+            status_code=403, detail="Invalid refresh token payload"
+        ) from exc
 
 
 def get_current_user(
@@ -179,7 +183,9 @@ def logout_user(
 ) -> Response:
     if refresh_token:
         token_record = session.exec(
-            select(OAuthTokenTable).where(OAuthTokenTable.refresh_token == refresh_token)
+            select(OAuthTokenTable).where(
+                OAuthTokenTable.refresh_token == refresh_token
+            )
         ).first()
         if token_record is not None:
             session.delete(token_record)

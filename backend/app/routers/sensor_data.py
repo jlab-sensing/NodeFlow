@@ -10,7 +10,6 @@ from app.routers.sensor_data_util import (
     process_measurement,
 )
 
-
 router = APIRouter(
     prefix="/api/sensor",
     tags=["Sensor Data"],
@@ -29,13 +28,7 @@ def get_content_type(request: Request) -> str:
         application/json
     """
 
-    return (
-        request.headers
-        .get("content-type", "")
-        .partition(";")[0]
-        .strip()
-        .lower()
-    )
+    return request.headers.get("content-type", "").partition(";")[0].strip().lower()
 
 
 @router.post("/upload/")
@@ -91,16 +84,11 @@ async def handle_ttn(
 ):
     """Handle a TTN JSON webhook."""
 
-    uplink_message = uplink_json.get(
-        "uplink_message"
-    )
+    uplink_message = uplink_json.get("uplink_message")
 
     # Preserve the existing ENTS behavior: malformed/non-uplink TTN
     # messages are acknowledged but do not store anything.
-    if (
-        not isinstance(uplink_message, dict)
-        or "f_port" not in uplink_message
-    ):
+    if not isinstance(uplink_message, dict) or "f_port" not in uplink_message:
         return Response(
             content="Missing uplink_message or f_port.",
             status_code=status.HTTP_200_OK,
@@ -123,9 +111,7 @@ async def handle_ttn(
             media_type="text/plain",
         )
 
-    payload_string = uplink_message.get(
-        "frm_payload"
-    )
+    payload_string = uplink_message.get("frm_payload")
 
     if not isinstance(payload_string, str):
         return Response(

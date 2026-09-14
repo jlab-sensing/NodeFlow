@@ -3,11 +3,14 @@ import logging
 import os
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
+
 import pytest
 import socketio
+
 from app import realtime_sensors
 from app.routers.sensor_data_util import emit_measurement_received
 from app.schemas.sensor import SensorTable
+
 
 def create_sensor(
     db_session,
@@ -28,12 +31,13 @@ def create_sensor(
     db_session.refresh(sensor)
     return sensor
 
+
 @pytest.mark.anyio
 async def test_room_based_emission(monkeypatch, test_user):
     sensor = SensorTable(
         user_id=test_user.id,
-        name = "Power Sensor",
-        sensor_type = "power",
+        name="Power Sensor",
+        sensor_type="power",
         logger_id=1,
     )
     measurement = {
@@ -71,16 +75,12 @@ async def test_room_based_emission(monkeypatch, test_user):
             "obj_count": 2,
             "transport": "wifi",
         },
-        room=f"sensor_{sensor.uuid}"
+        room=f"sensor_{sensor.uuid}",
     )
 
+
 @pytest.mark.anyio
-async def test_subscription_logic(
-    db_session,
-    test_engine,
-    test_user,
-    monkeypatch
-):
+async def test_subscription_logic(db_session, test_engine, test_user, monkeypatch):
     sensor = create_sensor(
         db_session,
         test_user.id,
@@ -131,6 +131,7 @@ async def test_subscription_logic(
         "socket_id",
         f"sensor_{sensor.uuid}",
     )
+
 
 @pytest.mark.anyio
 async def test_subscription_rejects_unowned_sensor(
@@ -193,6 +194,7 @@ async def test_subscription_rejects_unowned_sensor(
         "socket-id",
         f"sensor_{owned_sensor.uuid}",
     )
+
 
 @pytest.mark.anyio
 async def test_subscription_rejects_invalid_payload():

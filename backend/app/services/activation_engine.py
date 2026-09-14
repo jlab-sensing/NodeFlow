@@ -1,11 +1,13 @@
-from sqlmodel import Session, select
-import logging
 import asyncio
-from app.schemas.groups import GroupTable
+import logging
+
+from sqlmodel import Session, select
+
 from app.database import engine
+from app.schemas.groups import GroupTable
+from app.schemas.preferences import ActivationPrefTable
 from app.schemas.sensor import SensorTable
 from app.schemas.solenoid import SolenoidTable
-from app.schemas.preferences import ActivationPrefTable
 from app.services.sensor_readings import get_sensor_reading
 from app.services.solenoid_control import (
     close_solenoid,
@@ -14,6 +16,7 @@ from app.services.solenoid_control import (
 
 logger = logging.getLogger(__name__)
 
+
 def condition_is_met(
     reading: float,
     operator: str,
@@ -21,11 +24,12 @@ def condition_is_met(
 ) -> bool:
     if operator == "<":
         return reading < threshold
-    
+
     if operator == ">":
         return reading > threshold
-    
+
     raise ValueError(f"Unsupported operator: {operator}")
+
 
 async def evaluate_preference(pref, session: Session):
     group_statement = select(GroupTable).where(
@@ -39,12 +43,12 @@ async def evaluate_preference(pref, session: Session):
     sensor = session.get(SensorTable, pref.sensor_id)
     if not sensor or sensor.group_id != pref.group_id:
         return
-    
+
     reading = await get_sensor_reading(sensor)
 
     if reading["measurement"] != pref.measurement:
         return
-    
+
     should_open = condition_is_met(
         reading=float(reading["value"]),
         operator=pref.condition_operator,
@@ -77,10 +81,9 @@ async def evaluate_preference(pref, session: Session):
         elif should_close and solenoid.active_state != "closed":
             await close_solenoid(solenoid, session)
 
+
 async def evaluate_all_preferences(session: Session):
-    statement = select(ActivationPrefTable).where(
-        ActivationPrefTable.enabled.is_(True)
-    )
+    statement = select(ActivationPrefTable).where(ActivationPrefTable.enabled.is_(True))
     preferences = session.exec(statement).all()
     for preference in preferences:
         try:
@@ -90,6 +93,7 @@ async def evaluate_all_preferences(session: Session):
                 "Failed to evaluate activation preference %s",
                 preference.id,
             )
+
 
 async def run_activation_loop():
     while True:

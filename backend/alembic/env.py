@@ -1,18 +1,17 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import create_engine, pool
 from sqlmodel import SQLModel
 
+# Register table definitions with SQLModel.metadata for migration autogeneration.
+import app.schemas.groups  # noqa: F401
+import app.schemas.preferences  # noqa: F401
+import app.schemas.sensor  # noqa: F401
+import app.schemas.sensor_reading  # noqa: F401
+import app.schemas.solenoid  # noqa: F401
+import app.schemas.user_schema  # noqa: F401
+from alembic import context
 from app.database import get_database_url
-
-import app.schemas.groups 
-import app.schemas.preferences  
-import app.schemas.sensor  
-import app.schemas.sensor_reading  
-import app.schemas.solenoid  
-import app.schemas.user_schema  
-
 
 config = context.config
 

@@ -1,9 +1,10 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 from app.schemas.user_schema import UserTable
+
 
 def create_sensor(
     db_session,
@@ -24,6 +25,7 @@ def create_sensor(
     db_session.refresh(sensor)
     return sensor
 
+
 def create_reading(
     db_session,
     sensor,
@@ -43,19 +45,19 @@ def create_reading(
     db_session.refresh(reading)
     return reading
 
+
 def test_data_availability_requires_authentication(client):
     response = client.get(
         "/api/data-availability/sensors",
         params={
-            "sensor_uuids": (
-                "00000000-0000-0000-0000-000000000001"
-            ),
+            "sensor_uuids": ("00000000-0000-0000-0000-000000000001"),
         },
     )
     assert response.status_code == 401
     assert response.json() == {
         "detail": "No token provided",
     }
+
 
 def test_data_availability_requires_sensor_uuids(
     authenticated_client,
@@ -65,14 +67,10 @@ def test_data_availability_requires_sensor_uuids(
     )
     assert response.status_code == 422
     details = response.json()["detail"]
-    assert any(
-        error["loc"][-1] == "sensor_uuids"
-        for error in details
-    )
+    assert any(error["loc"][-1] == "sensor_uuids" for error in details)
 
-def test_data_availability_rejects_empty_sensor_uuids(
-    authenticated_client
-):
+
+def test_data_availability_rejects_empty_sensor_uuids(authenticated_client):
     response = authenticated_client.get(
         "/api/data-availability/sensors",
         params={
@@ -81,9 +79,8 @@ def test_data_availability_rejects_empty_sensor_uuids(
     )
     assert response.status_code == 422
 
-def test_data_availability_rejects_invalid_uuid(
-    authenticated_client
-):
+
+def test_data_availability_rejects_invalid_uuid(authenticated_client):
     response = authenticated_client.get(
         "/api/data-availability/sensors",
         params={
@@ -92,26 +89,22 @@ def test_data_availability_rejects_invalid_uuid(
     )
     assert response.status_code == 400
     assert response.json() == {
-        "detail": (
-            "sensor_uuids contains an invalid UUID"
-        ),
+        "detail": ("sensor_uuids contains an invalid UUID"),
     }
 
-def test_data_availability_rejects_unknown_sensor(
-    authenticated_client
-):
+
+def test_data_availability_rejects_unknown_sensor(authenticated_client):
     response = authenticated_client.get(
         "/api/data-availability/sensors",
         params={
-            "sensor_uuids": (
-                "00000000-0000-0000-0000-000000000001"
-            ),
+            "sensor_uuids": ("00000000-0000-0000-0000-000000000001"),
         },
     )
     assert response.status_code == 404
     assert response.json() == {
         "detail": "Sensor not found",
     }
+
 
 def test_data_availability_returns_empty_result(
     authenticated_client,
@@ -137,6 +130,7 @@ def test_data_availability_returns_empty_result(
         "has_recent_data": False,
     }
 
+
 def test_data_availability_reports_recent_data(
     authenticated_client,
     db_session,
@@ -147,10 +141,7 @@ def test_data_availability_reports_recent_data(
         test_user.id,
     )
 
-    recent_timestamp = (
-        datetime.now(timezone.utc)
-        - timedelta(days=7)
-    )
+    recent_timestamp = datetime.now(timezone.utc) - timedelta(days=7)
 
     create_reading(
         db_session,
@@ -170,12 +161,8 @@ def test_data_availability_reports_recent_data(
     payload = response.json()
 
     assert payload["has_recent_data"] is True
-    assert datetime.fromisoformat(
-        payload["earliest_timestamp"]
-    ) == recent_timestamp
-    assert datetime.fromisoformat(
-        payload["latest_timestamp"]
-    ) == recent_timestamp
+    assert datetime.fromisoformat(payload["earliest_timestamp"]) == recent_timestamp
+    assert datetime.fromisoformat(payload["latest_timestamp"]) == recent_timestamp
 
 
 def test_data_availability_reports_old_data(
@@ -188,10 +175,7 @@ def test_data_availability_reports_old_data(
         test_user.id,
     )
 
-    old_timestamp = (
-        datetime.now(timezone.utc)
-        - timedelta(days=30)
-    )
+    old_timestamp = datetime.now(timezone.utc) - timedelta(days=30)
 
     create_reading(
         db_session,
@@ -211,12 +195,8 @@ def test_data_availability_reports_old_data(
     payload = response.json()
 
     assert payload["has_recent_data"] is False
-    assert datetime.fromisoformat(
-        payload["earliest_timestamp"]
-    ) == old_timestamp
-    assert datetime.fromisoformat(
-        payload["latest_timestamp"]
-    ) == old_timestamp
+    assert datetime.fromisoformat(payload["earliest_timestamp"]) == old_timestamp
+    assert datetime.fromisoformat(payload["latest_timestamp"]) == old_timestamp
 
 
 def test_data_availability_returns_timestamp_bounds(
@@ -229,14 +209,8 @@ def test_data_availability_returns_timestamp_bounds(
         test_user.id,
     )
 
-    earliest = (
-        datetime.now(timezone.utc)
-        - timedelta(days=10)
-    )
-    latest = (
-        datetime.now(timezone.utc)
-        - timedelta(days=2)
-    )
+    earliest = datetime.now(timezone.utc) - timedelta(days=10)
+    latest = datetime.now(timezone.utc) - timedelta(days=2)
 
     create_reading(
         db_session,
@@ -262,12 +236,8 @@ def test_data_availability_returns_timestamp_bounds(
 
     payload = response.json()
 
-    assert datetime.fromisoformat(
-        payload["earliest_timestamp"]
-    ) == earliest
-    assert datetime.fromisoformat(
-        payload["latest_timestamp"]
-    ) == latest
+    assert datetime.fromisoformat(payload["earliest_timestamp"]) == earliest
+    assert datetime.fromisoformat(payload["latest_timestamp"]) == latest
     assert payload["has_recent_data"] is True
 
 
@@ -316,23 +286,13 @@ def test_data_availability_uses_legacy_data(
         legacy_cell_id=42,
     )
 
-    legacy_earliest = (
-        datetime.now(timezone.utc)
-        - timedelta(days=20)
-    )
-    legacy_latest = (
-        datetime.now(timezone.utc)
-        - timedelta(days=1)
-    )
+    legacy_earliest = datetime.now(timezone.utc) - timedelta(days=20)
+    legacy_latest = datetime.now(timezone.utc) - timedelta(days=1)
 
     ents_get = AsyncMock(
         return_value={
-            "earliest_timestamp": (
-                legacy_earliest.isoformat()
-            ),
-            "latest_timestamp": (
-                legacy_latest.isoformat()
-            ),
+            "earliest_timestamp": (legacy_earliest.isoformat()),
+            "latest_timestamp": (legacy_latest.isoformat()),
         }
     )
 
@@ -352,12 +312,8 @@ def test_data_availability_uses_legacy_data(
 
     payload = response.json()
 
-    assert datetime.fromisoformat(
-        payload["earliest_timestamp"]
-    ) == legacy_earliest
-    assert datetime.fromisoformat(
-        payload["latest_timestamp"]
-    ) == legacy_latest
+    assert datetime.fromisoformat(payload["earliest_timestamp"]) == legacy_earliest
+    assert datetime.fromisoformat(payload["latest_timestamp"]) == legacy_latest
     assert payload["has_recent_data"] is True
 
     ents_get.assert_awaited_once_with(
@@ -380,18 +336,9 @@ def test_data_availability_combines_native_and_legacy_data(
         legacy_cell_id=42,
     )
 
-    native_timestamp = (
-        datetime.now(timezone.utc)
-        - timedelta(days=7)
-    )
-    legacy_earliest = (
-        datetime.now(timezone.utc)
-        - timedelta(days=30)
-    )
-    legacy_latest = (
-        datetime.now(timezone.utc)
-        - timedelta(days=1)
-    )
+    native_timestamp = datetime.now(timezone.utc) - timedelta(days=7)
+    legacy_earliest = datetime.now(timezone.utc) - timedelta(days=30)
+    legacy_latest = datetime.now(timezone.utc) - timedelta(days=1)
 
     create_reading(
         db_session,
@@ -401,12 +348,8 @@ def test_data_availability_combines_native_and_legacy_data(
 
     ents_get = AsyncMock(
         return_value={
-            "earliest_timestamp": (
-                legacy_earliest.isoformat()
-            ),
-            "latest_timestamp": (
-                legacy_latest.isoformat()
-            ),
+            "earliest_timestamp": (legacy_earliest.isoformat()),
+            "latest_timestamp": (legacy_latest.isoformat()),
         }
     )
 
@@ -426,10 +369,6 @@ def test_data_availability_combines_native_and_legacy_data(
 
     payload = response.json()
 
-    assert datetime.fromisoformat(
-        payload["earliest_timestamp"]
-    ) == legacy_earliest
-    assert datetime.fromisoformat(
-        payload["latest_timestamp"]
-    ) == legacy_latest
+    assert datetime.fromisoformat(payload["earliest_timestamp"]) == legacy_earliest
+    assert datetime.fromisoformat(payload["latest_timestamp"]) == legacy_latest
     assert payload["has_recent_data"] is True

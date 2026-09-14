@@ -71,10 +71,7 @@ async def test_list_shared_loggers(monkeypatch):
 
     result = await list_shared_loggers()
 
-    assert [
-        logger["logger_id"]
-        for logger in result
-    ] == [123, 456]
+    assert [logger["logger_id"] for logger in result] == [123, 456]
 
     get_mock.assert_awaited_once_with(
         "/api/logger/",
@@ -231,9 +228,7 @@ async def test_update_shared_logger(monkeypatch):
         },
     )
 
-    get_mock.assert_awaited_once_with(
-        "/api/logger/123"
-    )
+    get_mock.assert_awaited_once_with("/api/logger/123")
 
 
 @pytest.mark.anyio
@@ -270,6 +265,4 @@ async def test_delete_shared_logger(monkeypatch):
     }
 
     existing_mock.assert_awaited_once_with(123)
-    delete_mock.assert_awaited_once_with(
-        "/api/logger/123"
-    )
+    delete_mock.assert_awaited_once_with("/api/logger/123")

@@ -1,12 +1,15 @@
-from uuid import UUID
 from typing import Literal
+from uuid import UUID
+
 from pydantic import BaseModel, Field
+
 
 class SensorSubscriptionRequest(BaseModel):
     sensorUuids: list[UUID] = Field(
         default_factory=list,
         max_length=100,
     )
+
 
 class SensorMeasurementValue(BaseModel):
     type: str

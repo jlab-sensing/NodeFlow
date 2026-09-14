@@ -1,8 +1,8 @@
 import os
+from typing import Generator
 from urllib.parse import quote_plus
 
-from sqlmodel import create_engine, Session, SQLModel
-from typing import Generator
+from sqlmodel import Session, create_engine
 
 
 def get_database_url() -> str:
@@ -21,6 +21,7 @@ def get_database_url() -> str:
 
 
 engine = create_engine(get_database_url())
+
 
 def get_session() -> Generator:
     """Dependency to provide a database session to routers."""

@@ -2,12 +2,12 @@
 
 This module is adapted from the ENTS backend's api/resources/util.py.
 
-The ENTS protobuf wire format is preserved. Incoming ``loggerId`` and ``cellId`` values identify 
-a sensor tht was previously configured in NodeFlow. The incoming ``cellId`` 
+The ENTS protobuf wire format is preserved. Incoming ``loggerId`` and ``cellId`` values identify
+a sensor tht was previously configured in NodeFlow. The incoming ``cellId``
 maps to ``SensorTable.sensor_id``
 
 Nodeflow uses the configured sensor UUID for persistence, authorization, historical queries
-and Socket.io rooms. 
+and Socket.io rooms.
 """
 
 import logging
@@ -25,13 +25,9 @@ from app.realtime_sensors import sio
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 
-
 logger = logging.getLogger(__name__)
 
-DEBUG_SOCKETIO = (
-    os.getenv("DEBUG_SOCKETIO", "False").lower()
-    == "true"
-)
+DEBUG_SOCKETIO = os.getenv("DEBUG_SOCKETIO", "False").lower() == "true"
 
 
 # Each entry is:
@@ -98,9 +94,7 @@ LEGACY_READING_SPECS: dict[
             "Ohms",
         ),
     ),
-    "pcap02": (
-        ("Capacitance", "Capacitance", "Farads"),
-    ),
+    "pcap02": (("Capacitance", "Capacitance", "Farads"),),
     "sen0257": (
         ("pressure", "pressure", "kPa"),
         ("voltage", "voltage", "V"),
@@ -109,12 +103,8 @@ LEGACY_READING_SPECS: dict[
         ("voltage", "voltage", "V"),
         ("humidity", "humidity", "%"),
     ),
-    "yfs210c": (
-        ("flow", "flow", "L/Min"),
-    ),
-    "D10": (
-        ("flow", "flow", "G/Min"),
-    ),
+    "yfs210c": (("flow", "flow", "L/Min"),),
+    "D10": (("flow", "flow", "G/Min"),),
 }
 
 
@@ -140,9 +130,7 @@ GENERIC_STORAGE_NAME_OVERRIDES: dict[
         "teros12",
         "ec",
     ): "Electrical Conductivity",
-    ("teros21", "matricPot"): (
-        "soil_water_potential"
-    ),
+    ("teros21", "matricPot"): ("soil_water_potential"),
     ("co2", "CO2"): "co2",
 }
 
@@ -170,14 +158,10 @@ def parse_device_timestamp(value: Any) -> datetime:
     try:
         timestamp = float(value)
     except (TypeError, ValueError) as exc:
-        raise MeasurementProcessingError(
-            "Measurement timestamp is invalid"
-        ) from exc
+        raise MeasurementProcessingError("Measurement timestamp is invalid") from exc
 
     if not math.isfinite(timestamp):
-        raise MeasurementProcessingError(
-            "Measurement timestamp is not finite"
-        )
+        raise MeasurementProcessingError("Measurement timestamp is not finite")
 
     return datetime.fromtimestamp(
         timestamp,
@@ -196,9 +180,7 @@ def numeric_value(value: Any) -> float:
         ) from exc
 
     if not math.isfinite(converted):
-        raise MeasurementProcessingError(
-            "Measurement value is not finite"
-        )
+        raise MeasurementProcessingError("Measurement value is not finite")
 
     return converted
 
@@ -214,18 +196,17 @@ def generic_storage_name(
         measurement_name,
     )
 
+
 def resolve_configured_sensor(
     measurement: dict[str, Any],
     session: Session,
 ) -> SensorTable:
     """Resolve an incoming measaurement to configured nodeflow hardware"""
-    try: 
+    try:
         logger_id = int(measurement.get("loggerId"))
     except (TypeError, ValueError) as exc:
-        raise MeasurementProcessingError(
-            "Payload loggerId is invalid"
-        ) from exc
-    
+        raise MeasurementProcessingError("Payload loggerId is invalid") from exc
+
     try:
         sensor_id = int(measurement.get("cellId"))
     except (TypeError, ValueError) as exc:
@@ -234,20 +215,22 @@ def resolve_configured_sensor(
 
     if not isinstance(sensor_type, str) or not sensor_type:
         raise MeasurementProcessingError("payload sensor type is missing")
-    
+
     matching_sensors = list(
         session.exec(
             select(SensorTable).where(
                 SensorTable.logger_id == logger_id,
                 SensorTable.sensor_id == sensor_id,
-                SensorTable.archived.is_(False)
+                SensorTable.archived.is_(False),
             )
         ).all()
     )
-    
+
     if not matching_sensors:
-        raise MeasurementProcessingError(f"Sensor {sensor_id} is not configured for logger {logger_id}")
-    
+        raise MeasurementProcessingError(
+            f"Sensor {sensor_id} is not configured for logger {logger_id}"
+        )
+
     if len(matching_sensors) > 1:
         raise MeasurementProcessingError(
             f"Sensor {sensor_id} is ambigous for logger {logger_id}"
@@ -259,6 +242,7 @@ def resolve_configured_sensor(
             f"Payload sensor type {sensor_type} does not match configured sensor type {sensor.sensor_type}"
         )
     return sensor
+
 
 def create_reading(
     *,
@@ -299,9 +283,7 @@ async def emit_measurement_received(
             "unknown",
         ),
         "sensorUuid": str(sensor.uuid),
-        "loggerId": measurement.get(
-            "loggerId"
-        ),
+        "loggerId": measurement.get("loggerId"),
         "timestamp": measurement.get("ts"),
         "data": measurement.get(
             "data",
@@ -322,16 +304,14 @@ async def emit_measurement_received(
 
         if DEBUG_SOCKETIO:
             logger.info(
-                "[socketio] emitted measurement "
-                "to %s",
+                "[socketio] emitted measurement to %s",
                 room_name,
             )
     except Exception:
         # Persistence has already committed. Socket.IO failure must not erase
         # saved data or change a successful device acknowledgement.
         logger.exception(
-            "[socketio] failed to emit "
-            "measurement for sensor %s",
+            "[socketio] failed to emit measurement for sensor %s",
             sensor.uuid,
         )
 
@@ -358,31 +338,20 @@ async def process_generic_measurement_json(
     try:
         for measurement in measurements:
             if "unsignedInt" in measurement:
-                value = measurement[
-                    "unsignedInt"
-                ]
+                value = measurement["unsignedInt"]
             elif "signedInt" in measurement:
-                value = measurement[
-                    "signedInt"
-                ]
+                value = measurement["signedInt"]
             elif "decimal" in measurement:
                 value = measurement["decimal"]
             else:
-                raise MeasurementProcessingError(
-                    "No valid measurement value found"
-                )
+                raise MeasurementProcessingError("No valid measurement value found")
 
             metadata = measurement.get("meta")
 
             if not isinstance(metadata, dict):
-                raise MeasurementProcessingError(
-                    "Generic measurement is "
-                    "missing meta"
-                )
+                raise MeasurementProcessingError("Generic measurement is missing meta")
 
-            measurement_name = measurement.get(
-                "name"
-            )
+            measurement_name = measurement.get("name")
             sensor_type = measurement.get("type")
 
             if (
@@ -392,27 +361,15 @@ async def process_generic_measurement_json(
                 )
                 or not measurement_name
             ):
-                raise MeasurementProcessingError(
-                    "Generic measurement name "
-                    "is missing"
-                )
+                raise MeasurementProcessingError("Generic measurement name is missing")
 
-            if (
-                not isinstance(sensor_type, str)
-                or not sensor_type
-            ):
-                raise MeasurementProcessingError(
-                    "Generic sensor type is missing"
-                )
+            if not isinstance(sensor_type, str) or not sensor_type:
+                raise MeasurementProcessingError("Generic sensor type is missing")
 
             measurement_dict = {
                 "type": sensor_type,
-                "loggerId": metadata.get(
-                    "loggerId"
-                ),
-                "cellId": metadata.get(
-                    "cellId"
-                ),
+                "loggerId": metadata.get("loggerId"),
+                "cellId": metadata.get("cellId"),
                 "ts": metadata.get("ts"),
                 "data": {
                     measurement_name: value,
@@ -427,9 +384,7 @@ async def process_generic_measurement_json(
                 session,
             )
 
-            timestamp = parse_device_timestamp(
-                measurement_dict["ts"]
-            )
+            timestamp = parse_device_timestamp(measurement_dict["ts"])
 
             reading = create_reading(
                 session=session,
@@ -461,16 +416,10 @@ async def process_generic_measurement_json(
     except Exception as exc:
         session.rollback()
 
-        logger.exception(
-            "Failed to process generic "
-            "sensor measurements"
-        )
+        logger.exception("Failed to process generic sensor measurements")
 
         return Response(
-            content=(
-                "Error adding generic sensor "
-                f"measurements: {exc}"
-            ),
+            content=(f"Error adding generic sensor measurements: {exc}"),
             status_code=status.HTTP_400_BAD_REQUEST,
             media_type="text/plain",
         )
@@ -507,20 +456,13 @@ async def process_generic_measurement(
 
         if not isinstance(measurements, list):
             raise MeasurementProcessingError(
-                "Decoded generic payload does "
-                "not contain a measurement list"
+                "Decoded generic payload does not contain a measurement list"
             )
     except Exception as exc:
-        logger.exception(
-            "Failed to decode generic "
-            "sensor payload"
-        )
+        logger.exception("Failed to decode generic sensor payload")
 
         return Response(
-            content=(
-                "Error parsing sensor "
-                f"measurements: {exc}"
-            ),
+            content=(f"Error parsing sensor measurements: {exc}"),
             status_code=status.HTTP_400_BAD_REQUEST,
             media_type="text/plain",
         )
@@ -545,10 +487,7 @@ async def process_measurement(
             raw=False,
         )
     except Exception:
-        logger.exception(
-            "Failed to decode legacy "
-            "sensor payload"
-        )
+        logger.exception("Failed to decode legacy sensor payload")
 
         return legacy_response(
             success=False,
@@ -588,9 +527,7 @@ async def process_measurement_dict(
     """
 
     sensor_type = measurement.get("type")
-    reading_specs = LEGACY_READING_SPECS.get(
-        sensor_type
-    )
+    reading_specs = LEGACY_READING_SPECS.get(sensor_type)
 
     if reading_specs is None:
         logger.error(
@@ -600,32 +537,23 @@ async def process_measurement_dict(
 
         return legacy_response(
             success=False,
-            status_code=(
-                status.HTTP_501_NOT_IMPLEMENTED
-            ),
+            status_code=(status.HTTP_501_NOT_IMPLEMENTED),
         )
 
     try:
         payload_data = measurement.get("data")
 
         if not isinstance(payload_data, dict):
-            raise MeasurementProcessingError(
-                "Measurement payload is "
-                "missing data"
-            )
+            raise MeasurementProcessingError("Measurement payload is missing data")
 
         sensor = resolve_configured_sensor(
             measurement,
             session,
         )
 
-        timestamp = parse_device_timestamp(
-            measurement.get("ts")
-        )
+        timestamp = parse_device_timestamp(measurement.get("ts"))
 
-        readings: list[
-            SensorReadingTable
-        ] = []
+        readings: list[SensorReadingTable] = []
 
         for (
             payload_name,
@@ -634,8 +562,7 @@ async def process_measurement_dict(
         ) in reading_specs:
             if payload_name not in payload_data:
                 raise MeasurementProcessingError(
-                    "Measurement payload is "
-                    f"missing {payload_name}"
+                    f"Measurement payload is missing {payload_name}"
                 )
 
             reading = create_reading(
@@ -658,16 +585,11 @@ async def process_measurement_dict(
     except Exception:
         session.rollback()
 
-        logger.exception(
-            "Failed to process legacy "
-            "sensor measurement"
-        )
+        logger.exception("Failed to process legacy sensor measurement")
 
         return legacy_response(
             success=False,
-            status_code=(
-                status.HTTP_501_NOT_IMPLEMENTED
-            ),
+            status_code=(status.HTTP_501_NOT_IMPLEMENTED),
         )
 
     await emit_measurement_received(

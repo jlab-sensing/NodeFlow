@@ -49,13 +49,13 @@ function TestSolenoidStatus() {
     )
   }
 
-if (isStatusError) {
-  return (
-    <Typography color="error">
-      {statusError.response?.data?.detail || 'Test solenoid unreachable'}
-    </Typography>
-  )
-}
+  if (isStatusError) {
+    return (
+      <Typography color="error">
+        {statusError.response?.data?.detail || 'Test solenoid unreachable'}
+      </Typography>
+    )
+  }
   const isOpen = data?.state === 'open'
   const stateNumber = isOpen ? 1 : 0
 

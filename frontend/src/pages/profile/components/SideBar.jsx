@@ -6,7 +6,6 @@ import {
   Box,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import cube from '../../../assets/box.svg'
 import group from '../../../assets/POSSIBLEgroup.svg'
 import logger from '../../../assets/logger.svg'
 import user from '../../../assets/user.svg'
@@ -89,7 +88,7 @@ function SideBar() {
           }}
         >
           <ListItemIcon sx={{ minWidth: '2.5rem' }}>
-            <HardwareIcon sx={{color:"white"}}/>
+            <HardwareIcon sx={{ color: 'white' }} />
           </ListItemIcon>
           <ListItemText
             primary="Hardware"

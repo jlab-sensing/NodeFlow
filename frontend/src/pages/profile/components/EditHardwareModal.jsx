@@ -57,15 +57,18 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
   const [name, setName] = useState(hardware.name ?? '')
   const [loggerId, setLoggerId] = useState(hardware.loggerId ?? '')
   const [groupId, setGroupId] = useState(hardware.groupId ?? '')
-  const [sensorType, setSensorType] = useState( isSensor ? hardware.subtype ?? '' : '')
+  const [sensorType, setSensorType] = useState(
+    isSensor ? (hardware.subtype ?? '') : '',
+  )
   const [submitted, setSubmitted] = useState(false)
 
-  const formIsValid = name.trim().length > 0 &&
-    loggerId !== '' && (!isSensor || sensorType !== '')
+  const formIsValid =
+    name.trim().length > 0 &&
+    loggerId !== '' &&
+    (!isSensor || sensorType !== '')
 
-  
   const handleClose = () => {
-    if (updateHardwareMutation.isPending){
+    if (updateHardwareMutation.isPending) {
       return
     }
     onClose()
@@ -73,11 +76,11 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (updateHardwareMutation.isPending){
+    if (updateHardwareMutation.isPending) {
       return
     }
     setSubmitted(true)
-    if (!formIsValid){
+    if (!formIsValid) {
       return
     }
     try {
@@ -162,14 +165,13 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
               </Alert>
             )}
 
-              <TextField
-                label="Category"
-                value={isSensor ? 'Sensor' : 'Actuator'}
-                fullWidth
-                slotProps={{ input: {readOnly: true }
-              }}
-                helperText="Category cannot be changed after registration."
-              />
+            <TextField
+              label="Category"
+              value={isSensor ? 'Sensor' : 'Actuator'}
+              fullWidth
+              slotProps={{ input: { readOnly: true } }}
+              helperText="Category cannot be changed after registration."
+            />
 
             <TextField
               label="Hardware Name"
@@ -305,7 +307,7 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
                 label="Actuator Type"
                 value="Solenoid"
                 fullWidth
-                slotProps={{ input: {readOnly: true }}}
+                slotProps={{ input: { readOnly: true } }}
               />
             )}
           </Stack>

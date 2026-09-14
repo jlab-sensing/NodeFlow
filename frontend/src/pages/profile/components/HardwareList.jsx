@@ -101,9 +101,7 @@ function HardwareList() {
         field: 'category',
         headerName: 'Category',
         width: 125,
-        renderCell: ({ row }) => (
-          row.category
-        ),
+        renderCell: ({ row }) => row.category,
       },
       {
         field: 'name',
@@ -158,14 +156,14 @@ function HardwareList() {
         filterable: false,
         disableColumnMenu: true,
         renderCell: ({ row }) => (
-          <Stack 
+          <Stack
             direction="row"
             spacing={1}
-            sx={{ alignItems: 'center', height: '100%'}}
+            sx={{ alignItems: 'center', height: '100%' }}
           >
             <Button
-              variant='contained'
-              sx={{ p: 0.7, minWidth: 0}}
+              variant="contained"
+              sx={{ p: 0.7, minWidth: 0 }}
               onClick={() => setEditingHardware(row)}
             >
               Edit
@@ -375,9 +373,7 @@ function HardwareList() {
           groups={groups}
         />
       )}
-
     </Box>
-  
   )
 }
 

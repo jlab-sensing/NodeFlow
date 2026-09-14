@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import PropTypes from 'prop-types'
 import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
-import {
-    HARDWARE_TYPES,
-    useDeleteHardware,
-} from '../../../services/hardware'
+import { HARDWARE_TYPES, useDeleteHardware } from '../../../services/hardware'
 import DeleteIcon from '@mui/icons-material/Delete'
 import {
   Alert,
@@ -28,8 +25,8 @@ function DeleteHardwareButton({ hardware }) {
   const detail = requestError?.response?.data?.detail
   const error = deleteHardwareMutation.isError
     ? typeof detail === 'string'
-        ? detail
-        : requestError.message || 'The hardware could not be deleted'
+      ? detail
+      : requestError.message || 'The hardware could not be deleted'
     : ''
 
   const handleOpen = () => {
@@ -38,25 +35,25 @@ function DeleteHardwareButton({ hardware }) {
   }
 
   const handleClose = () => {
-    if (deleting){
-        return
+    if (deleting) {
+      return
     }
     setOpen(false)
     deleteHardwareMutation.reset()
   }
 
   const handleDelete = async () => {
-    if (deleting){
-        return 
+    if (deleting) {
+      return
     }
     try {
-        await deleteHardwareMutation.mutateAsync({
-            hardwareType: hardware.hardwareType,
-            backendId: hardware.backendId,
-        })
-        setOpen(false)
+      await deleteHardwareMutation.mutateAsync({
+        hardwareType: hardware.hardwareType,
+        backendId: hardware.backendId,
+      })
+      setOpen(false)
     } catch {
-        // intentionally left blank
+      // intentionally left blank
     }
   }
 
@@ -68,15 +65,15 @@ function DeleteHardwareButton({ hardware }) {
         disabled={deleting}
         sx={{
           color: 'black',
-          p:0.5,
-          minWidth:0.4,
+          p: 0.5,
+          minWidth: 0.4,
           '&:hover': {
             color: '#d32f2f',
             backgroundColor: 'rgba(211, 47, 47, 0.08',
           },
         }}
       >
-        <DeleteIcon fontSize='small'/>
+        <DeleteIcon fontSize="small" />
       </Button>
 
       <Dialog
@@ -87,54 +84,53 @@ function DeleteHardwareButton({ hardware }) {
         aria-labelledby={`delete-hardware-title-${hardware.id}`}
       >
         <DialogTitle
-            id={`delete-hardware-title-${hardware.id}`}
-            sx={{
-                bgcolor: '#d32f2f',
-                color: 'white',
-                fontWeight: 600,
-        }}
+          id={`delete-hardware-title-${hardware.id}`}
+          sx={{
+            bgcolor: '#d32f2f',
+            color: 'white',
+            fontWeight: 600,
+          }}
         >
-            Delete Hardware
+          Delete Hardware
         </DialogTitle>
 
         <DialogContent dividers>
-            <Typography>
-                Are you sure you want to delete the {' '}
-                    {isSensor ? 'sensor' : 'actuator'}{' '}
-                    <strong>{hardware.name}</strong>?
-            </Typography>
+          <Typography>
+            Are you sure you want to delete the{' '}
+            {isSensor ? 'sensor' : 'actuator'} <strong>{hardware.name}</strong>?
+          </Typography>
 
-            <Typography sx={{ mt: 2 }}
-                color="text.secondary">
-                    This action cannot be undone.
-                </Typography>
+          <Typography sx={{ mt: 2 }} color="text.secondary">
+            This action cannot be undone.
+          </Typography>
 
-                {!isSensor && (
-                    <Alert severity='warning' sx={{ mt: 2 }}>
-                        Deleting this record does not send a close command. Close before deleting if needed
-                    </Alert>
-                )}
+          {!isSensor && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              Deleting this record does not send a close command. Close before
+              deleting if needed
+            </Alert>
+          )}
 
-                {error && (
-                    <Alert severity='error' sx={{ mt: 2 }}>
-                        {error}
-                    </Alert>
-                )}
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
         </DialogContent>
 
-        <DialogActions sx={{ px:3, py:2 }}>
-            <Button onClick={handleClose} disabled={deleting}>
-                Cancel
-            </Button>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={handleClose} disabled={deleting}>
+            Cancel
+          </Button>
 
-            <Button
-                variant="contained"
-                color="error"
-                onClick={handleDelete}
-                disabled={deleting}
-            >
-                {deleting ? 'Deleting...' : 'Delete Hardware'}
-            </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete Hardware'}
+          </Button>
         </DialogActions>
       </Dialog>
     </>
@@ -142,15 +138,15 @@ function DeleteHardwareButton({ hardware }) {
 }
 
 DeleteHardwareButton.PropTypes = {
-    hardware: PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        backendId: PropTypes.number.isRequired,
-        hardwareType: PropTypes.oneOf([
-            HARDWARE_TYPES.SENSOR,
-            HARDWARE_TYPES.ACTUATOR,
-        ]).isRequired,
-        name: PropTypes.string.isRequired,
-    }).isRequired,
+  hardware: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    backendId: PropTypes.number.isRequired,
+    hardwareType: PropTypes.oneOf([
+      HARDWARE_TYPES.SENSOR,
+      HARDWARE_TYPES.ACTUATOR,
+    ]).isRequired,
+    name: PropTypes.string.isRequired,
+  }).isRequired,
 }
 
-  export default DeleteHardwareButton
+export default DeleteHardwareButton

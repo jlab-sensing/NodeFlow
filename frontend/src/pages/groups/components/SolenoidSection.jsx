@@ -7,7 +7,6 @@ function SolenoidSection({ selectedIds, onSelectionChange }) {
   const axiosPrivate = useAxiosPrivate()
   const [solenoids, setSolenoids] = useState([])
   const [loading, setLoading] = useState(true)
-  
 
   useEffect(() => {
     async function loadSolenoids() {

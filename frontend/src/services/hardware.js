@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { axiosPrivate } from '../api/axios'
 
 export const HARDWARE_QUERY_KEY = ['hardware']
 export const SENSOR_TYPES_QUERY_KEY = ['sensor-types']
@@ -139,10 +138,7 @@ export const updateHardware = (
     .then((response) => response.data)
 }
 
-export const deleteHardware = (
-  axiosPrivate,
-  { hardwareType, backendId},
-) => {
+export const deleteHardware = (axiosPrivate, { hardwareType, backendId }) => {
   const endpoint = getHardwareEndpoint(hardwareType)
   return axiosPrivate
     .delete(`${endpoint}/${backendId}`)

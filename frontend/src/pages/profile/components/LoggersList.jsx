@@ -64,7 +64,7 @@ function LoggersList() {
 
   const handleRowSelection = (newSelection) => {
     const selectedId = Array.from(newSelection.ids)[0]
-      setSelectedRowId(selectedId ?? '')
+    setSelectedRowId(selectedId ?? '')
   }
 
   return (

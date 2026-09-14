@@ -73,7 +73,7 @@ describe('hardware service', () => {
       id: 'actuator:7',
       backendId: 7,
       hardwareType: 'actuator',
-      category: 'Actuator',
+      category: 'Solenoid',
       subtype: 'Solenoid',
       name: 'Greenhouse Valve',
       hardwareId: 7,

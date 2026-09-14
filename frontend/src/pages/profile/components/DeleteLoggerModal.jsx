@@ -17,12 +17,12 @@ function DeleteLoggerModal({ id }) {
   const [loggerId, setLoggerId] = useState('')
 
   const handleOpen = () => {
-   if (id === '' || id == null){
-    return
-   }
-   setLoggerId(id)
-   setResponse(null)
-   setOpen(true)
+    if (id === '' || id == null) {
+      return
+    }
+    setLoggerId(id)
+    setResponse(null)
+    setOpen(true)
   }
 
   const handleClose = () => {
@@ -46,7 +46,8 @@ function DeleteLoggerModal({ id }) {
         message:
           error?.response?.data?.detail ||
           error?.response?.data?.message ||
-          error?.message || "Failed to delete logger",
+          error?.message ||
+          'Failed to delete logger',
       })
     }
   }
@@ -57,9 +58,9 @@ function DeleteLoggerModal({ id }) {
 
   return (
     <>
-      <Button 
-        sx={{ color: 'black' }} 
-        key="delete" 
+      <Button
+        sx={{ color: 'black' }}
+        key="delete"
         onClick={handleOpen}
         disabled={id === '' || id == null}
       >
@@ -139,9 +140,9 @@ function DeleteLoggerModal({ id }) {
                   variant="body1"
                   sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}
                 >
-                  This logger is shared by all NodeFlow users and stored in dirtViz.
-                  It cannot be deleted while any NodeFlow sensor or actuator is using it.
-                  Are you sure you want to delete it? 
+                  This logger is shared by all NodeFlow users and stored in
+                  dirtViz. It cannot be deleted while any NodeFlow sensor or
+                  actuator is using it. Are you sure you want to delete it?
                 </Typography>
 
                 {/* Action Buttons */}

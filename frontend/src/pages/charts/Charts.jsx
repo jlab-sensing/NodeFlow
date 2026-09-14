@@ -372,12 +372,12 @@ function Charts() {
     />
   )
   const liveIndicator = (
-    <Stack 
-      direction="row" 
-      spacing={1} 
+    <Stack
+      direction="row"
+      spacing={1}
       alignItems="center"
-      sx={{ transform: 'translateY(16px)', }}
-      >
+      sx={{ transform: 'translateY(16px)' }}
+    >
       <Box
         aria-hidden="true"
         sx={{

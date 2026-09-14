@@ -24,7 +24,6 @@ function EditLoggerModal({ logger }) {
   const [error, setError] = useState('')
   const [isSubmitting, setSubmitting] = useState(false)
 
-
   const handleOpen = () => {
     setOpen(true)
     setResponse(null)
@@ -48,7 +47,7 @@ function EditLoggerModal({ logger }) {
 
   const handleSubmit = async () => {
     const name = formData.name?.trim()
-    if (!name || isSubmitting){
+    if (!name || isSubmitting) {
       return
     }
     setSubmitting(true)
@@ -67,8 +66,11 @@ function EditLoggerModal({ logger }) {
       await refetch()
     } catch (requestError) {
       console.error('Edit failed:', requestError)
-      setError(requestError?.response?.data?.detail || requestError?.response?.data?.message ||
-        requestError?.message || 'Failed to update logger',
+      setError(
+        requestError?.response?.data?.detail ||
+          requestError?.response?.data?.message ||
+          requestError?.message ||
+          'Failed to update logger',
       )
     } finally {
       setSubmitting(false)
@@ -213,7 +215,7 @@ function EditLoggerModal({ logger }) {
                   />
                 </Box>
 
-                {error && <Alert severity='error'>{error}</Alert>}
+                {error && <Alert severity="error">{error}</Alert>}
 
                 {/* Action Buttons */}
                 <Box

@@ -100,9 +100,7 @@ describe('logger service', () => {
 
     await getLogger(123, axiosPrivate)
 
-    expect(axiosPrivate.get).toHaveBeenCalledWith(
-      '/api/logger/123',
-    )
+    expect(axiosPrivate.get).toHaveBeenCalledWith('/api/logger/123')
   })
 
   it('updates a shared logger', async () => {
@@ -122,13 +120,10 @@ describe('logger service', () => {
       axiosPrivate,
     )
 
-    expect(axiosPrivate.put).toHaveBeenCalledWith(
-      '/api/logger/123',
-      {
-        name: 'Updated Logger',
-        description: 'Updated description',
-      },
-    )
+    expect(axiosPrivate.put).toHaveBeenCalledWith('/api/logger/123', {
+      name: 'Updated Logger',
+      description: 'Updated description',
+    })
   })
 
   it('deletes a shared logger', async () => {
@@ -141,9 +136,7 @@ describe('logger service', () => {
 
     await deleteLogger(123, axiosPrivate)
 
-    expect(axiosPrivate.delete).toHaveBeenCalledWith(
-      '/api/logger/123',
-    )
+    expect(axiosPrivate.delete).toHaveBeenCalledWith('/api/logger/123')
   })
 
   it('preserves API errors for the calling modal', async () => {
@@ -158,8 +151,6 @@ describe('logger service', () => {
 
     axiosPrivate.delete.mockRejectedValue(error)
 
-    await expect(
-      deleteLogger(123, axiosPrivate),
-    ).rejects.toBe(error)
+    await expect(deleteLogger(123, axiosPrivate)).rejects.toBe(error)
   })
 })

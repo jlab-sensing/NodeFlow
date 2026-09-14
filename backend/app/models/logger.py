@@ -1,16 +1,40 @@
+from datetime import datetime 
+from pydantic import Field, field_validator
 from sqlmodel import SQLModel
-from uuid import UUID
-from datetime import datetime
 
-class LoggerBase(SQLModel):
-    user_id: UUID
-    logger_id: int
-    update_interval: int
+class LoggerCreate(SQLModel):
+    name: str = Field(min_length=1, max_length=255)
+    type: str = "ents"
+    device_eui: str | None = None
+    description: str = ""
 
-class LoggerCreate(LoggerBase):
-    pass
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Logger name cannot be blank")
+        
+        return cleaned
 
-class LoggerRead(LoggerBase):
+class LoggerUpdate(SQLModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str = ""
+
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Logger name cannot be blank")
+        
+        return cleaned
+
+class LoggerRead(SQLModel):
     id: int
-    uuid: UUID
-    last_seen: datetime
+    logger_id: int
+    name: str
+    type: str | None = None
+    device_eui: str | None = None
+    description: str | None = None
+    date_created: datetime | None = None

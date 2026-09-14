@@ -63,7 +63,8 @@ function LoggersList() {
   }
 
   const handleRowSelection = (newSelection) => {
-    setSelectedRowId(newSelection[0])
+    const selectedId = Array.from(newSelection.ids)[0]
+    setSelectedRowId(selectedId ?? '')
   }
 
   return (
@@ -117,6 +118,7 @@ function LoggersList() {
           columns={columns}
           pageSize={5}
           autoHeight
+          disableMultipleRowSelection
           onRowSelectionModelChange={handleRowSelection}
         />
       </Box>

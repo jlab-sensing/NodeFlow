@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  Alert,
   Modal,
   Box,
   Typography,
@@ -11,46 +12,69 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useOutletContext } from 'react-router-dom'
 import { updateLogger } from '../../../services/logger'
 import PropTypes from 'prop-types'
-import useAuth from '../../../auth/hooks/useAuth'
 
 function EditLoggerModal({ logger }) {
   const data = useOutletContext()
   const refetch = data[9] // Logger refetch function from outlet context
-  const { auth } = useAuth()
+  const axiosPrivate = data[10]
 
   const [isOpen, setOpen] = useState(false)
   const [formData, setFormData] = useState({ ...logger })
   const [response, setResponse] = useState(null)
+  const [error, setError] = useState('')
   const [isSubmitting, setSubmitting] = useState(false)
 
   const handleOpen = () => {
     setOpen(true)
     setResponse(null)
+    setError('')
     setFormData({ ...logger })
   }
 
-  const handleClose = () => setOpen(false)
-
-  const handleChange = (field) => (e) => {
-    setFormData({ ...formData, [field]: e.target.value })
+  const handleClose = () => {
+    setOpen(false)
+    setResponse(null)
+    setError('')
+    setSubmitting(false)
   }
 
-  const handleSubmit = () => {
-    setSubmitting(true)
+  const handleChange = (field) => (event) => {
+    setFormData((current) => ({
+      ...current,
+      [field]: event.target.value,
+    }))
+  }
 
-    // Only name and description can be updated (TTN fields are immutable)
-    const updateData = {
-      name: formData.name,
-      description: formData.description,
+  const handleSubmit = async () => {
+    const name = formData.name?.trim()
+    if (!name || isSubmitting) {
+      return
     }
-
-    updateLogger(logger.id, updateData, auth?.accessToken)
-      .then((res) => {
-        setResponse(res)
-        refetch()
-      })
-      .catch((err) => console.error('Edit failed:', err))
-      .finally(() => setSubmitting(false))
+    setSubmitting(true)
+    setError('')
+    const updateData = {
+      name,
+      description: formData.description?.trim() || '',
+    }
+    try {
+      const updatedLogger = await updateLogger(
+        logger.id,
+        updateData,
+        axiosPrivate,
+      )
+      setResponse(updatedLogger)
+      await refetch()
+    } catch (requestError) {
+      console.error('Edit failed:', requestError)
+      setError(
+        requestError?.response?.data?.detail ||
+          requestError?.response?.data?.message ||
+          requestError?.message ||
+          'Failed to update logger',
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -125,7 +149,7 @@ function EditLoggerModal({ logger }) {
                     mt: 0.5,
                   }}
                 >
-                  Update your environmental sensor logger settings
+                  Update this shared Logger
                 </Typography>
               </Box>
 
@@ -168,7 +192,7 @@ function EditLoggerModal({ logger }) {
                     value={formData.device_eui || ''}
                     fullWidth
                     disabled
-                    helperText="Device EUI cannot be changed after TTN registration"
+                    helperText="Device EUI cannot currently be changed after logger creation"
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
@@ -190,6 +214,8 @@ function EditLoggerModal({ logger }) {
                     }}
                   />
                 </Box>
+
+                {error && <Alert severity="error">{error}</Alert>}
 
                 {/* Action Buttons */}
                 <Box
@@ -265,7 +291,7 @@ function EditLoggerModal({ logger }) {
                     mt: 0.5,
                   }}
                 >
-                  Your logger settings have been saved
+                  Logger settings have been saved
                 </Typography>
               </Box>
 

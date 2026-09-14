@@ -372,18 +372,25 @@ function Charts() {
     />
   )
   const liveIndicator = (
-    <Stack direction="row" spacing={1} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      sx={{ transform: 'translateY(16px)' }}
+    >
       <Box
         aria-hidden="true"
         sx={{
           width: 10,
           height: 10,
           borderRadius: '50%',
-          bgcolor: 'error.main',
+          bgcolor: 'success.main',
+          flexShrink: 0,
+          transform: 'translateY(4px)',
         }}
       />
       <Typography variant="body2" fontWeight={600}>
-        Live · raw logger readings · last {LIVE_WINDOW_MINUTES} minutes
+        Live
       </Typography>
     </Stack>
   )

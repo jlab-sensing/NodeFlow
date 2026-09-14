@@ -2,10 +2,12 @@
 
 This module is adapted from the ENTS backend's api/resources/util.py.
 
-The ENTS protobuf wire format is preserved. Incoming ``cellId`` values are
-treated only as legacy identifiers used to resolve a NodeFlow SensorTable row.
-After resolution, NodeFlow uses the sensor UUID for persistence, authorization,
-historical queries, and Socket.IO rooms.
+The ENTS protobuf wire format is preserved. Incoming ``loggerId`` and ``cellId`` values identify 
+a sensor tht was previously configured in NodeFlow. The incoming ``cellId`` 
+maps to ``SensorTable.sensor_id``
+
+Nodeflow uses the configured sensor UUID for persistence, authorization, historical queries
+and Socket.io rooms. 
 """
 
 import logging
@@ -20,7 +22,6 @@ from fastapi import Response, status
 from sqlmodel import Session, select
 
 from app.realtime_sensors import sio
-from app.schemas.logger import LoggerTable
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 
@@ -213,119 +214,51 @@ def generic_storage_name(
         measurement_name,
     )
 
-
-def resolve_logger(
-    logger_id: Any,
+def resolve_configured_sensor(
+    measurement: dict[str, Any],
     session: Session,
-) -> LoggerTable:
-    """Resolve the logger embedded in the ENTS protobuf payload.
-
-    Logger IDs are globally unique in NodeFlow, so the payload ID resolves to
-    at most one owner. The defensive ambiguity check also protects deployments
-    that have not applied the uniqueness migration yet.
-    """
-
-    try:
-        parsed_logger_id = int(logger_id)
+) -> SensorTable:
+    """Resolve an incoming measaurement to configured nodeflow hardware"""
+    try: 
+        logger_id = int(measurement.get("loggerId"))
     except (TypeError, ValueError) as exc:
         raise MeasurementProcessingError(
             "Payload loggerId is invalid"
         ) from exc
+    
+    try:
+        sensor_id = int(measurement.get("cellId"))
+    except (TypeError, ValueError) as exc:
+        raise MeasurementProcessingError("Payload cellId is invalid") from exc
+    sensor_type = measurement.get("type")
 
-    matching_loggers = list(
+    if not isinstance(sensor_type, str) or not sensor_type:
+        raise MeasurementProcessingError("payload sensor type is missing")
+    
+    matching_sensors = list(
         session.exec(
-            select(LoggerTable).where(
-                LoggerTable.logger_id
-                == parsed_logger_id,
+            select(SensorTable).where(
+                SensorTable.logger_id == logger_id,
+                SensorTable.sensor_id == sensor_id,
+                SensorTable.archived.is_(False)
             )
         ).all()
     )
-
-    if not matching_loggers:
+    
+    if not matching_sensors:
+        raise MeasurementProcessingError(f"Sensor {sensor_id} is not configured for logger {logger_id}")
+    
+    if len(matching_sensors) > 1:
         raise MeasurementProcessingError(
-            f"Logger {parsed_logger_id} is not registered"
+            f"Sensor {sensor_id} is ambigous for logger {logger_id}"
         )
 
-    if len(matching_loggers) > 1:
+    sensor = matching_sensors[0]
+    if sensor.sensor_type != sensor_type:
         raise MeasurementProcessingError(
-            f"Logger ID {parsed_logger_id} is ambiguous"
+            f"Payload sensor type {sensor_type} does not match configured sensor type {sensor.sensor_type}"
         )
-
-    return matching_loggers[0]
-
-
-def resolve_or_create_sensor(
-    measurement: dict[str, Any],
-    session: Session,
-) -> tuple[LoggerTable, SensorTable, bool]:
-    """Resolve an ENTS identity to one NodeFlow sensor.
-
-    The incoming cellId is retained only as SensorTable.legacy_cell_id.
-    NodeFlow generates and uses SensorTable.uuid as the canonical identity.
-    """
-
-    logger_record = resolve_logger(
-        measurement.get("loggerId"),
-        session,
-    )
-
-    legacy_cell_id = measurement.get("cellId")
-    sensor_type = measurement.get("type")
-
-    if legacy_cell_id is None:
-        raise MeasurementProcessingError(
-            "Payload is missing cellId"
-        )
-
-    try:
-        parsed_cell_id = int(legacy_cell_id)
-    except (TypeError, ValueError) as exc:
-        raise MeasurementProcessingError(
-            "Payload cellId is invalid"
-        ) from exc
-
-    if not isinstance(sensor_type, str) or not sensor_type:
-        raise MeasurementProcessingError(
-            "Payload sensor type is missing"
-        )
-
-    sensor = session.exec(
-        select(SensorTable).where(
-            SensorTable.user_id
-            == logger_record.user_id,
-            SensorTable.logger_id
-            == logger_record.logger_id,
-            SensorTable.legacy_cell_id
-            == parsed_cell_id,
-            SensorTable.sensor_type
-            == sensor_type,
-        )
-    ).first()
-
-    if sensor is not None:
-        return logger_record, sensor, False
-
-    sensor = SensorTable(
-        user_id=logger_record.user_id,
-        name=(
-            f"{sensor_type} "
-            f"{parsed_cell_id}"
-        ),
-        legacy_cell_id=parsed_cell_id,
-        sensor_type=sensor_type,
-        sensor_id=None,
-        logger_id=logger_record.logger_id,
-        group_id=None,
-    )
-
-    session.add(sensor)
-
-    # Assign database-generated values without committing. The sensor and all
-    # of its readings remain part of the same transaction.
-    session.flush()
-
-    return logger_record, sensor, True
-
+    return sensor
 
 def create_reading(
     *,
@@ -349,53 +282,6 @@ def create_reading(
 
     session.add(reading)
     return reading
-
-
-def touch_logger(
-    logger_record: LoggerTable,
-    session: Session,
-) -> None:
-    """Record when NodeFlow last received data from this logger."""
-
-    # LoggerTable currently uses a timezone-naive datetime column/default.
-    logger_record.last_seen = (
-        datetime.now(timezone.utc)
-        .replace(tzinfo=None)
-    )
-    session.add(logger_record)
-
-
-async def emit_sensor_created(
-    sensor: SensorTable,
-) -> None:
-    """Notify the owning user after a new sensor has been committed."""
-
-    try:
-        await sio.emit(
-            "sensor_created",
-            {
-                "uuid": str(sensor.uuid),
-                "name": sensor.name,
-                "sensorType": sensor.sensor_type,
-                "loggerId": sensor.logger_id,
-                "legacyCellId": sensor.legacy_cell_id,
-            },
-            room=f"user_{sensor.user_id}",
-        )
-
-        if DEBUG_SOCKETIO:
-            logger.info(
-                "[socketio] emitted sensor_created for sensor %s",
-                sensor.uuid,
-            )
-    except Exception:
-        # Persistence has already committed. Realtime notification failures
-        # must not turn a successful device upload into a failed upload.
-        logger.exception(
-            "[socketio] failed to emit sensor_created "
-            "for sensor %s",
-            sensor.uuid,
-        )
 
 
 async def emit_measurement_received(
@@ -468,7 +354,6 @@ async def process_generic_measurement_json(
             SensorReadingTable,
         ]
     ] = []
-    created_sensors: dict[str, SensorTable] = {}
 
     try:
         for measurement in measurements:
@@ -537,17 +422,10 @@ async def process_generic_measurement_json(
                 },
             }
 
-            (
-                logger_record,
-                sensor,
-                sensor_created,
-            ) = resolve_or_create_sensor(
+            sensor = resolve_configured_sensor(
                 measurement_dict,
                 session,
             )
-
-            if sensor_created:
-                created_sensors[str(sensor.uuid)] = sensor
 
             timestamp = parse_device_timestamp(
                 measurement_dict["ts"]
@@ -567,11 +445,6 @@ async def process_generic_measurement_json(
                 timestamp=timestamp,
             )
 
-            touch_logger(
-                logger_record,
-                session,
-            )
-
             pending_events.append(
                 (
                     sensor,
@@ -584,9 +457,6 @@ async def process_generic_measurement_json(
 
         for _, _, reading in pending_events:
             session.refresh(reading)
-
-        for created_sensor in created_sensors.values():
-            session.refresh(created_sensor)
 
     except Exception as exc:
         session.rollback()
@@ -604,9 +474,6 @@ async def process_generic_measurement_json(
             status_code=status.HTTP_400_BAD_REQUEST,
             media_type="text/plain",
         )
-
-    for created_sensor in created_sensors.values():
-        await emit_sensor_created(created_sensor)
 
     # ENTS emits one event per individual generic measurement.
     for (
@@ -747,11 +614,7 @@ async def process_measurement_dict(
                 "missing data"
             )
 
-        (
-            logger_record,
-            sensor,
-            sensor_created,
-        ) = resolve_or_create_sensor(
+        sensor = resolve_configured_sensor(
             measurement,
             session,
         )
@@ -786,19 +649,11 @@ async def process_measurement_dict(
 
             readings.append(reading)
 
-        touch_logger(
-            logger_record,
-            session,
-        )
-
-        # Commit the sensor, all readings, and logger update together.
+        # commit all readings atomically
         session.commit()
 
         for reading in readings:
             session.refresh(reading)
-
-        if sensor_created:
-            session.refresh(sensor)
 
     except Exception:
         session.rollback()
@@ -814,9 +669,6 @@ async def process_measurement_dict(
                 status.HTTP_501_NOT_IMPLEMENTED
             ),
         )
-
-    if sensor_created:
-        await emit_sensor_created(sensor)
 
     await emit_measurement_received(
         sensor=sensor,

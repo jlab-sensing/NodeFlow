@@ -6,14 +6,12 @@ from sqlmodel import SQLModel
 
 from app.database import get_database_url
 
-# Import every table definition so SQLModel.metadata is complete.
-import app.schemas.groups  # noqa: F401
-import app.schemas.logger  # noqa: F401
-import app.schemas.preferences  # noqa: F401
-import app.schemas.sensor  # noqa: F401
-import app.schemas.sensor_reading  # noqa: F401
-import app.schemas.solenoid  # noqa: F401
-import app.schemas.user_schema  # noqa: F401
+import app.schemas.groups 
+import app.schemas.preferences  
+import app.schemas.sensor  
+import app.schemas.sensor_reading  
+import app.schemas.solenoid  
+import app.schemas.user_schema  
 
 
 config = context.config

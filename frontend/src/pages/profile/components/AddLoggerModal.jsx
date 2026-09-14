@@ -3,11 +3,6 @@ import CloseIcon from '@mui/icons-material/Close'
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   IconButton,
   Input,
   Modal,
@@ -25,31 +20,12 @@ import { addLogger } from '../../../services/logger'
 import { IMaskInput } from 'react-imask'
 import PropTypes from 'prop-types'
 
-const LongTextMask = React.forwardRef(function TextMaskCustom(props, ref) {
-  const { onChange, ...other } = props
-  return (
-    <IMaskInput
-      {...other}
-      mask="**:**:**:**:**:**:**:**:**:**:**:**:**:**:**:**" //AppKey
-      inputRef={ref}
-      onAccept={(value) => onChange({ target: { name: props.name, value } })}
-      overwrite
-    />
-  )
-})
-
-LongTextMask.propTypes = {
-  name: PropTypes.string,
-  onChange: PropTypes.func,
-}
-
-////////////////////////////////////////////
 const ShortTextMask = React.forwardRef(function TextMaskCustom(props, ref) {
   const { onChange, ...other } = props
   return (
     <IMaskInput
       {...other}
-      mask="**:**:**:**:**:**:**:**" //DevEUI & AppEui
+      mask="**:**:**:**:**:**:**:**" // Device EUI
       inputRef={ref}
       onAccept={(value) => onChange({ target: { name: props.name, value } })}
       overwrite
@@ -65,10 +41,9 @@ ShortTextMask.propTypes = {
 const cleanHexLike = (value) => (value || '').replace(/[^a-zA-Z0-9]/g, '')
 
 const isValidEui64 = (value) => /^[0-9a-fA-F]{16}$/.test(value)
-const isValidAppKey = (value) => /^[0-9a-fA-F]{32}$/.test(value)
 
 function AddLoggerModal() {
-  let data = useOutletContext()
+  const data = useOutletContext()
   const refetch = data[9] // Logger refetch function from outlet context
   const user = data[4]
   const axiosPrivate = data[10]
@@ -76,21 +51,17 @@ function AddLoggerModal() {
   const [isOpen, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [type, setType] = useState('')
-  const [devEui, setDevEui] = useState('') // Changed to match TTN API
-  const [joinEui, setJoinEui] = useState('') // Added for TTN integration
-  const [appKey, setAppKey] = useState('') // TTN App Key (sensitive)
+  const [devEui, setDevEui] = useState('')
   const [description, setDescription] = useState('')
   const [response, setResponse] = useState(null)
   const [error, setError] = useState(null)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingSubmit, setPendingSubmit] = useState(null)
+  const [isSubmitting, setSubmitting] = useState(false)
 
   const handleOpen = () => {
     setOpen(true)
     setResponse(null)
     setError(null)
-    setConfirmOpen(false)
-    setPendingSubmit(null)
+    setSubmitting(false)
   }
 
   const DoneButtonClose = () => {
@@ -101,11 +72,8 @@ function AddLoggerModal() {
     setName('')
     setType('')
     setDevEui('')
-    setJoinEui('')
-    setAppKey('')
     setDescription('')
-    setConfirmOpen(false)
-    setPendingSubmit(null)
+    setSubmitting(false)
   }
 
   const handleClose = () => {
@@ -116,11 +84,8 @@ function AddLoggerModal() {
     setName('')
     setType('')
     setDevEui('')
-    setJoinEui('')
-    setAppKey('')
     setDescription('')
-    setConfirmOpen(false)
-    setPendingSubmit(null)
+    setSubmitting(false)
   }
 
   if (!user) {
@@ -128,73 +93,38 @@ function AddLoggerModal() {
   }
 
   const cleanDevEui = cleanHexLike(devEui)
-  const cleanJoinEui = cleanHexLike(joinEui)
-  const cleanAppKey = cleanHexLike(appKey)
-
   const devEuiTyped = Boolean(cleanDevEui)
-  const joinEuiTyped = Boolean(cleanJoinEui)
-  const appKeyTyped = Boolean(cleanAppKey)
-
   const devEuiInvalid = devEuiTyped && !isValidEui64(cleanDevEui)
-  const joinEuiInvalid = joinEuiTyped && !isValidEui64(cleanJoinEui)
-  const appKeyInvalid = appKeyTyped && !isValidAppKey(cleanAppKey)
 
-  const lorawanCompleteAndValid =
-    isValidEui64(cleanDevEui) &&
-    isValidEui64(cleanJoinEui) &&
-    isValidAppKey(cleanAppKey)
+  const handleAddLogger = async (event) => {
+    event?.preventDefault()
 
-  const submitLogger = ({ submitDevEui, submitJoinEui, submitAppKey }) => {
-    addLogger(
-      name,
-      type,
-      submitDevEui,
-      submitJoinEui,
-      submitAppKey,
-      description,
-      user.email,
-      axiosPrivate,
-    )
-      .then((res) => {
-        setResponse({
-          ...res,
-          name,
-          type,
-          devEui: submitDevEui || '',
-          description,
-        })
-        refetch()
-      })
-      .catch((error) => {
-        setError(error)
-        console.error(error)
-      })
-  }
-
-  const handleAddLogger = () => {
-    const typeIsEnts = (type || '').toLowerCase() === 'ents'
-    const dbDeviceEui = isValidEui64(cleanDevEui) ? cleanDevEui : undefined
-
-    // Only attempt TTN registration when all fields are present and valid.
-    const submitDevEui = dbDeviceEui
-    const submitJoinEui = lorawanCompleteAndValid ? cleanJoinEui : undefined
-    const submitAppKey = lorawanCompleteAndValid ? cleanAppKey : undefined
-
-    if (typeIsEnts && !lorawanCompleteAndValid) {
-      setPendingSubmit({
-        submitDevEui,
-        submitJoinEui,
-        submitAppKey,
-      })
-      setConfirmOpen(true)
+    if (!name.trim() || !type.trim() || devEuiInvalid || isSubmitting) {
       return
     }
 
-    submitLogger({
-      submitDevEui,
-      submitJoinEui,
-      submitAppKey,
-    })
+    setError(null)
+    setSubmitting(true)
+
+    try {
+      const createdLogger = await addLogger(
+        {
+          name: name.trim(),
+          type: type.trim(),
+          deviceEui: cleanDevEui || null,
+          description: description.trim(),
+        },
+        axiosPrivate,
+      )
+
+      setResponse(createdLogger)
+      await refetch()
+    } catch (requestError) {
+      setError(requestError)
+      console.error(requestError)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -222,59 +152,8 @@ function AddLoggerModal() {
             overflow: 'hidden',
           }}
           component="form"
+          onSubmit={handleAddLogger}
         >
-          <Dialog
-            open={confirmOpen}
-            onClose={() => {
-              setConfirmOpen(false)
-              setPendingSubmit(null)
-            }}
-            aria-labelledby="lorawan-confirm-title"
-            aria-describedby="lorawan-confirm-desc"
-          >
-            <DialogTitle id="lorawan-confirm-title">
-              Create Logger Without LoRaWAN?
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText id="lorawan-confirm-desc">
-                The LoRaWAN fields (Device EUI, Join EUI, App Key) are missing
-                or invalid. If you continue, the logger will be created in
-                DirtViz but it will not be registered on The Things Network
-                (LoRaWAN).
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setConfirmOpen(false)
-                  setPendingSubmit(null)
-                }}
-              >
-                Go Back
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  const next = pendingSubmit || {
-                    submitDevEui: undefined,
-                    submitJoinEui: undefined,
-                    submitAppKey: undefined,
-                  }
-                  setConfirmOpen(false)
-                  setPendingSubmit(null)
-                  submitLogger(next)
-                }}
-                sx={{
-                  backgroundColor: '#588157',
-                  '&:hover': { backgroundColor: '#3a5a40' },
-                }}
-              >
-                Continue
-              </Button>
-            </DialogActions>
-          </Dialog>
-
           {error == null && response == null && (
             <>
               {/* Header Section */}
@@ -318,7 +197,7 @@ function AddLoggerModal() {
                     mt: 0.5,
                   }}
                 >
-                  Configure your environmental sensor logger
+                  Register a shared NodeFlow logger
                 </Typography>
               </Box>
 
@@ -366,24 +245,6 @@ function AddLoggerModal() {
                       <MenuItem value="other">Other</MenuItem>
                     </Select>
                   </FormControl>
-                  {/* Change the following three text fields to follow this format
-                  
-                  <FormControl variant="standard">
-                  <InputLabel htmlFor="formatted-text-mask-input">react-imask</InputLabel>
-                  <Input
-                    onChange={handleChange}
-                    name="textmask"
-                    id="formatted-text-mask-input"
-                    inputComponent={TextMaskCustom}
-                  />
-                </FormControl>
-
-
-                You will need to create the TextMaskCustom function above to have this desired functionality
-
-                see https://github.com/jlab-sensing/ENTS-backend/issues/512 for more
-                */}
-                  {/* THIS IS WHERE THE Device EUI & Join EUI Code is*/}
                   <FormControl variant="standard">
                     <InputLabel>Device EUI</InputLabel>
                     <Input
@@ -401,50 +262,9 @@ function AddLoggerModal() {
                       }}
                     />
                     <FormHelperText error={devEuiInvalid}>
-                      Optional. 16 hex characters (EUI64).{' '}
+                      Optional. Enter 16 hexadecimal characters. This stores the
+                      Device EUI but does not register the logger with TTN.{' '}
                       {devEuiInvalid ? 'Invalid Device EUI.' : ''}
-                    </FormHelperText>
-                  </FormControl>
-                  <FormControl variant="standard">
-                    <InputLabel>Join EUI</InputLabel>
-                    <Input
-                      label="Join EUI"
-                      variant="outlined"
-                      fullWidth
-                      value={joinEui}
-                      onChange={(e) => setJoinEui(e.target.value)}
-                      placeholder="e.g., 0101010101010101"
-                      inputComponent={ShortTextMask}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '8px',
-                        },
-                      }}
-                    />
-                    <FormHelperText error={joinEuiInvalid}>
-                      Optional. 16 hex characters (EUI64).{' '}
-                      {joinEuiInvalid ? 'Invalid Join EUI.' : ''}
-                    </FormHelperText>
-                  </FormControl>
-                  <FormControl variant="standard">
-                    <InputLabel>App Key</InputLabel>
-                    <Input
-                      label="App Key"
-                      variant="outlined"
-                      fullWidth
-                      value={appKey}
-                      onChange={(e) => setAppKey(e.target.value)}
-                      placeholder="Application Key"
-                      inputComponent={LongTextMask}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '8px',
-                        },
-                      }}
-                    />
-                    <FormHelperText error={appKeyInvalid}>
-                      Optional. 32 hex characters.{' '}
-                      {appKeyInvalid ? 'Invalid App Key.' : ''}
                     </FormHelperText>
                   </FormControl>
                   <TextField
@@ -491,8 +311,13 @@ function AddLoggerModal() {
                   </Button>
                   <Button
                     variant="contained"
-                    onClick={handleAddLogger}
-                    disabled={!name.trim() || !(type || '').trim()}
+                    type="submit"
+                    disabled={
+                      isSubmitting ||
+                      !name.trim() ||
+                      !type.trim() ||
+                      devEuiInvalid
+                    }
                     sx={{
                       backgroundColor: '#588157',
                       '&:hover': { backgroundColor: '#3a5a40' },
@@ -504,7 +329,7 @@ function AddLoggerModal() {
                       px: '1.5rem',
                     }}
                   >
-                    Add Logger
+                    {isSubmitting ? 'Adding...' : 'Add Logger'}
                   </Button>
                 </Box>
               </Box>
@@ -554,7 +379,8 @@ function AddLoggerModal() {
                   variant="body1"
                   sx={{ mb: 3, color: '#666', lineHeight: 1.6 }}
                 >
-                  {error?.response?.data?.message ||
+                  {error?.response?.data?.detail ||
+                    error?.response?.data?.message ||
                     error?.message ||
                     'An unknown error occurred. Please try again.'}
                 </Typography>
@@ -603,7 +429,7 @@ function AddLoggerModal() {
                       mt: 0.5,
                     }}
                   >
-                    Your environmental sensor logger has been configured
+                    The logger was created in the shared DirtViz logger table
                   </Typography>
                 </Box>
 
@@ -678,7 +504,7 @@ function AddLoggerModal() {
                           sx={{ color: '#333' }}
                           component="span"
                         >
-                          {response.devEui || 'Not set'}
+                          {response.device_eui || 'Not set'}
                         </Typography>
                       </Box>
 

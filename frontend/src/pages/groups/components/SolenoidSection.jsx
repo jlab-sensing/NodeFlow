@@ -1,16 +1,17 @@
 import GroupSection from './GroupSection'
 import { useEffect, useState } from 'react'
 import { Box, Button } from '@mui/material'
-import axios from '../../../api/axios'
+import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
 
 function SolenoidSection({ selectedIds, onSelectionChange }) {
+  const axiosPrivate = useAxiosPrivate()
   const [solenoids, setSolenoids] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadSolenoids() {
       try {
-        const res = await axios.get('/api/solenoid/')
+        const res = await axiosPrivate.get('/api/solenoid/')
 
         setSolenoids(res.data)
       } catch (error) {
@@ -20,7 +21,7 @@ function SolenoidSection({ selectedIds, onSelectionChange }) {
       }
     }
     loadSolenoids()
-  }, [])
+  }, [axiosPrivate])
 
   const toggleSolenoidSelection = (solenoidId) => {
     onSelectionChange((currentIds) =>

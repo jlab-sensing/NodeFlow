@@ -4,11 +4,13 @@ from typing import List, Optional
 from datetime import datetime
 from app.database import get_session
 from app.schemas.groups import GroupTable
-from app.schemas.logger import LoggerTable
+from app.services.logger_service import get_shared_logger
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
-from app.models.sensor import SensorRead, SensorCreate
+from app.models.sensor import SensorRead, SensorCreate, SensorUpdate
 from app.models.groups import DeviceGroupUpdate
+from app.models.hardware import ArchiveUpdate
+from app.services.sensor_config import SENSOR_TYPE_CONFIG_KEYS
 from app.models.test_sensor import (
     TestSensorModeUpdate,
     TestSensorReading,
@@ -56,20 +58,6 @@ def validate_owned_group(
     )
     if not session.exec(statement).first():
         raise HTTPException(status_code=404, detail="Group not found")
-
-
-def validate_owned_logger(
-    logger_id: int,
-    session: Session,
-    current_user: UserTable,
-):
-    statement = select(LoggerTable).where(
-        LoggerTable.logger_id == logger_id,
-        LoggerTable.user_id == current_user.id,
-    )
-    if not session.exec(statement).first():
-        raise HTTPException(status_code=404, detail="Logger not found")
-
 
 def get_owned_test_sensor(
     sensor_id: int,
@@ -196,46 +184,59 @@ async def update_test_sensor_simulation(
 @router.get("/", response_model=List[SensorRead])
 def list_sensors(
     available: bool = Query(None),
+    include_archived: bool = Query(False),
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
     statement = select(SensorTable).where(
         SensorTable.user_id == current_user.id,
     )
-    if available is True:
-        statement = statement.where(SensorTable.group_id.is_(None))
+    if not include_archived:
+        statement = statement.where(SensorTable.archived.is_(False))
+    if available:
+        statement = statement.where(SensorTable.group_id.is_(None), SensorTable.archived.is_(False))
     return session.exec(statement).all()
 
 @router.post("/", response_model=SensorRead, status_code=status.HTTP_201_CREATED)
-def add_new_sensor(
+async def add_new_sensor(
     sensor: SensorCreate,
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
-    validate_owned_logger(sensor.logger_id, session, current_user)
+    await get_shared_logger(sensor.logger_id)
     validate_owned_group(sensor.group_id, session, current_user)
 
     db_sensor = SensorTable(
-        **sensor.model_dump(),
+        name=sensor.name,
+        sensor_type=sensor.sensor_type,
+        logger_id=sensor.logger_id,
+        group_id=sensor.group_id,
         user_id=current_user.id,
     )
+    session.add(db_sensor)
+    session.flush()
+    db_sensor.sensor_id = db_sensor.id
     session.add(db_sensor)
     session.commit()
     session.refresh(db_sensor)
     return db_sensor
 
+@router.get("/types", response_model=list[str])
+def list_sensor_types(current_user: UserTable = Depends(get_current_user)):
+    return sorted(SENSOR_TYPE_CONFIG_KEYS.keys())
+
 @router.put("/{sensor_id}", response_model=SensorRead)
 async def update_sensor(
     sensor_id: int,
-    sensor_update: SensorCreate,
+    sensor_update: SensorUpdate,
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
     db_sensor = get_owned_sensor(sensor_id, session, current_user)
-    validate_owned_logger(sensor_update.logger_id, session, current_user)
+    await get_shared_logger(sensor_update.logger_id)
     validate_owned_group(sensor_update.group_id, session, current_user)
 
-    sensor_data = sensor_update.model_dump(exclude_unset=True)
+    sensor_data = sensor_update.model_dump()
     for key, value in sensor_data.items():
         setattr(db_sensor, key, value)
 
@@ -260,7 +261,7 @@ def update_sensor_group(
     session.refresh(sensor)
     return sensor
 
-@router.get("/data/")
+@router.get("/data")
 async def get_sensor_plot_data(
     sensor_id: int,
     start: Optional[datetime] = Query(None),
@@ -271,6 +272,22 @@ async def get_sensor_plot_data(
     """Graphing sensor data (Placeholder for DirtViz dynamic integration)."""
     get_owned_sensor(sensor_id, session, current_user)
     return {"sensor_id": sensor_id, "timestamps": [], "values": []}
+
+@router.patch("/{sensor_id}/archive", response_model=SensorRead)
+def set_sensor_archived(
+    sensor_id: int,
+    update: ArchiveUpdate,
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
+    sensor = get_owned_sensor(sensor_id, session, current_user)
+    sensor.archived = update.archived
+    if update.archived:
+        sensor.group_id = None
+    session.add(sensor)
+    session.commit()
+    session.refresh(sensor)
+    return sensor
 
 @router.delete("/{sensor_id}")
 async def delete_sensor(
@@ -288,3 +305,4 @@ async def delete_sensor(
     session.delete(sensor)
     session.commit()
     return {"ok": True}
+

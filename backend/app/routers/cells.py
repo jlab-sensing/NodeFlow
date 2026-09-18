@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/cell", tags=["Cells"])
 @router.get("/")
 async def get_cells() -> list[dict[str, Any]]:
     # get all cells
-    return await ents_get("/api/cell")
+    return await ents_get("/api/cell/")
 
 
 @router.get("/id")

@@ -55,6 +55,6 @@
     "prettier": "3.9.6",
     "vite": "^8.0.12",
     "vitest": "^4.1.10",
-    "vitest-canvas-mock": "^1.1.5"
+    "vitest-canvas-mock": "^1.2.0"
   }
 }

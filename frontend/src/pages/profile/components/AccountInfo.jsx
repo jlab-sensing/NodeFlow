@@ -138,15 +138,13 @@ function AccountInfo() {
     const rawPhone = formData.phone.trim()
     const phone = rawPhone.replace(/[\s().-]/g, '')
 
-    const validPhone = 
+    const validPhone =
       /^[0-9]{10}$/.test(phone) ||
       /^1[0-9]{10}$/.test(phone) ||
       /^\+[1-9][0-9]{1, 14}$/.test(phone)
 
     if (rawPhone && !validPhone) {
-      setError(
-        'Enter a 10 digit number to use +1, or include country code'
-      )
+      setError('Enter a 10 digit number to use +1, or include country code')
       return false
     }
 
@@ -165,7 +163,7 @@ function AccountInfo() {
     setIsSubmitting(true)
     try {
       const response = await axiosPrivate.put('/user', {
-        ...formData, 
+        ...formData,
         phone: formData.phone.trim() || null,
       })
       if (response.status === 200 && response.data) {
@@ -192,7 +190,7 @@ function AccountInfo() {
       setError(
         typeof detail === 'string'
           ? detail
-          : validationMessage || 'Failed to update user information'
+          : validationMessage || 'Failed to update user information',
       )
     } finally {
       setIsSubmitting(false)
@@ -533,14 +531,14 @@ function AccountInfo() {
               <TextField
                 fullWidth
                 label="Phone Number (Optional)"
-                type='tel'
-                autoComplete='tel'
+                type="tel"
+                autoComplete="tel"
                 value={formData.phone}
-                onChange={(event) => 
-                  setFormData({...formData, phone: event.target.value})
+                onChange={(event) =>
+                  setFormData({ ...formData, phone: event.target.value })
                 }
                 disabled={isSubmitting}
-                placeholder='8001112233'
+                placeholder="8001112233"
                 helperText="10 digit numbers default to +1. For another country, include + and its country code"
               />
               {error &&

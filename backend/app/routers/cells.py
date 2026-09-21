@@ -13,7 +13,6 @@ async def get_cells() -> list[dict[str, Any]]:
     return await ents_get("/api/cell/")
 
 
-
 @router.get("/id")
 async def get_cell_id() -> list[dict[str, Any]]:
     return await ents_get("/api/cell/id")

@@ -13,6 +13,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import EmailIcon from '@mui/icons-material/Email'
+import PhoneIcon from '@mui/icons-material/Phone'
 import PersonIcon from '@mui/icons-material/Person'
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
@@ -30,6 +31,7 @@ function AccountInfo() {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    phone: '',
   })
   const [error, setError] = useState(null)
 
@@ -114,6 +116,7 @@ function AccountInfo() {
     setFormData({
       first_name: user.first_name || '',
       last_name: user.last_name || '',
+      phone: user.phone || '',
     })
     setError(null)
   }
@@ -131,6 +134,22 @@ function AccountInfo() {
       setError('Last name cannot be empty')
       return false
     }
+
+    const rawPhone = formData.phone.trim()
+    const phone = rawPhone.replace(/[\s().-]/g, '')
+
+    const validPhone = 
+      /^[0-9]{10}$/.test(phone) ||
+      /^1[0-9]{10}$/.test(phone) ||
+      /^\+[1-9][0-9]{1, 14}$/.test(phone)
+
+    if (rawPhone && !validPhone) {
+      setError(
+        'Enter a 10 digit number to use +1, or include country code'
+      )
+      return false
+    }
+
     return true
   }
 
@@ -145,7 +164,10 @@ function AccountInfo() {
 
     setIsSubmitting(true)
     try {
-      const response = await axiosPrivate.put('/user', formData)
+      const response = await axiosPrivate.put('/user', {
+        ...formData, 
+        phone: formData.phone.trim() || null,
+      })
       if (response.status === 200 && response.data) {
         // Update the user data in parent context
         if (setUser) {
@@ -153,6 +175,7 @@ function AccountInfo() {
             ...user,
             first_name: response.data.first_name,
             last_name: response.data.last_name,
+            phone: response.data.phone,
           })
         }
         setIsEditing(false)
@@ -161,8 +184,16 @@ function AccountInfo() {
         setTimeout(() => setShowSuccess(false), 3000) // Hide after 3 seconds
       }
     } catch (error) {
-      console.error('Error updating user:', error)
-      setError('Failed to update user information. Please try again.')
+      const detail = error.response?.data?.detail
+      const validationMessage = Array.isArray(detail)
+        ? detail.find((item) => typeof item?.msg === 'string')?.msg
+        : null
+
+      setError(
+        typeof detail === 'string'
+          ? detail
+          : validationMessage || 'Failed to update user information'
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -344,6 +375,52 @@ function AccountInfo() {
           </CardContent>
         </Card>
 
+        {/* Phone number card */}
+
+        <Card
+          sx={{
+            borderRadius: '12px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+            border: '1px solid #e9ecef',
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+              transform: 'translateY(-2px)',
+            },
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <PhoneIcon sx={{ fontSize: '1.5rem', color: '#1E3A5F' }} />
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#666',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    mb: 0.5,
+                  }}
+                >
+                  Phone Number
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: '#333',
+                    fontWeight: 500,
+                    fontSize: '1.1rem',
+                  }}
+                >
+                  {user.phone || 'Not Provided'}
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
         {/* API key management is intentionally hidden in NodeFlow. */}
       </Box>
 
@@ -452,6 +529,19 @@ function AccountInfo() {
                     borderRadius: '8px',
                   },
                 }}
+              />
+              <TextField
+                fullWidth
+                label="Phone Number (Optional)"
+                type='tel'
+                autoComplete='tel'
+                value={formData.phone}
+                onChange={(event) => 
+                  setFormData({...formData, phone: event.target.value})
+                }
+                disabled={isSubmitting}
+                placeholder='8001112233'
+                helperText="10 digit numbers default to +1. For another country, include + and its country code"
               />
               {error &&
                 !error.includes('First name') &&

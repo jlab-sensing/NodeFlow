@@ -16,6 +16,7 @@ class UserTable(SQLModel, table=True):
     first_name: str = ""
     last_name: str = ""
     password: str = ""
+    phone: str | None = Field(default=None, max_length=16, nullable=True)
     api_key: str | None = Field(default=None, index=True)
     date_created: datetime = Field(default_factory=datetime.utcnow)
 

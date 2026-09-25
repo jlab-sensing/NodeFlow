@@ -47,6 +47,6 @@ typing_extensions==4.15.0
 urllib3==2.7.0
 uvicorn==0.52.3
 watchfiles==1.1.1
-websockets==16.0
+websockets==17.1
 python-socketio==5.16.3
 ents==2.3.11

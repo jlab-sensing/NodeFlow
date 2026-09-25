@@ -36,7 +36,7 @@ requests==2.34.2
 rich==15.0.0
 rich-toolkit==0.20.5
 rignore==0.7.6
-sentry-sdk==2.59.0
+sentry-sdk==2.70.0
 shellingham==1.5.4
 SQLAlchemy==2.0.50
 sqlmodel==0.0.42

@@ -1,7 +1,5 @@
 """Tests for NodeFlow activation-preference validation."""
 
-from uuid import uuid4
-
 import pytest
 from pydantic import ValidationError
 
@@ -159,11 +157,18 @@ def test_create_activation_pref_persists_nodeflow_threshold(
 
 def test_create_activation_pref_rejects_invalid_close_condition(
     authenticated_client,
+    db_session,
+    test_user,
 ):
+    group, sensor = create_group_and_sensor(
+        db_session,
+        test_user.id,
+    )
+
     response = authenticated_client.post(
-        f"/api/groups/{uuid4()}/activationPref/",
+        f"/api/groups/{group.uuid}/activationPref/",
         json={
-            "sensor_id": 1,
+            "sensor_id": sensor.id,
             "measurement": "Volumetric Water Content",
             "condition_operator": "<",
             "condition_value": 25.0,

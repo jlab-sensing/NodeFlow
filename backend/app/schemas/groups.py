@@ -13,6 +13,10 @@ class GroupTable(SQLModel, table=True):
             "irrigation_mode IN ('manual', 'auto')",
             name="valid_irrigation_mode",
         ),
+        CheckConstraint(
+            "kind IN ('irrigation', 'deployment')",
+            name="valid_group_kind",
+        ),
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -23,4 +27,8 @@ class GroupTable(SQLModel, table=True):
     irrigation_mode: str = Field(
         default="auto",
         sa_column_kwargs={"server_default": "auto"},
+    )
+    kind: str = Field(
+        default="irrigation",
+        sa_column_kwargs={"server_default": "irrigation"},
     )

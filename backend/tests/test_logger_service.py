@@ -73,10 +73,7 @@ async def test_list_shared_loggers(monkeypatch):
 
     assert [logger["logger_id"] for logger in result] == [123, 456]
 
-    get_mock.assert_awaited_once_with(
-        "/api/logger/",
-        params={"user": "true"},
-    )
+    get_mock.assert_awaited_once_with("/api/logger/")
 
 
 @pytest.mark.anyio

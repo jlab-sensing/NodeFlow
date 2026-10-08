@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
 from app.auth.auth import get_current_user
@@ -17,7 +17,42 @@ from app.schemas.solenoid import SolenoidTable
 from app.schemas.user_schema import UserTable
 from app.services.solenoid_control import close_solenoid
 
-router = APIRouter(prefix="/api/groups", tags=["Groups"])
+
+def require_irrigation_route(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    raw_id = request.path_params.get("group_id")
+
+    if raw_id is None:
+        return
+    try:
+        group_uuid = UUID(str(raw_id))
+    except ValueError as exc:
+        raise HTTPException(
+            422,
+            "invalid group UUID",
+        ) from exc
+
+    group = session.exec(
+        select(GroupTable).where(
+            GroupTable.uuid == group_uuid,
+            GroupTable.kind == "irrigation",
+        )
+    ).first()
+
+    if group is None:
+        raise HTTPException(
+            404,
+            "irrigation group not found",
+        )
+
+
+router = APIRouter(
+    prefix="/api/groups",
+    tags=["Groups"],
+    dependencies=[Depends(require_irrigation_route)],
+)
 
 
 @router.get("/", response_model=List[GroupRead])
@@ -25,7 +60,10 @@ def get_user_group_list(
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
-    statement = select(GroupTable).where(GroupTable.user_id == current_user.id)
+    statement = select(GroupTable).where(
+        GroupTable.user_id == current_user.id,
+        GroupTable.kind == "irrigation",
+    )
     return session.exec(statement).all()
 
 

@@ -21,20 +21,19 @@ function AddChartModal({
   selectedSensors,
   panelOrder,
   onAddPanel,
+  availableEntries,
 }) {
   const availablePanelIds = useMemo(
     () => new Set(selectedSensors.flatMap((sensor) => sensor.panel_ids ?? [])),
     [selectedSensors],
   )
-  const addableEntries = useMemo(
-    () =>
-      FULL_CATALOG.filter(
-        (entry) =>
-          availablePanelIds.has(entry.panelId) &&
-          !panelOrder.includes(entry.panelId),
-      ),
-    [availablePanelIds, panelOrder],
-  )
+  const addableEntries = useMemo(() => {
+    const entries =
+      availableEntries ??
+      FULL_CATALOG.filter((entry) => availablePanelIds.has(entry.panelId))
+
+    return entries.filter((entry) => !panelOrder.includes(entry.panelId))
+  }, [availableEntries, availablePanelIds, panelOrder])
 
   const handleSelect = (panelId) => {
     onAddPanel(panelId)
@@ -108,6 +107,14 @@ AddChartModal.propTypes = {
   ).isRequired,
   panelOrder: PropTypes.arrayOf(PropTypes.string).isRequired,
   onAddPanel: PropTypes.func.isRequired,
+  availableEntries: PropTypes.arrayOf(
+    PropTypes.shape({
+      panelId: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      description: PropTypes.string,
+      category: PropTypes.string,
+    }),
+  ),
 }
 
 export default AddChartModal

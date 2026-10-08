@@ -7,6 +7,7 @@ const emptyGroupConfig = {
   name: '',
   selectedSolenoidIds: [],
   selectedSensorIds: [],
+  alertPreferences: [],
 
   activationPreference: {
     sensorId: '',

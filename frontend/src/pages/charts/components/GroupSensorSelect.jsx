@@ -14,12 +14,17 @@ import PropTypes from 'prop-types'
 import { useCallback, useMemo, useState } from 'react'
 
 function GroupSensorSelect({
-  groups,
-  sensors,
-  selectedSensorIds,
+  groups = [],
+  sensors = [],
+  selectedSensorIds = [],
   onSelectionChange,
   loading = false,
   error = false,
+  demoGroups = [],
+  selectedDemoGroupId = null,
+  onDemoSelectionChange = () => {},
+  demoLoading = false,
+  demoError = false,
 }) {
   const [anchorElement, setAnchorElement] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -76,6 +81,21 @@ function GroupSensorSelect({
   )
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+
+  const visibleDemoGroups = useMemo(
+    () =>
+      demoGroups
+        .filter((group) =>
+          group.name.toLowerCase().includes(normalizedSearchQuery),
+        )
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [demoGroups, normalizedSearchQuery],
+  )
+
+  const selectedDemo = demoGroups.find(
+    (group) => group.uuid === selectedDemoGroupId,
+  )
 
   const sensorMatchesSearch = useCallback(
     (sensor) => {
@@ -141,24 +161,20 @@ function GroupSensorSelect({
   )
 
   const selectionLabel = useMemo(() => {
-    if (loading) {
-      return 'Loading sensors...'
-    }
-
-    if (error) {
-      return 'Unable to load sensors'
-    }
-
-    if (selectedSensors.length === 0) {
-      return 'Select groups or sensors'
+    if (selectedDemoGroupId) {
+      return selectedDemo ? 'DEMO: ' + selectedDemo.name : 'Selected demo group'
     }
 
     if (selectedSensors.length === 1) {
       return selectedSensors[0].name
     }
 
-    return `${selectedSensors.length} sensors selected`
-  }, [loading, error, selectedSensors])
+    if (selectedSensors.length > 1) {
+      return selectedSensors.length + ' sensors selected'
+    }
+
+    return 'Select demo groups, groups or sensors'
+  }, [selectedDemoGroupId, selectedDemo, selectedSensors])
 
   const toggleSensor = (sensorId) => {
     if (selectedSensorIdSet.has(sensorId)) {
@@ -195,7 +211,11 @@ function GroupSensorSelect({
   }
 
   const clearSelection = () => {
-    onSelectionChange([])
+    if (selectedDemoGroupId) {
+      onDemoSelectionChange(null)
+    } else {
+      onSelectionChange([])
+    }
   }
 
   const handleOpen = (event) => {
@@ -208,7 +228,14 @@ function GroupSensorSelect({
   }
 
   const noSearchResults =
-    visibleGroups.length === 0 && visibleUngroupedSensors.length === 0
+    Boolean(normalizedSearchQuery) &&
+    !loading &&
+    !demoLoading &&
+    !error &&
+    !demoError &&
+    visibleDemoGroups.length === 0 &&
+    visibleGroups.length === 0 &&
+    visibleUngroupedSensors.length === 0
 
   return (
     <>
@@ -216,7 +243,6 @@ function GroupSensorSelect({
         id="group-sensor-select-button"
         variant="outlined"
         onClick={handleOpen}
-        disabled={loading || Boolean(error)}
         aria-haspopup="menu"
         aria-expanded={menuOpen ? 'true' : undefined}
         aria-controls={menuOpen ? 'group-sensor-select-menu' : undefined}
@@ -291,13 +317,13 @@ function GroupSensorSelect({
             fullWidth
             autoFocus
             size="small"
-            label="Search groups or sensors"
+            label="Search dem groups, groups, or sensors"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onClick={(event) => event.stopPropagation()}
           />
 
-          {selectedSensorIds.length > 0 && (
+          {(selectedDemoGroupId || selectedSensorIds.length > 0) && (
             <Button
               size="small"
               color="error"
@@ -308,12 +334,61 @@ function GroupSensorSelect({
                 textTransform: 'none',
               }}
             >
-              Clear all sensors
+              Clear selection
             </Button>
           )}
         </Box>
 
         <Divider />
+
+        <Box
+          sx={{
+            px: 2,
+            py: 1.5,
+            bgcolor: 'rgba(30, 58, 95, 0.06)',
+          }}
+        >
+          <Typography sx={{ fontWeight: 700 }}>DEMO groups</Typography>
+        </Box>
+
+        {demoLoading && <MenuItem disabled>Loading demo groups…</MenuItem>}
+
+        {demoError && <MenuItem disabled>Unable to load demo groups.</MenuItem>}
+
+        {!demoLoading && !demoError && visibleDemoGroups.length === 0 && (
+          <MenuItem disabled>
+            {normalizedSearchQuery
+              ? 'No matching demo groups.'
+              : 'No demo groups yet.'}
+          </MenuItem>
+        )}
+
+        {visibleDemoGroups.map((group) => (
+          <MenuItem
+            key={'demo:' + group.uuid}
+            selected={group.uuid === selectedDemoGroupId}
+            onClick={() => {
+              onDemoSelectionChange(group.uuid)
+              handleClose()
+            }}
+          >
+            {group.name}
+          </MenuItem>
+        ))}
+
+        <Divider />
+
+        {loading && <MenuItem disabled>Loading sensors…</MenuItem>}
+
+        {error && (
+          <MenuItem disabled>Unable to load ordinary sensors.</MenuItem>
+        )}
+
+        {visibleGroups.length > 0 && (
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <Typography sx={{ fontWeight: 700 }}>Grouped Sensors</Typography>
+          </Box>
+        )}
 
         {visibleGroups.map(({ group, groupSensors, visibleSensors }) => {
           const groupSensorIds = groupSensors.map((sensor) => sensor.uuid)
@@ -503,6 +578,19 @@ GroupSensorSelect.defaultProps = {
   selectedSensorIds: [],
   loading: false,
   error: false,
+}
+
+GroupSensorSelect.propTypes = {
+  demoGroups: PropTypes.arrayOf(
+    PropTypes.shape({
+      uuid: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ),
+  selectedDemoGroupId: PropTypes.string,
+  onDemoSelectionChange: PropTypes.func,
+  demoLoading: PropTypes.bool,
+  demoError: PropTypes.bool,
 }
 
 export default GroupSensorSelect

@@ -1,107 +1,103 @@
-# Contributing to NodeFlow
+# Contributing
 
-Use Docker with Compose for the application and backend tests, Python 3.11 for
-local backend development, and Node.js 22.19.0 with npm for the frontend.
-Run commands from the repository root unless a section says otherwise.
+When contributing to this repository, please first dicuss the change you wish to make via issue or any other method with the owners of this repository before making a change. 
 
-## Backend environment
+## Code Contributions
 
-Create and activate a virtual environment, then install the development
-dependencies:
+### Your first issue
+
+1. Read the project's README.md to learn how to setup development environment. 
+2. Find an issue to work on. The best way is to look for the good first issue or help wanted labels. 
+3. Comment on the issue saying you are going to work on it. 
+4. Code! Make sure to update unit tests!
+5. When done, create your pull request. 
+6. Verify that the CI passes all status checks, or fix if needed. 
+7. Wait for other developers to review your code and update code as needed. 
+8. Once reviewed and approved, a NodeFlow developer will merge your pull request. 
+
+### Pull Request Process
+
+1. Verify that CI passes all status checks, or fix if needed. 
+2. Update the pull request with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations, and container parameters. 
+3. Wait for other developers to review your code and update code as needed. 
+4. Once reviewed and approved, a NodeFlow developer will merge your pull request. 
+
+### Code Formatting
+
+NodeFlow uses various formatters and linters to maintain a standar of code. We will not merge code that does not pass automated CI tests. 
+
+### Formatter
+
+#### Ruff
+
+For python files, NodeFlow uses ruff to format files to keep coding styles consistent throughout the code base.
+
+It is automatically installed through the backend/requirements.txt when you set up your dev environment. 
+
+You can check the formatting of the backend by running from repository root:
 
 ```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r backend/requirements-dev.txt
+python -m ruff check backend
 ```
 
-On Windows, activate the environment with `.venv\Scripts\Activate.ps1` in
-PowerShell. Development requirements include the application dependencies, Ruff,
-and pytest tooling. Runtime dependencies remain in `backend/requirements.txt`.
-
-If you only need to format or lint Python, install the smaller quality dependency
-set in your activated environment instead:
+and automatically fix supported cases by running:
 
 ```bash
-python -m pip install -r backend/requirements-quality.txt
+python -m ruff check backend --fix
 ```
 
-## Backend formatting and linting
+#### Prettier
 
-Ruff provides both formatting and linting. Its version is pinned in
-`backend/requirements-quality.txt`, and its configuration is in
-`backend/pyproject.toml`. Run these commands from `backend/`:
+For JSX files, NodeFlow uses Prettier to format files to keep coding styles consistent throughout the code base. 
 
-```bash
-python -m ruff format --check .
-python -m ruff check .
-```
+To install Prettier, search up Prettier is VSCode extension marketplace and install it. 
 
-To apply supported lint fixes and format the code:
+You can check the formatting of the frontend by running:
 
 ```bash
-python -m ruff check --fix .
-python -m ruff format .
-```
-
-Review the resulting diff and fix any remaining lint findings manually. Imports
-that register database models can be required even when no symbol is referenced;
-preserve their `# noqa: F401` annotations in `alembic/env.py`.
-
-## Backend tests
-
-Run the same container test suite as CI from the repository root. If `.env` does
-not exist yet, create it with `cp .env.example .env` before using Compose.
-
-```bash
-docker compose --project-name nodeflow-ci-local --profile ci build backend-test
-docker compose --project-name nodeflow-ci-local --profile ci up \
-  --abort-on-container-exit \
-  --exit-code-from backend-test \
-  backend-test
-```
-
-The test service uses a dedicated PostgreSQL database and generates a coverage
-report. The project name keeps these containers separate from the normal
-development stack. When finished, clean up that test project:
-
-```bash
-docker compose --project-name nodeflow-ci-local --profile ci down --volumes
-```
-
-See the [backend testing guide](backend/tests/README.md) for coverage export and
-local pytest options.
-
-## Frontend checks
-
-Run these commands from `frontend/`:
-
-```bash
-npm ci
 npm run format:check
-npm run lint
-npm run test:ci
-npm run build
 ```
 
-Use `npm run format` to apply Prettier formatting.
+and can automatically format the frontend files by rinning 
 
-## Pull requests and the merge queue
+```bash
+npm run format
+```
 
-[NodeFlow CI](.github/workflows/test.yml) runs four jobs:
+### Linting
 
-| Check | What it verifies |
-| --- | --- |
-| Backend tests | Backend pytest suite and coverage in Docker |
-| Backend quality | Ruff formatting and linting |
-| Frontend quality | Prettier, ESLint, and Vitest |
-| Frontend build | Production frontend build |
+#### Ruff
 
-The workflow runs on pull requests, pushes to `main`, and merge queue
-`merge_group` events. Queue checks validate the proposed merge with the current
-base and any preceding queued changes.
+For python files, NodeFlow uses Ruff to lint for potential syntax/code errors.
+Run ruff with the following command while in the repository root:
 
-After the workflow containing **Backend quality** has landed on `main` and the
-check is available, a repository maintainer must add **Backend quality** to the
-required status checks in the `main` branch ruleset alongside the other three
-checks. Adding the job to the workflow alone does not make it required for merging.
+```bash
+python -m ruff format --check backend
+```
+
+and automatically fix supported issues by running from repo root:
+
+```bash
+python -m ruff format backend
+```
+
+
+#### ESLint
+
+For JSX files, NodeFlow uses ESLint to lint for potential syntax/code errors.
+Run ESLint with the following command while in the frontend folder: 
+
+```bash
+npm run lint
+```
+
+Supprted lint issues can be automatically fixed by running:
+
+```bash
+npx eslint --fix
+```
+
+
+## Attribution
+
+Portions adopted from <https://github.com/rapidsai/cuml/blob/branch-24.04/CONTRIBUTING.md> and <https://github.com/jlab-sensing/ENTS-backend/blob/main/CONTRIBUTING.md>

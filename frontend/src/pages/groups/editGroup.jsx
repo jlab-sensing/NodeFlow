@@ -51,6 +51,7 @@ function EditGroup() {
           name: groupResponse.data.name,
           selectedSolenoidIds,
           selectedSensorIds,
+          alertPreferences: [],
           activationPreference: preferenceResponse.data
             ? {
                 sensorId: preferenceResponse.data.sensor_id,

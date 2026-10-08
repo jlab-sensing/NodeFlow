@@ -124,6 +124,6 @@ export const CHART_CONFIGS = {
     measurements: ['flow'],
     units: ['G/Min'],
     axisIds: ['y'],
-    chartId: 'waterFlow',
+    chartId: 'waterFlowD10',
   },
 }

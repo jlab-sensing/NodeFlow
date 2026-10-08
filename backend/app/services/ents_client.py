@@ -178,3 +178,13 @@ async def ents_delete(path: str, params: dict[str, Any] | None = None) -> Any:
             status_code=502,
             detail=f"ENTS request failed: {exc}",
         ) from exc
+
+
+def get_ents_source_instance() -> str:
+    instance = os.getenv("ENTS_SOURCE_INSTANCE", "").strip()
+    if not instance:
+        raise HTTPException(
+            status_code=500,
+            detail="ENTS_SOURCE_INSTANCE is not configured",
+        )
+    return instance

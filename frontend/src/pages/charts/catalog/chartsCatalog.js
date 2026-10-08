@@ -91,8 +91,15 @@ export const UNIFIED_CATALOG = [
   {
     panelId: 'u:waterFlow',
     unifiedType: 'waterFlow',
-    label: 'Water flow',
-    description: 'yfs210c · flow',
+    label: 'Water flow (L/min)',
+    description: 'yfs210c · flow · L/min',
+    category: 'generic',
+  },
+  {
+    panelId: 'u:waterFlowD10',
+    unifiedType: 'waterFlowD10',
+    label: 'Water flow (G/min)',
+    description: 'D10 · flow · G/min',
     category: 'generic',
   },
   {

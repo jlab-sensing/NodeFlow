@@ -2,6 +2,7 @@ import GroupSection from './GroupSection'
 import { useEffect, useState } from 'react'
 import { Box, Button } from '@mui/material'
 import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
+import { formatSensorType } from '../../../utils/sensorTypes'
 
 function SensorSection({ selectedIds, onSelectionChange }) {
   const axiosPrivate = useAxiosPrivate()
@@ -73,7 +74,8 @@ function SensorSection({ selectedIds, onSelectionChange }) {
                     },
                   }}
                 >
-                  {sensor.sensor_type}
+                  {sensor.name || formatSensorType(sensor.sensor_type)} (
+                  {formatSensorType(sensor.sensor_type)}, #{sensor.id})
                 </Button>
               )
             })}

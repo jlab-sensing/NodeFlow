@@ -25,12 +25,7 @@ import {
   useUpdateHardware,
   useSensorTypes,
 } from '../../../services/hardware'
-
-const formatSensorType = (sensorType) =>
-  sensorType
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
+import { formatSensorType } from '../../../utils/sensorTypes'
 
 const getErrorMessage = (error) => {
   const detail = error?.response?.data?.detail

@@ -13,6 +13,8 @@ import LoggersList from './pages/profile/components/LoggersList'
 import GroupsList from './pages/profile/components/GroupsList'
 import Dashboard from './pages/dashboard/Dashboard'
 import HardwareList from './pages/profile/components/HardwareList'
+import Deployments from './pages/shared/Deployments'
+import SharedCharts from './pages/shared/SharedCharts'
 import { useContext } from 'react'
 
 const queryClient = new QueryClient()
@@ -61,6 +63,8 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/charts" element={<Charts />} />
+            <Route path="/deployments" element={<Deployments />} />
+            <Route path="/groups/:groupId/charts" element={<SharedCharts />} />
             <Route path="/add-group" element={<AddGroup />} />
             <Route
               path="/groups/:groupId/edit"

@@ -10,6 +10,7 @@ export default function VwcChart({
   startDate,
   endDate,
   onResampleChange,
+  resample,
 }) {
   const vwcDatasets = data.datasets.filter((_, i) => i % 2 == 0)
   const { rightYMin, rightYMax, rightYStep } = getAxisBoundsAndStepValues(
@@ -91,6 +92,7 @@ export default function VwcChart({
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
+      resample={resample}
     />
   )
 }
@@ -100,4 +102,5 @@ VwcChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
+  resample: PropTypes.oneOf(['none', 'hour', 'day']),
 }

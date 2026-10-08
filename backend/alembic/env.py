@@ -8,6 +8,7 @@ import app.schemas.groups  # noqa: F401
 import app.schemas.preferences  # noqa: F401
 import app.schemas.sensor  # noqa: F401
 import app.schemas.sensor_reading  # noqa: F401
+import app.schemas.shared_cells  # noqa: F401
 import app.schemas.solenoid  # noqa: F401
 import app.schemas.user_schema  # noqa: F401
 from alembic import context

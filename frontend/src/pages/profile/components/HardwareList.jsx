@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   FormControl,
   InputLabel,
   MenuItem,
@@ -21,18 +20,15 @@ import { useUserLoggers } from '../../../services/logger'
 import AddHardwareModal from './AddHardwareModal'
 import EditHardwareModal from './EditHardwareModal'
 import DeleteHardwareButton from './DeleteHardwareButton'
-
-const formatSubtype = (subtype) => {
-  if (!subtype) {
-    return '-'
-  }
-  return subtype
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
+import { formatSensorType } from '../../../utils/sensorTypes'
+import DirtvizHardware from './DirtvizHardware'
+import { useSharedHardware } from '../../../services/sharedHardware'
 
 const getStatusColor = (row) => {
+  if (row.hardwareType === 'dirtviz-cell') {
+    if (!row.enabled) return 'default'
+    return row.detailsError ? 'warning' : 'success'
+  }
   if (row.archived) {
     return 'default'
   }
@@ -44,6 +40,7 @@ const getStatusColor = (row) => {
 
 function HardwareList() {
   const axiosPrivate = useAxiosPrivate()
+  const sharedHardware = useSharedHardware(axiosPrivate)
   const [archiveFilter, setArchiveFilter] = useState('active')
   const [addHardwareOpen, setAddHardwareOpen] = useState(false)
   const [editingHardware, setEditingHardware] = useState(null)
@@ -69,6 +66,12 @@ function HardwareList() {
     isError: groupsHaveError,
   } = useUserGroups(axiosPrivate)
 
+  const hardwareOptionsUnavailable =
+    loggersAreLoading ||
+    groupsAreLoading ||
+    loggersHaveErrors ||
+    groupsHaveError
+
   const loggerNames = useMemo(
     () =>
       new Map(
@@ -86,14 +89,28 @@ function HardwareList() {
   )
 
   const filteredHardware = useMemo(() => {
+    const rows = [...hardware, ...sharedHardware.rows].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )
+
     if (archiveFilter === 'archived') {
-      return hardware.filter((item) => item.archived)
+      return rows.filter((row) => row.archived)
     }
+
+    if (archiveFilter === 'disabled') {
+      return rows.filter(
+        (row) => row.hardwareType === 'dirtviz-cell' && !row.enabled,
+      )
+    }
+
     if (archiveFilter === 'active') {
-      return hardware.filter((item) => !item.archived)
+      return rows.filter((row) =>
+        row.hardwareType === 'dirtviz-cell' ? row.enabled : !row.archived,
+      )
     }
-    return hardware
-  }, [archiveFilter, hardware])
+
+    return rows
+  }, [archiveFilter, hardware, sharedHardware.rows])
 
   const columns = useMemo(
     () => [
@@ -114,12 +131,15 @@ function HardwareList() {
         headerName: 'Subtype',
         minWidth: 150,
         flex: 1,
-        renderCell: ({ row }) => formatSubtype(row.subtype),
+        renderCell: ({ row }) =>
+          row.hardwareType === 'dirtviz-cell'
+            ? row.subtype
+            : formatSensorType(row.subtype),
       },
       {
         field: 'hardwareId',
-        headerName: 'Hardware ID',
-        width: 125,
+        headerName: 'Hardware ID / Cell ID',
+        width: 180,
         renderCell: ({ row }) => row.hardwareId ?? '-',
       },
       {
@@ -128,7 +148,9 @@ function HardwareList() {
         minWidth: 160,
         flex: 1,
         renderCell: ({ row }) =>
-          loggerNames.get(row.loggerId) || `Logger ${row.loggerId}`,
+          row.loggerId == null
+            ? '-'
+            : loggerNames.get(row.loggerId) || `Logger ${row.loggerId}`,
       },
       {
         field: 'groupId',
@@ -136,9 +158,11 @@ function HardwareList() {
         minWidth: 150,
         flex: 1,
         renderCell: ({ row }) =>
-          row.groupId
-            ? groupNames.get(row.groupId) || 'Unknown Group'
-            : 'No Group',
+          row.hardwareType === 'dirtviz-cell'
+            ? row.deploymentLabel
+            : row.groupId
+              ? groupNames.get(row.groupId) || 'Unknown Group'
+              : 'No Group',
       },
       {
         field: 'status',
@@ -155,55 +179,36 @@ function HardwareList() {
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
-        renderCell: ({ row }) => (
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ alignItems: 'center', height: '100%' }}
-          >
-            <Button
-              variant="contained"
-              sx={{ p: 0.7, minWidth: 0 }}
-              onClick={() => setEditingHardware(row)}
+        renderCell: ({ row }) =>
+          row.hardwareType === 'dirtviz-cell' ? (
+            '—'
+          ) : (
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: 'center',
+                height: '100%',
+              }}
             >
-              Edit
-            </Button>
+              <Button
+                variant="contained"
+                sx={{ p: 0.7, minWidth: 0 }}
+                disabled={hardwareOptionsUnavailable}
+                onClick={() => setEditingHardware(row)}
+              >
+                Edit
+              </Button>
 
-            <DeleteHardwareButton hardware={row} />
-          </Stack>
-        ),
+              <DeleteHardwareButton hardware={row} />
+            </Stack>
+          ),
       },
     ],
-    [groupNames, loggerNames],
+    [groupNames, loggerNames, hardwareOptionsUnavailable],
   )
 
-  const isLoading = hardwareIsLoading || loggersAreLoading || groupsAreLoading
-
-  const hasError = hardwareIsError || loggersHaveErrors || groupsHaveError
-
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          minHeight: 400,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    )
-  }
-  if (hasError) {
-    return (
-      <Alert severity="error">
-        {hardwareError?.response?.data?.detail ||
-          hardwareError?.message ||
-          'Hardware could not be loaded.'}
-      </Alert>
-    )
-  }
+  const isLoading = hardwareIsLoading || sharedHardware.isLoading
 
   return (
     <Box
@@ -252,15 +257,16 @@ function HardwareList() {
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
-            Manage your sensors and actuators.
+            Manage your hardware
           </Typography>
         </Box>
 
         <Stack
           direction="row"
-          spacing={1}
           sx={{
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 1,
           }}
         >
           <FormControl
@@ -279,6 +285,7 @@ function HardwareList() {
             >
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="archived">Archived</MenuItem>
+              <MenuItem value="disabled">Disabled</MenuItem>
               <MenuItem value="all">All</MenuItem>
             </Select>
           </FormControl>
@@ -287,6 +294,7 @@ function HardwareList() {
             variant="contained"
             startIcon={<AddCircleIcon />}
             onClick={() => setAddHardwareOpen(true)}
+            disabled={hardwareOptionsUnavailable}
             sx={{
               backgroundColor: '#1E3A5F',
               whiteSpace: 'nowrap',
@@ -297,19 +305,53 @@ function HardwareList() {
           >
             Add Hardware
           </Button>
+          <DirtvizHardware />
         </Stack>
       </Stack>
 
-      {filteredHardware.length === 0 && (
-        <Alert
-          severity="info"
-          sx={{
-            mb: 2,
-          }}
-        >
-          No hardware matches the selected filter.
+      {hardwareIsError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {hardwareError?.message || 'Local hardware could not be loaded.'}
         </Alert>
       )}
+
+      {(loggersHaveErrors || groupsHaveError) && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Some logger or group names could not be loaded.
+        </Alert>
+      )}
+
+      {sharedHardware.isError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Imported Dirtviz cells could not be loaded.
+        </Alert>
+      )}
+
+      {sharedHardware.detailsError && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Some Dirtviz cell details or demo memberships could not be loaded.
+        </Alert>
+      )}
+
+      {sharedHardware.detailsLoading && (
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Loading Dirtviz cell details…
+        </Typography>
+      )}
+
+      {!isLoading &&
+        !hardwareIsError &&
+        !sharedHardware.isError &&
+        filteredHardware.length === 0 && (
+          <Alert
+            severity="info"
+            sx={{
+              mb: 2,
+            }}
+          >
+            No hardware matches the selected filter.
+          </Alert>
+        )}
 
       <Box
         sx={{
@@ -323,10 +365,11 @@ function HardwareList() {
         <DataGrid
           rows={filteredHardware}
           columns={columns}
+          loading={isLoading}
           getRowClassName={({ row }) =>
-            row.hardwareType === 'sensor'
-              ? 'hardware-row--sensor'
-              : 'hardware-row--actuator'
+            row.hardwareType === 'actuator'
+              ? 'hardware-row--actuator'
+              : 'hardware-row--sensor'
           }
           disableRowSelectionOnClick
           pageSizeOptions={[5, 10, 25]}

@@ -41,7 +41,7 @@ async def get_service_account_email() -> str:
 
 
 async def list_shared_loggers() -> list[dict[str, Any]]:
-    response = await ents_get("/api/logger/", params={"user": "true"})
+    response = await ents_get("/api/logger/")
     if not isinstance(response, list):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

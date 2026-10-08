@@ -9,6 +9,7 @@ export default function TempChart({
   startDate,
   endDate,
   onResampleChange,
+  resample,
 }) {
   const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(
     data.datasets,
@@ -68,6 +69,7 @@ export default function TempChart({
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
+      resample={resample}
     />
   )
 }
@@ -76,4 +78,5 @@ TempChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
+  resample: PropTypes.oneOf(['none', 'hour', 'day']),
 }

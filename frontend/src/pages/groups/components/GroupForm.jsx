@@ -29,6 +29,17 @@ function GroupForm({ mode, initialValues, onSubmit, submitting, error }) {
       return {
         ...current,
         selectedSensorIds,
+
+        alertPreferences: current.alertPreferences.map((alert) =>
+          selectedSensorIds.includes(Number(alert.sensorId))
+            ? alert
+            : {
+                ...alert,
+                sensorId: '',
+                threshold: '',
+              },
+        ),
+
         activationPreference: selectedPreferenceStillExists
           ? current.activationPreference
           : {
@@ -125,7 +136,16 @@ function GroupForm({ mode, initialValues, onSubmit, submitting, error }) {
               }))
             }
           />
-          <NotificationPrefSection />
+          <NotificationPrefSection
+            selectedSensorIds={formData.selectedSensorIds}
+            value={formData.alertPreferences}
+            onChange={(alertPreferences) =>
+              setFormData((current) => ({
+                ...current,
+                alertPreferences,
+              }))
+            }
+          />
 
           {error && (
             <Typography color="error" textAlign="center">

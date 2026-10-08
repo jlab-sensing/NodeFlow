@@ -37,7 +37,7 @@ async def evaluate_preference(pref, session: Session):
         GroupTable.user_id == pref.user_id,
     )
     group = session.exec(group_statement).first()
-    if not group or group.irrigation_mode != "auto":
+    if not group or group.kind != "irrigation" or group.irrigation_mode != "auto":
         return
 
     sensor = session.get(SensorTable, pref.sensor_id)

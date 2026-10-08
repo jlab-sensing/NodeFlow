@@ -523,7 +523,7 @@ describe('loading charts', () => {
     expect(zoomOutBtnElement).toBeInTheDocument()
   })
 
-  it('should render downsample button', async () => {
+  it('should not render a downsample button', async () => {
     render(
       <MockChartWrapper
         id="vwc"
@@ -533,8 +533,7 @@ describe('loading charts', () => {
         stream={false}
       />,
     )
-    const downsampleBtnElement = await screen.findByLabelText(/Downsample/i)
-    expect(downsampleBtnElement).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Downsample/i)).not.toBeInTheDocument()
   })
 
   it('should render fullscreen button', async () => {
@@ -796,94 +795,5 @@ describe('testing side button events', () => {
     createElementSpy.mockRestore()
     appendChildSpy.mockRestore()
     removeChildSpy.mockRestore()
-  })
-
-  it('should call onResampleChange when resample option is selected', async () => {
-    const user = userEvent.setup()
-    const mockOnResampleChange = vi.fn()
-
-    render(
-      <ChartWrapper
-        id="vwc"
-        data={data}
-        options={chartOptions}
-        stream={false}
-        onResampleChange={mockOnResampleChange}
-      />,
-    )
-
-    const downsampleBtnElement = await screen.findByLabelText(/Downsample/i)
-    await user.click(downsampleBtnElement)
-
-    const hourlyMenuItem = await screen.findByText('Hourly')
-    await user.click(hourlyMenuItem)
-
-    expect(mockOnResampleChange).toHaveBeenCalledWith('hour')
-  })
-
-  it('should call onResampleChange with none', async () => {
-    const user = userEvent.setup()
-    const mockOnResampleChange = vi.fn()
-
-    render(
-      <ChartWrapper
-        id="vwc2"
-        data={data}
-        options={chartOptions}
-        stream={false}
-        onResampleChange={mockOnResampleChange}
-      />,
-    )
-
-    const downsampleBtnElement = await screen.findByLabelText(/Downsample/i)
-    await user.click(downsampleBtnElement)
-
-    const noneMenuItem = await screen.findByText('None')
-    await user.click(noneMenuItem)
-
-    expect(mockOnResampleChange).toHaveBeenCalledWith('none')
-  })
-
-  it('should call onResampleChange with day', async () => {
-    const user = userEvent.setup()
-    const mockOnResampleChange = vi.fn()
-
-    render(
-      <ChartWrapper
-        id="vwc3"
-        data={data}
-        options={chartOptions}
-        stream={false}
-        onResampleChange={mockOnResampleChange}
-      />,
-    )
-
-    const downsampleBtnElement = await screen.findByLabelText(/Downsample/i)
-    await user.click(downsampleBtnElement)
-
-    const dailyMenuItem = await screen.findByText('Daily')
-    await user.click(dailyMenuItem)
-
-    expect(mockOnResampleChange).toHaveBeenCalledWith('day')
-  })
-
-  it('should show all resample menu items', async () => {
-    const user = userEvent.setup()
-
-    render(
-      <ChartWrapper
-        id="vwc4"
-        data={data}
-        options={chartOptions}
-        stream={false}
-      />,
-    )
-
-    const downsampleBtnElement = await screen.findByLabelText(/Downsample/i)
-    await user.click(downsampleBtnElement)
-
-    expect(screen.getByText('None')).toBeInTheDocument()
-    expect(screen.getByText('Hourly')).toBeInTheDocument()
-    expect(screen.getByText('Daily')).toBeInTheDocument()
   })
 })

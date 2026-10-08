@@ -4,7 +4,13 @@ import { getAxisBoundsAndStepValues } from '../alignAxis'
 import { getChartTimeDomain } from '../timeDomain'
 import ChartWrapper from '../ChartWrapper'
 
-export default function VChart({ data, startDate, endDate, onResampleChange }) {
+export default function VChart({
+  data,
+  startDate,
+  endDate,
+  onResampleChange,
+  resample,
+}) {
   const { leftYMin, leftYMax, leftYStep, rightYMin, rightYMax, rightYStep } =
     getAxisBoundsAndStepValues(
       data.datasets.filter((_, i) => i % 2 == 0),
@@ -46,7 +52,7 @@ export default function VChart({ data, startDate, endDate, onResampleChange }) {
         position: 'left',
         title: {
           display: true,
-          text: 'Voltage (mV)',
+          text: 'Cell Voltage (mV)',
         },
         ticks: {
           stepSize: leftYStep,
@@ -78,6 +84,7 @@ export default function VChart({ data, startDate, endDate, onResampleChange }) {
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
+      resample={resample}
     />
   )
 }
@@ -87,4 +94,5 @@ VChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
+  resample: PropTypes.oneOf(['none', 'hour', 'day']),
 }

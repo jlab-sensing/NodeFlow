@@ -9,6 +9,7 @@ export default function PwrChart({
   startDate,
   endDate,
   onResampleChange,
+  resample,
 }) {
   const { leftYMin, leftYMax, leftYStep } = getAxisBoundsAndStepValues(
     data.datasets,
@@ -67,6 +68,7 @@ export default function PwrChart({
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
+      resample={resample}
     />
   )
 }
@@ -76,4 +78,5 @@ PwrChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
+  resample: PropTypes.oneOf(['none', 'hour', 'day']),
 }

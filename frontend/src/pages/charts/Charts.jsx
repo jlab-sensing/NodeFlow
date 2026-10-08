@@ -31,7 +31,9 @@ import BackBtn from './components/BackBtn'
 import ChartPanelActions from './components/ChartPanelActions'
 import ChartPanelGrid from './components/ChartPanelGrid'
 import DateRangeSel from './components/DateRangeSel'
-import GroupSensorSelect from './components/GroupSensorSelect'
+import ChartSourcesSelect from '../profile/components/ChartSourceSelect'
+import { DemoChartsContent } from '../shared/SharedCharts'
+import useAuth from '../../auth/hooks/useAuth'
 import StreamToggle from './components/StreamToggle'
 import { useChartsHistoricalData } from './hooks/useChartsHistoricalData'
 import { useSensorSocket } from '../../realtime_sensors/useSensorSocket'
@@ -39,7 +41,7 @@ import { useSensorSocket } from '../../realtime_sensors/useSensorSocket'
 const CATALOG_PANEL_ORDER = FULL_CATALOG.map((entry) => entry.panelId)
 const LIVE_WINDOW_MINUTES = 30
 
-function Charts() {
+function SensorCharts() {
   const axiosPrivate = useAxiosPrivate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -354,7 +356,7 @@ function Charts() {
   }, [])
 
   const sensorSelector = (
-    <GroupSensorSelect
+    <ChartSourcesSelect
       groups={groups}
       sensors={allSensors}
       selectedSensorIds={selectedSensorIds}
@@ -396,110 +398,136 @@ function Charts() {
   )
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <TopNav />
-      <Box sx={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
-        <DateRangeNotification
-          open={showFallbackNotification}
-          onClose={hideFallbackNotification}
-          fallbackStartDate={fallbackDates.start}
-          fallbackEndDate={fallbackDates.end}
-        />
-        <LayoutMismatchNotification
-          open={layoutMismatchOpen}
-          onClose={() => setLayoutMismatchOpen(false)}
-          missingPanelIds={layoutMismatchPanels}
-        />
-        <Stack
-          direction="column"
-          divider={<Divider orientation="horizontal" flexItem />}
-          sx={{ minHeight: '100vh', boxSizing: 'border-box' }}
-        >
-          {isMobile ? (
-            <Box sx={{ px: 3, py: 2 }}>
-              <Stack spacing={2}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <BackBtn />
-                  <Box sx={{ flexGrow: 1 }}>{sensorSelector}</Box>
-                </Stack>
-                {isLive ? liveIndicator : dateSelector}
-                <Box sx={{ alignSelf: 'flex-end' }}>
-                  <StreamToggle
-                    isStreaming={isLive}
-                    onToggle={handleStreamToggle}
-                  />
-                </Box>
+    <>
+      <DateRangeNotification
+        open={showFallbackNotification}
+        onClose={hideFallbackNotification}
+        fallbackStartDate={fallbackDates.start}
+        fallbackEndDate={fallbackDates.end}
+      />
+      <LayoutMismatchNotification
+        open={layoutMismatchOpen}
+        onClose={() => setLayoutMismatchOpen(false)}
+        missingPanelIds={layoutMismatchPanels}
+      />
+      <Stack
+        direction="column"
+        divider={<Divider orientation="horizontal" flexItem />}
+        sx={{ minHeight: '100vh', boxSizing: 'border-box' }}
+      >
+        {isMobile ? (
+          <Box sx={{ px: 3, py: 2 }}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <BackBtn />
+                <Box sx={{ flexGrow: 1 }}>{sensorSelector}</Box>
               </Stack>
-            </Box>
-          ) : (
-            <Stack
-              direction="row"
-              alignItems="center"
-              sx={{ p: 2 }}
-              spacing={3}
-            >
-              <BackBtn />
-              <Box sx={{ flexGrow: 1, maxWidth: '30%' }}>{sensorSelector}</Box>
               {isLive ? liveIndicator : dateSelector}
-              <Box sx={{ flexGrow: 1 }} />
-              <StreamToggle
-                isStreaming={isLive}
-                onToggle={handleStreamToggle}
-              />
-            </Stack>
-          )}
-
-          {selectedSensors.length === 0 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              sx={{ minHeight: 'calc(100vh - 120px)' }}
-            >
-              <Box textAlign="center">
-                <Typography variant="h4" color="primary" gutterBottom>
-                  Welcome to NodeFlow Charts
-                </Typography>
-                <Typography variant="h6" color="text.secondary">
-                  Select one or more groups or sensors to view historical data
-                </Typography>
+              <Box sx={{ alignSelf: 'flex-end' }}>
+                <StreamToggle
+                  isStreaming={isLive}
+                  onToggle={handleStreamToggle}
+                />
               </Box>
-            </Box>
-          ) : panelOrder.length === 0 ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              sx={{ minHeight: 'calc(100vh - 120px)' }}
-            >
-              <Typography variant="body1" color="text.secondary">
-                The selected sensors do not currently expose any chart panels.
+            </Stack>
+          </Box>
+        ) : (
+          <Stack direction="row" alignItems="center" sx={{ p: 2 }} spacing={3}>
+            <BackBtn />
+            <Box sx={{ flexGrow: 1, maxWidth: '30%' }}>{sensorSelector}</Box>
+            {isLive ? liveIndicator : dateSelector}
+            <Box sx={{ flexGrow: 1 }} />
+            <StreamToggle isStreaming={isLive} onToggle={handleStreamToggle} />
+          </Stack>
+        )}
+
+        {selectedSensors.length === 0 ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            sx={{ minHeight: 'calc(100vh - 120px)' }}
+          >
+            <Box textAlign="center">
+              <Typography variant="h4" color="primary" gutterBottom>
+                Welcome to NodeFlow Charts
+              </Typography>
+              <Typography variant="h6" color="text.secondary">
+                Select one or more groups or sensors to view historical data
               </Typography>
             </Box>
-          ) : (
-            <Box sx={{ width: '100%', p: 2 }}>
-              <ChartPanelActions
-                onAddChart={() => setAddChartOpen(true)}
-                panelColumns={panelColumns}
-                onPanelColumnsChange={setPanelColumns}
-              />
-              <ChartPanelGrid
-                panelOrder={panelOrder}
-                onPanelOrderChange={setPanelOrder}
-                onRemovePanel={handleRemovePanel}
-                panelColumns={panelColumns}
-                chartProps={panelChartProps}
-              />
-              <AddChartModal
-                open={addChartOpen}
-                onClose={() => setAddChartOpen(false)}
-                selectedSensors={selectedSensors}
-                panelOrder={panelOrder}
-                onAddPanel={handleAddPanel}
-              />
-            </Box>
-          )}
-        </Stack>
+          </Box>
+        ) : panelOrder.length === 0 ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            sx={{ minHeight: 'calc(100vh - 120px)' }}
+          >
+            <Typography variant="body1" color="text.secondary">
+              The selected sensors do not currently expose any chart panels.
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ width: '100%', p: 2 }}>
+            <ChartPanelActions
+              onAddChart={() => setAddChartOpen(true)}
+              panelColumns={panelColumns}
+              onPanelColumnsChange={setPanelColumns}
+            />
+            <ChartPanelGrid
+              panelOrder={panelOrder}
+              onPanelOrderChange={setPanelOrder}
+              onRemovePanel={handleRemovePanel}
+              panelColumns={panelColumns}
+              chartProps={panelChartProps}
+            />
+            <AddChartModal
+              open={addChartOpen}
+              onClose={() => setAddChartOpen(false)}
+              selectedSensors={selectedSensors}
+              panelOrder={panelOrder}
+              onAddPanel={handleAddPanel}
+            />
+          </Box>
+        )}
+      </Stack>
+    </>
+  )
+}
+
+function Charts() {
+  const [params] = useSearchParams()
+  const { user, loggedIn, isAuthLoading } = useAuth()
+
+  const demoId = params.get('demo')
+
+  const signedInReady = Boolean(user?.id && loggedIn && !isAuthLoading)
+
+  return (
+    <Box
+      sx={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <TopNav />
+
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          background: '#FFFFFF',
+        }}
+      >
+        {demoId ? (
+          <DemoChartsContent groupId={demoId} />
+        ) : signedInReady ? (
+          <SensorCharts key={user.id} />
+        ) : (
+          <DemoChartsContent />
+        )}
       </Box>
     </Box>
   )

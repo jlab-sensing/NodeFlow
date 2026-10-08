@@ -57,6 +57,7 @@ def validate_owned_group(
     statement = select(GroupTable).where(
         GroupTable.uuid == group_id,
         GroupTable.user_id == current_user.id,
+        GroupTable.kind == "irrigation",
     )
     if not session.exec(statement).first():
         raise HTTPException(status_code=404, detail="Group not found")

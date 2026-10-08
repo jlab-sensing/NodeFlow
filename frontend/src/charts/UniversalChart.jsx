@@ -16,6 +16,7 @@ export default function UniversalChart({
   startDate,
   endDate,
   onResampleChange,
+  resample,
 }) {
   // Build chart options dynamically based on measurements
   const buildChartOptions = () => {
@@ -149,6 +150,7 @@ export default function UniversalChart({
       data={data}
       options={chartOptions}
       onResampleChange={onResampleChange}
+      resample={resample}
     />
   )
 }
@@ -163,4 +165,5 @@ UniversalChart.propTypes = {
   startDate: PropTypes.object,
   endDate: PropTypes.object,
   onResampleChange: PropTypes.func,
+  resample: PropTypes.oneOf(['none', 'hour', 'day']),
 }

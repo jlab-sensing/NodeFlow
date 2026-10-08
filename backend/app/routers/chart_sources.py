@@ -29,6 +29,7 @@ def get_chart_sources(
     groups = session.exec(
         select(GroupTable).where(
             GroupTable.user_id == current_user.id,
+            GroupTable.kind == "irrigation",
         )
     ).all()
 

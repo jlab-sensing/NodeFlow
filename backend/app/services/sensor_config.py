@@ -147,7 +147,7 @@ PANEL_IDS_BY_CONFIG_KEY = {
     "soilHum": ["u:soilHum"],
     "waterPress": ["u:waterPress"],
     "waterFlow": ["u:waterFlow"],
-    "waterFlowD10": ["u:waterFlow"],
+    "waterFlowD10": ["u:waterFlowD10"],
 }
 
 
@@ -156,6 +156,8 @@ SENSOR_TYPE_CONFIG_KEYS = {
     "teros": ["teros12_vwc_adj", "teros12_temp", "teros12_ec"],
     "conductivity": ["teros12_ec"],
     "temperature": ["temperature"],
+    "yfs210c": ["waterFlow"],
+    "D10": ["waterFlowD10"],
 }
 
 

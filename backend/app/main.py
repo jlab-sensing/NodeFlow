@@ -13,10 +13,13 @@ from app.routers.cells import router as cell_router
 from app.routers.chart_data import router as chart_data_router
 from app.routers.chart_sources import router as chart_sources_router
 from app.routers.data_availability import router as data_availability_router
+from app.routers.deployments import router as deployments_router
 from app.routers.groups import router as groups_router
 from app.routers.logger import router as logger_router
+from app.routers.public_deployments import router as public_deployments_router
 from app.routers.sensor import router as sensor_router
 from app.routers.sensor_data import router as sensor_data_router
+from app.routers.shared_cells import router as shared_cells_router
 from app.routers.solenoid import router as solenoid_router
 from app.routers.tag import router as tag_router
 from app.routers.test_solenoid import router as test_solenoid_router
@@ -73,6 +76,9 @@ fastapi_app.include_router(test_solenoid_router)
 fastapi_app.include_router(chart_sources_router)
 fastapi_app.include_router(chart_data_router)
 fastapi_app.include_router(sensor_data_router)
+fastapi_app.include_router(shared_cells_router)
+fastapi_app.include_router(deployments_router)
+fastapi_app.include_router(public_deployments_router)
 
 
 @fastapi_app.get("/")

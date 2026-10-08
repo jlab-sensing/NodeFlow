@@ -1,15 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import Modal from '@mui/material/Modal'
 import Fade from '@mui/material/Fade'
-import {
-  Box,
-  ToggleButton,
-  Tooltip,
-  Menu,
-  MenuItem,
-  ListItemText,
-} from '@mui/material'
+import { Box, ToggleButton, Tooltip } from '@mui/material'
 import zoom from '../assets/zoom.svg'
 import reset from '../assets/reset.svg'
 import pan from '../assets/pan.svg'
@@ -17,7 +10,6 @@ import FullscreenExit from '../assets/minimize.svg'
 import Fullscreen from '../assets/maximize.svg'
 import zoomIn from '../assets/zoom-in.svg'
 import zoomOut from '../assets/zoom-out.svg'
-import downsample from '../assets/downsample.svg'
 import downloadIcon from '../assets/download.svg'
 
 import {
@@ -45,7 +37,7 @@ ChartJS.register(
 )
 
 //** Wrapper for chart functionality and state */
-function ChartWrapper({ id, data, options, onResampleChange }) {
+function ChartWrapper({ id, data, options }) {
   const [resetSelected] = useState(false)
   const [zoomSelected, setZoomSelected] = useState(false)
   const [panSelected, setPanSelected] = useState(true)
@@ -53,8 +45,12 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
 
-  const [resampleAnchor, setResampleAnchor] = useState(null)
-  const [selectedResample, setSelectedResample] = useState('hour')
+  const datasetIdKey = data.datasets.every(
+    (dataset) => typeof dataset.id === 'string',
+  )
+    ? 'id'
+    : 'label'
+
   const [scaleRef, setScaleRef] = useState({})
 
   //** defines axis for charts, charts may have different axis names/
@@ -114,24 +110,21 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
 
   let optionsWithPlugins = new Options()
   const chartRef = useRef(null)
-  // const chartRef = useRef({ id, data, optionsWithPlugins });
 
-  //** Modifies chart ref with new scales object */
-  function setScales(scaleRef) {
-    if (chartRef.current) {
-      for (const { axis, axisMin, axisMax } of axesWithScaleKeys) {
-        if (chartRef.current.scales[axis]) {
-          if (scaleRef[axisMin] !== undefined) {
-            chartRef.current.scales[axis].options.min = scaleRef[axisMin]
-          }
-          if (scaleRef[axisMax] !== undefined) {
-            chartRef.current.scales[axis].options.max = scaleRef[axisMax]
-          }
-        }
-      }
-      chartRef.current.update()
+  const setScales = useCallback((savedScales) => {
+    const chart = chartRef.current
+    if (!chart) return
+
+    for (const [axis, scale] of Object.entries(chart.scales)) {
+      const min = savedScales[axis + 'Min']
+      const max = savedScales[axis + 'Max']
+
+      if (min !== undefined) scale.options.min = min
+      if (max !== undefined) scale.options.max = max
     }
-  }
+
+    chart.update()
+  }, [])
 
   const globalChartOpts = {
     interaction: {
@@ -182,28 +175,10 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
     }
   }
 
-  const handleResampleClick = (event) => {
-    setResampleAnchor(event.currentTarget)
-  }
-
-  const handleResampleClose = () => {
-    setResampleAnchor(null)
-  }
-
-  const handleResampleSelect = (value) => {
-    setSelectedResample(value)
-    handleResampleClose()
-    // Trigger data refresh with new resample value
-    if (onResampleChange) {
-      onResampleChange(value)
-    }
-  }
-
   // const lineChart = () => {
   //   return <Line key={id} ref={chartRef} data={data} options={{ ...optionsWithPlugins, ...globalChartOpts }}></Line>;
   // };
 
-  /** Maintain zoom and pan ref from previous render */
   useEffect(() => {
     if (chartRef.current) {
       if (scaleRef != undefined) {
@@ -212,12 +187,8 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
       }
       return
     }
+  }, [zoomSelected, panSelected, scaleRef, data, setScales])
 
-    // TODO: refactor for better state management, useCallback for setting scaleRef
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoomSelected, panSelected, scaleRef, data])
-
-  //** Keep the current zoom and pan bounds when historical data changes. */
   useEffect(() => {
     if (chartRef.current && chartRef.current.config.data != data) {
       chartRef.current.config.data.labels = data.labels
@@ -227,19 +198,14 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
       }
       chartRef.current.update()
     }
-    // TODO: refactor for better state management
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, scaleRef])
+  }, [data, scaleRef, setScales])
 
-  /** Sets zoom / pan when state is updated onZoomComplete or onPanComplete */
   useEffect(() => {
     if (scaleRef != undefined) {
       setScales(scaleRef)
     }
     return
-    // TODO: refactor for better state management, useCallback for setting scaleRef
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scaleRef])
+  }, [scaleRef, setScales])
 
   const handleExportChart = () => {
     if (chartRef.current) {
@@ -274,6 +240,7 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
       >
         <Line
           data-testid="chart-container"
+          datasetIdKey={datasetIdKey}
           key={id}
           ref={chartRef}
           data={data}
@@ -440,68 +407,7 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
               ></Box>
             </ToggleButton>
           </Tooltip>
-          <Tooltip
-            title="Downsample"
-            placement="bottom"
-            disableInteractive
-            slotProps={{
-              popper: {
-                modifiers: [
-                  {
-                    name: 'offset',
-                    options: {
-                      offset: [0, -11],
-                    },
-                  },
-                ],
-              },
-            }}
-          >
-            <ToggleButton
-              value={false}
-              variant="contained"
-              onClick={handleResampleClick}
-              sx={{ width: '32px', height: '32px' }}
-            >
-              <Box
-                component="img"
-                src={downsample}
-                sx={{ width: '16px', height: '16px' }}
-              ></Box>
-            </ToggleButton>
-          </Tooltip>
-          <Menu
-            anchorEl={resampleAnchor}
-            open={Boolean(resampleAnchor)}
-            onClose={handleResampleClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-          >
-            <MenuItem
-              onClick={() => handleResampleSelect('none')}
-              selected={selectedResample === 'none'}
-            >
-              <ListItemText>None</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleResampleSelect('hour')}
-              selected={selectedResample === 'hour'}
-            >
-              <ListItemText>Hourly</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleResampleSelect('day')}
-              selected={selectedResample === 'day'}
-            >
-              <ListItemText>Daily</ListItemText>
-            </MenuItem>
-          </Menu>
+
           <Tooltip
             title="Export Chart"
             placement="bottom"
@@ -590,6 +496,7 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
                 <Line
                   key={id}
                   ref={chartRef}
+                  datasetIdKey={datasetIdKey}
                   data={data}
                   options={{ ...optionsWithPlugins, ...globalChartOpts }}
                   plugins={[]}
@@ -745,67 +652,7 @@ function ChartWrapper({ id, data, options, onResampleChange }) {
                       ></Box>
                     </ToggleButton>
                   </Tooltip>
-                  <Tooltip
-                    title="Downsample"
-                    placement="bottom"
-                    disableInteractive
-                    slotProps={{
-                      popper: {
-                        modifiers: [
-                          {
-                            name: 'offset',
-                            options: {
-                              offset: [0, -11],
-                            },
-                          },
-                        ],
-                      },
-                    }}
-                  >
-                    <ToggleButton
-                      value={false}
-                      variant="contained"
-                      onClick={handleResampleClick}
-                    >
-                      <Box
-                        component="img"
-                        src={downsample}
-                        sx={{ width: '20px', height: '20px' }}
-                      ></Box>
-                    </ToggleButton>
-                  </Tooltip>
-                  <Menu
-                    anchorEl={resampleAnchor}
-                    open={Boolean(resampleAnchor)}
-                    onClose={handleResampleClose}
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
-                    }}
-                    transformOrigin={{
-                      vertical: 'top',
-                      horizontal: 'right',
-                    }}
-                  >
-                    <MenuItem
-                      onClick={() => handleResampleSelect('none')}
-                      selected={selectedResample === 'none'}
-                    >
-                      <ListItemText>None</ListItemText>
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => handleResampleSelect('hour')}
-                      selected={selectedResample === 'hour'}
-                    >
-                      <ListItemText>Hourly</ListItemText>
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => handleResampleSelect('day')}
-                      selected={selectedResample === 'day'}
-                    >
-                      <ListItemText>Daily</ListItemText>
-                    </MenuItem>
-                  </Menu>
+
                   <Tooltip
                     title="Export Chart"
                     placement="bottom"
@@ -876,5 +723,4 @@ ChartWrapper.propTypes = {
   id: PropTypes.string,
   data: PropTypes.object,
   options: PropTypes.object,
-  onResampleChange: PropTypes.func,
 }

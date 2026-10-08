@@ -96,6 +96,7 @@ function SortableChartPagePanel({
   onRemovePanel,
   panelColumns,
   canRemove,
+  renderPanel,
 }) {
   return (
     <SortableChartPanel
@@ -103,7 +104,11 @@ function SortableChartPagePanel({
       onRemove={canRemove ? onRemovePanel : undefined}
       panelColumns={panelColumns}
     >
-      <ChartPanelContent panelId={panelId} chartProps={chartProps} />
+      {renderPanel ? (
+        renderPanel(panelId)
+      ) : (
+        <ChartPanelContent panelId={panelId} chartProps={chartProps} />
+      )}
     </SortableChartPanel>
   )
 }
@@ -114,6 +119,7 @@ SortableChartPagePanel.propTypes = {
   onRemovePanel: PropTypes.func.isRequired,
   panelColumns: PropTypes.oneOf([1, 2]).isRequired,
   canRemove: PropTypes.bool.isRequired,
+  renderPanel: PropTypes.func,
 }
 
 export default function ChartPanelGrid({
@@ -122,6 +128,7 @@ export default function ChartPanelGrid({
   onRemovePanel,
   chartProps,
   panelColumns,
+  renderPanel,
 }) {
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
@@ -156,9 +163,17 @@ export default function ChartPanelGrid({
           onRemovePanel={onRemovePanel}
           panelColumns={panelColumns}
           canRemove={canRemovePanels}
+          renderPanel={renderPanel}
         />
       )),
-    [panelOrder, chartProps, onRemovePanel, panelColumns, canRemovePanels],
+    [
+      panelOrder,
+      chartProps,
+      onRemovePanel,
+      panelColumns,
+      canRemovePanels,
+      renderPanel,
+    ],
   )
 
   if (panelOrder.length === 0) {
@@ -201,7 +216,7 @@ ChartPanelGrid.propTypes = {
     axiosPrivate: PropTypes.func,
     startDate: PropTypes.any,
     endDate: PropTypes.any,
-    modeResample: PropTypes.oneOf(['none', 'hour']),
+    modeResample: PropTypes.oneOf(['none', 'hour', 'day']),
     historicalSensorByKey: PropTypes.object,
     historicalLoading: PropTypes.bool,
     centralHistoricalActive: PropTypes.shape({
@@ -210,4 +225,5 @@ ChartPanelGrid.propTypes = {
     onPowerDataStatusChange: PropTypes.func,
     onTerosDataStatusChange: PropTypes.func,
   }).isRequired,
+  renderPanel: PropTypes.func,
 }

@@ -52,8 +52,16 @@ vi.mock('../../../src/pages/charts/components/BackBtn', () => ({
   default: () => <div>Back</div>,
 }))
 
-vi.mock('../../../src/pages/charts/components/GroupSensorSelect', () => ({
+vi.mock('../../../src/pages/profile/components/ChartSourceSelect', () => ({
   default: () => <div>Sensor selector</div>,
+}))
+
+vi.mock('../../../src/auth/hooks/useAuth', () => ({
+  default: () => ({
+    user: { id: 'test-user' },
+    loggedIn: true,
+    isAuthLoading: false,
+  }),
 }))
 
 vi.mock('../../../src/pages/charts/components/DateRangeSel', () => ({

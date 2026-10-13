@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
 import GroupSection from './GroupSection'
 
+
+// This file is meant to define the alerts you may want
+// Currently only set up for flowmeter not recieving water after opening a solenoid
 const flowUnitsByType = {
   yfs210c: 'L/Min',
   waterflow: 'L/Min',
@@ -74,7 +77,7 @@ function NotificationPrefSection({ selectedSensorIds, value, onChange }) {
     <GroupSection title="Alert Preferences">
       <Box sx={{ width: '90%', mx: 'auto', mt: 1 }}>
         <Typography variant="body2" sx={{ mb: 2 }}>
-          functionality coming soon
+        Not fully implemented.
         </Typography>
 
         {loading && <Typography>Loading sensors...</Typography>}

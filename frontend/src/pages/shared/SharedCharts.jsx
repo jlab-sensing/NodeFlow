@@ -320,6 +320,7 @@ function DeploymentCharts({ groupId }) {
           <DirtvizCharts
             catalogs={catalogs}
             historiesByUuid={historiesByUuid}
+            historiesRead={histories.every((query) => query.isSuccess)}
             startDate={chartStartDate}
             endDate={chartEndDate}
             resample={resample}

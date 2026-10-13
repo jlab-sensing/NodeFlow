@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { Alert, Box, Stack, Typography } from '@mui/material'
 import VChart from '../charts/VChart/VChart'
@@ -173,9 +173,31 @@ function DemoPanelLayout({ panels, scopeKey, startDate, endDate, resample }) {
   )
 }
 
+function EmptyPanelsNotice({ count }) {
+    const [dismissed, setDismissed] = useState(false)
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setDismissed(true), 4000)
+        return () => window.clearTimeout(timer)
+    }, [])
+
+    if (dismissed) return null
+
+    return (
+        <Alert severity='info' onClose={() => setDismissed(true)}>
+            {count} chart{count === 1 ? '' : 's'} hidden becuase no plotted data points were returned for selected time range.
+        </Alert>
+    )
+}
+
+EmptyPanelsNotice.propTypes = {
+    count: PropTypes.number.isRequired,
+}
+
 export default function DirtvizCharts({
   catalogs = EMPTY_CATALOGS,
   historiesByUuid = EMPTY_HISTORIES,
+  historiesReady = false,
   startDate,
   endDate,
   resample,
@@ -204,6 +226,12 @@ export default function DirtvizCharts({
   }
 
   const { panels, warnings, unplottedChannels } = prepared.value
+  const visiblePanels = panels.filter((panel) => panel.hasData)
+
+  const emptyPanelIds = panels
+    .filter((panel) => !panel.hasData)
+    .map((panel) => panel.id)
+    .sort()
 
   const scopeKey = JSON.stringify([
     catalogs.map((cell) => [cell.source_instance, cell.uuid]),
@@ -224,8 +252,15 @@ export default function DirtvizCharts({
         <Alert severity="info">No numeric graph channels were discovered</Alert>
       )}
 
+    
+      {historiesReady && warnings.length === 0 && emptyPanelIds.length > 0 && (
+        <EmptyPanelsNotice
+            key={JSON.stringify([scopeKey, emptyPanelIds])}
+            count={emptyPanelIds.length}
+        />
+      )}
       <DemoPanelLayout
-        panels={panels}
+        panels={visiblePanels}
         scopeKey={scopeKey}
         startDate={startDate}
         endDate={endDate}
@@ -257,4 +292,5 @@ DirtvizCharts.PropTypes = {
   ...chartProps,
   catalogs: PropTypes.arrayOf(PropTypes.object),
   historiesByUuid: PropTypes.object,
+  historiesReady: PropTypes.bool,
 }

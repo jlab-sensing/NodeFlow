@@ -53,3 +53,8 @@ nodeflowsecrets.json
 
 backups/*
 backups/
+
+# SSL Certificates
+nginx/certs/*
+!nginx/certs/.gitkeep
+!nginx/certs/.gitignore

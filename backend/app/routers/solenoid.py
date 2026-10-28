@@ -100,8 +100,12 @@ async def update_solenoid(
         current_user,
     )
     solenoid.name = update.name
-    solenoid.logger_id = update.logger_id
     solenoid.group_id = update.group_id
+    if "physical_pin" in update.model_fields_set:
+        solenoid.physical_pin = update.physical_pin
+    elif solenoid.logger_id != update.logger_id:
+        solenoid.physical_pin = None
+    solenoid.logger_id = update.logger_id
     session.add(solenoid)
     session.commit()
     session.refresh(solenoid)
@@ -148,6 +152,7 @@ async def add_new_solenoid(
     db_solenoid = SolenoidTable(
         name=solenoid.name,
         logger_id=solenoid.logger_id,
+        physical_pin=solenoid.physical_pin,
         group_id=solenoid.group_id,
         user_id=current_user.id,
         active_state="closed",

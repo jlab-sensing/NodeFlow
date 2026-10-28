@@ -44,6 +44,7 @@ def create_solenoid(
     active_state="closed",
     group_id=None,
     archived=False,
+    physical_pin=None,
 ):
     solenoid = SolenoidTable(
         user_id=user_id,
@@ -52,6 +53,7 @@ def create_solenoid(
         logger_id=logger_id,
         group_id=group_id,
         archived=archived,
+        physical_pin=physical_pin,
     )
     db_session.add(solenoid)
     db_session.commit()
@@ -399,6 +401,7 @@ def test_create_solenoid_assigns_owner_and_closed_state(
     assert payload["name"] == "Greenhouse Valve"
     assert payload["active_state"] == "closed"
     assert payload["logger_id"] == 301
+    assert payload["physical_pin"] is None
     assert payload["archived"] is False
     assert "id" in payload
     assert "uuid" in payload
@@ -427,6 +430,101 @@ def test_create_solenoid_requires_shared_logger(
         "detail": "Logger not found",
     }
     shared_logger_mock.assert_awaited_once_with(999)
+
+
+def test_solenoid_pin_persists_through_create_edit_and_reload(
+    authenticated_client,
+    db_session,
+    shared_logger_mock,
+):
+    created = authenticated_client.post(
+        "/api/solenoid/",
+        json={"name": "Pin-selected valve", "logger_id": 123, "physical_pin": 18},
+    )
+    assert created.status_code == 201
+    solenoid_id = created.json()["id"]
+    assert created.json()["physical_pin"] == 18
+    assert reload_solenoid(db_session, solenoid_id).physical_pin == 18
+
+    updated = authenticated_client.put(
+        f"/api/solenoid/{solenoid_id}",
+        json={"name": "Updated valve", "logger_id": 123, "physical_pin": 37},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["physical_pin"] == 37
+    assert reload_solenoid(db_session, solenoid_id).physical_pin == 37
+
+    reloaded = authenticated_client.get(f"/api/solenoid/{solenoid_id}")
+    assert reloaded.json()["physical_pin"] == 37
+    listed = authenticated_client.get("/api/solenoid/")
+    assert listed.json()[0]["physical_pin"] == 37
+
+
+@pytest.mark.parametrize("physical_pin", [4, 40, -1, 18.5, "18", True])
+@pytest.mark.parametrize("operation", ["create", "update"])
+def test_solenoid_rejects_invalid_pins_without_saving(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+    physical_pin,
+    operation,
+):
+    solenoid = create_solenoid(db_session, test_user.id, physical_pin=18)
+    payload = {
+        "name": "Invalid pin",
+        "logger_id": solenoid.logger_id,
+        "physical_pin": physical_pin,
+    }
+    if operation == "create":
+        response = authenticated_client.post("/api/solenoid/", json=payload)
+    else:
+        response = authenticated_client.put(
+            f"/api/solenoid/{solenoid.id}", json=payload
+        )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "physical_pin"]
+    shared_logger_mock.assert_not_awaited()
+    assert reload_solenoid(db_session, solenoid.id).physical_pin == 18
+    assert len(authenticated_client.get("/api/solenoid/").json()) == 1
+
+
+@pytest.mark.parametrize("logger_id, expected_pin", [(123, 18), (456, None)])
+def test_update_without_pin_preserves_it_only_for_the_same_logger(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+    logger_id,
+    expected_pin,
+):
+    solenoid = create_solenoid(db_session, test_user.id, physical_pin=18)
+    response = authenticated_client.put(
+        f"/api/solenoid/{solenoid.id}",
+        json={"name": "Renamed valve", "logger_id": logger_id},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["physical_pin"] == expected_pin
+    assert reload_solenoid(db_session, solenoid.id).physical_pin == expected_pin
+
+
+def test_solenoid_pin_can_be_explicitly_cleared(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+):
+    solenoid = create_solenoid(db_session, test_user.id, physical_pin=18)
+    response = authenticated_client.put(
+        f"/api/solenoid/{solenoid.id}",
+        json={"name": solenoid.name, "logger_id": 123, "physical_pin": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["physical_pin"] is None
+    assert reload_solenoid(db_session, solenoid.id).physical_pin is None
 
 
 def test_update_solenoid_preserves_state_and_owner(

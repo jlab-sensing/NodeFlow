@@ -8,15 +8,16 @@ COMMANDS = {
     "open": 1,
 }
 
+
 def encode_solenoid_command(desired_state: str) -> str:
     if desired_state not in COMMANDS:
-        raise ValueError(
-            f"Unsupported solenoid state: {desired_state}"
-        )
-    
-    payload = bytes([
-        SOLENOID_PROTOCOL_VERSION,
-        COMMANDS[desired_state],
-    ])
+        raise ValueError(f"Unsupported solenoid state: {desired_state}")
 
-    return base64.b64encode(payload).decode('ascii')
+    payload = bytes(
+        [
+            SOLENOID_PROTOCOL_VERSION,
+            COMMANDS[desired_state],
+        ]
+    )
+
+    return base64.b64encode(payload).decode("ascii")

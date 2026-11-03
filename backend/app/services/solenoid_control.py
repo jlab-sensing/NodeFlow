@@ -1,17 +1,17 @@
 import os
-
-import httpx
-from sqlmodel import Session
-from fastapi import HTTPException
 from datetime import datetime, timezone
 
+import httpx
+from fastapi import HTTPException
+from sqlmodel import Session
+
+from app.schemas.solenoid import SolenoidTable
 from app.schemas.solenoid_command import SolenoidCommandTable
 from app.services.ents_client import ents_post
 from app.services.solenoid_payload import (
     SOLENOID_F_PORT,
     encode_solenoid_command,
 )
-from app.schemas.solenoid import SolenoidTable
 
 SOLENOID_TESTER_URL = os.getenv(
     "SOLENOID_TESTER_URL",
@@ -26,11 +26,11 @@ async def queue_logger_solenoid_command(
     if logger_id <= 0:
         raise HTTPException(
             status_code=400,
-            detail="A real logger ID is required"
-,        )
+            detail="A real logger ID is required",
+        )
     payload = encode_solenoid_command(desired_state)
 
-    try: 
+    try:
         result = await ents_post(
             f"/api/logger/{logger_id}/downlink",
             json={
@@ -43,7 +43,7 @@ async def queue_logger_solenoid_command(
             status_code=502,
             detail="ENTs returned an invalid downlink response",
         ) from exc
-    
+
     if (
         not isinstance(result, dict)
         or result.get("logger_id") != logger_id
@@ -56,6 +56,7 @@ async def queue_logger_solenoid_command(
         )
     return result
 
+
 async def submit_logger_solenoid_command(
     solenoid: SolenoidTable,
     desired_state: str,
@@ -66,19 +67,19 @@ async def submit_logger_solenoid_command(
             status_code=400,
             detail="unsupported solenoid state",
         )
-    
+
     if solenoid.archived:
         raise HTTPException(
             status_code=409,
             detail="cannot control archived hardware",
         )
-    
+
     if solenoid.logger_id <= 0:
         raise HTTPException(
             status_code=400,
             detail="a real logger is required",
         )
-    
+
     command = SolenoidCommandTable(
         logger_id=solenoid.logger_id,
         user_id=solenoid.user_id,
@@ -97,15 +98,9 @@ async def submit_logger_solenoid_command(
             desired_state=command.requested_state,
         )
     except HTTPException as exc:
-        rejected_statuses = {
-            400, 401, 403, 404, 405, 415, 422, 429
-        }
+        rejected_statuses = {400, 401, 403, 404, 405, 415, 422, 429}
 
-        command.status = (
-            "failed"
-            if exc.status_code in rejected_statuses
-            else "unknown"
-        )
+        command.status = "failed" if exc.status_code in rejected_statuses else "unknown"
         command.error = str(exc.detail)
 
         session.add(command)
@@ -134,9 +129,7 @@ async def set_solenoid_state(
         )
 
     if desired_state not in {"open", "closed"}:
-        raise ValueError(
-            f"Unsupported solenoid state: {desired_state}"
-        )
+        raise ValueError(f"Unsupported solenoid state: {desired_state}")
 
     if not force and solenoid.active_state == desired_state:
         return solenoid

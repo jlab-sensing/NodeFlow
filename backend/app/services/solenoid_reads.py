@@ -20,11 +20,7 @@ def serialize_solenoids(
             detail="solenoid not found",
         )
 
-    logger_ids = {
-        item.logger_id
-        for item in solenoids
-        if item.logger_id > 0
-    }
+    logger_ids = {item.logger_id for item in solenoids if item.logger_id > 0}
 
     latest_by_logger: dict[int, SolenoidCommandRead] = {}
     latest_queued_by_logger: dict[int, SolenoidCommandRead] = {}
@@ -54,9 +50,7 @@ def serialize_solenoids(
 
         # Filter to successful submissions before selecting the newest
         # command for each logger.
-        queued_statement = statement.where(
-            SolenoidCommandTable.status == "queued"
-        )
+        queued_statement = statement.where(SolenoidCommandTable.status == "queued")
         queued_commands = session.exec(queued_statement).all()
 
         latest_queued_by_logger = {
@@ -70,9 +64,7 @@ def serialize_solenoids(
         result = SolenoidRead.model_validate(solenoid)
 
         result.last_command = latest_by_logger.get(solenoid.logger_id)
-        result.last_queued_command = latest_queued_by_logger.get(
-            solenoid.logger_id
-        )
+        result.last_queued_command = latest_queued_by_logger.get(solenoid.logger_id)
 
         results.append(result)
 

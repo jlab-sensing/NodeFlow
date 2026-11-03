@@ -101,22 +101,23 @@ def get_specific_group_info(
 
 
 @router.get("/{group_id}/solenoidData", response_model=List[SolenoidRead])
-def get_group_solenoid_data(group_id: UUID, session: Session = Depends(get_session), current_user: UserTable = Depends(get_current_user)):
+def get_group_solenoid_data(
+    group_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
     """Fetches all solenoids belonging to a specific group."""
     group = session.exec(
         select(GroupTable).where(
             GroupTable.uuid == group_id,
             GroupTable.user_id == current_user.id,
-            GroupTable.kind == "irrigation"
+            GroupTable.kind == "irrigation",
         )
     ).first()
 
     if group is None:
-        raise HTTPException(
-            status_code=404,
-            detail="group not found"
-        )
-    
+        raise HTTPException(status_code=404, detail="group not found")
+
     solenoids = session.exec(
         select(SolenoidTable).where(
             SolenoidTable.group_id == group_id,
@@ -125,7 +126,8 @@ def get_group_solenoid_data(group_id: UUID, session: Session = Depends(get_sessi
     ).all()
 
     return serialize_solenoids(
-        solenoids,session,
+        solenoids,
+        session,
         current_user.id,
     )
 
@@ -172,7 +174,7 @@ async def delete_group(
             status_code=404,
             detail="Group not found",
         )
-    
+
     solenoids = session.exec(
         select(SolenoidTable).where(
             SolenoidTable.group_id == group_id,
@@ -183,7 +185,7 @@ async def delete_group(
     if any(solenoid.logger_id != -1 for solenoid in solenoids):
         raise HTTPException(
             status_code=409,
-            detail="Groups containing real solenoids cannot be eleted yet. Unassign solenoid before deleting the group"
+            detail="Groups containing real solenoids cannot be eleted yet. Unassign solenoid before deleting the group",
         )
 
     preferences = session.exec(
@@ -393,10 +395,7 @@ def get_group_devices(
     ).first()
 
     if group is None:
-        raise HTTPException(
-            status_code=404,
-            detail="group not found"
-        )
+        raise HTTPException(status_code=404, detail="group not found")
 
     solenoids = session.exec(
         select(SolenoidTable).where(

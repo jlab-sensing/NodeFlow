@@ -39,7 +39,7 @@ async def evaluate_preference(pref, session: Session):
     group = session.exec(group_statement).first()
     if not group or group.kind != "irrigation" or group.irrigation_mode != "auto":
         return
-    
+
     solenoids = session.exec(
         select(SolenoidTable).where(
             SolenoidTable.group_id == pref.group_id,

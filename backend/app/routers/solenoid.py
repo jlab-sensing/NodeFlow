@@ -2,7 +2,7 @@ import os
 from typing import List
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlmodel import Session, select
 
 from app.auth.auth import get_current_user
@@ -15,11 +15,15 @@ from app.schemas.groups import GroupTable
 from app.schemas.solenoid import SolenoidTable
 from app.schemas.user_schema import UserTable
 from app.services.logger_service import get_shared_logger
-from app.services.solenoid_control import close_solenoid, open_solenoid, submit_logger_solenoid_command
+from app.services.solenoid_control import (
+    close_solenoid,
+    open_solenoid,
+    submit_logger_solenoid_command,
+)
 from app.services.solenoid_reads import serialize_solenoids
 
-
 router = APIRouter(prefix="/api/solenoid", tags=["Solenoids"])
+
 
 async def perform_manual_action(
     solenoid_id: int,
@@ -38,7 +42,7 @@ async def perform_manual_action(
             status_code=409,
             detail="cannot control archived hardware",
         )
-    
+
     is_mock = solenoid.logger_id == -1
     if is_mock:
         affected_solenoids = [solenoid]
@@ -52,8 +56,7 @@ async def perform_manual_action(
 
         if str(logger.get("type", "")).lower() != "ents":
             raise HTTPException(
-                status_code=400,
-                detail="this logger does not support downlinks"
+                status_code=400, detail="this logger does not support downlinks"
             )
 
         affected_solenoids = session.exec(
@@ -62,23 +65,16 @@ async def perform_manual_action(
             )
         ).all()
 
-        if any(
-            item.user_id != current_user.id
-            for item in affected_solenoids
-        ):
+        if any(item.user_id != current_user.id for item in affected_solenoids):
             raise HTTPException(
                 status_code=409,
-                detail="This logger has hardware assigned to another user"
+                detail="This logger has hardware assigned to another user",
             )
-        
-    affected_solenoid_ids = [
-        item.id for item in affected_solenoids
-    ]
+
+    affected_solenoid_ids = [item.id for item in affected_solenoids]
 
     group_ids = {
-        item.group_id
-        for item in affected_solenoids
-        if item.group_id is not None
+        item.group_id for item in affected_solenoids if item.group_id is not None
     }
 
     groups = []
@@ -93,18 +89,17 @@ async def perform_manual_action(
 
         if {group.uuid for group in groups} != group_ids:
             raise HTTPException(
-                status_code=404,
-                detail="an affected irrigation group was not found"
+                status_code=404, detail="an affected irrigation group was not found"
             )
-        
+
     for group in groups:
         group.irrigation_mode = "manual"
         session.add(group)
-        
+
     if is_mock:
         session.commit()
 
-        try: 
+        try:
             if desired_state == "open":
                 updated = await open_solenoid(solenoid, session)
             else:
@@ -114,13 +109,13 @@ async def perform_manual_action(
                 status_code=503,
                 detail="test solenoid unavailable",
             ) from exc
-            
+
         return {
             "solenoid_id": updated.id,
             "state": updated.active_state,
             "mode": "manual" if group_ids else None,
         }
-        
+
     command = await submit_logger_solenoid_command(
         solenoid=solenoid,
         desired_state=desired_state,
@@ -138,9 +133,7 @@ async def perform_manual_action(
         "status": command.status,
         "queued_at": command.queued_at,
         "affected_solenoid_ids": affected_solenoid_ids,
-        "affected_group_ids": sorted(
-            str(group_id) for group_id in group_ids
-        ),
+        "affected_group_ids": sorted(str(group_id) for group_id in group_ids),
     }
 
 
@@ -159,7 +152,9 @@ def get_owned_solenoid(
     return solenoid
 
 
-def validate_owned_group(group_id, session: Session, current_user: UserTable, *, logger_id: int):
+def validate_owned_group(
+    group_id, session: Session, current_user: UserTable, *, logger_id: int
+):
     if group_id is None:
         return
 
@@ -176,11 +171,11 @@ def validate_owned_group(group_id, session: Session, current_user: UserTable, *,
             status_code=404,
             detail="group not found",
         )
-    
+
     if logger_id != -1 and group.irrigation_mode != "manual":
         raise HTTPException(
             status_code=409,
-            detail="switch destination group to manual mode before assigning a real solenoid"
+            detail="switch destination group to manual mode before assigning a real solenoid",
         )
 
 
@@ -352,6 +347,7 @@ async def close_specific_solenoid(
         current_user,
     )
 
+
 @router.post("/{solenoid_id}/open")
 async def open_specific_solenoid(
     solenoid_id: int,
@@ -399,7 +395,7 @@ async def set_solenoid_archived(
     if solenoid.logger_id != -1:
         raise HTTPException(
             status_code=409,
-            detail="error archiving real solenoid during manual control rollout"
+            detail="error archiving real solenoid during manual control rollout",
         )
 
     if update.archived and solenoid.active_state == "open":

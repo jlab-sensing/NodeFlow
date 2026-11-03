@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import Field, field_validator
 from sqlmodel import SQLModel
+
 from app.models.solenoid_command import SolenoidCommandRead
 
 SOLENOID_PHYSICAL_PINS = frozenset(

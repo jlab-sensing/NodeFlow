@@ -45,3 +45,4 @@ class SolenoidRead(SQLModel):
     date_created: datetime
     archived: bool
     last_command: SolenoidCommandRead | None = None
+    last_queued_command: SolenoidCommandRead | None = None

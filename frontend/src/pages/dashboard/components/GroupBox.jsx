@@ -276,7 +276,11 @@ function GroupBox({ group }) {
                   <Typography variant="body2">{solenoid.name}</Typography>
 
                   <OpenCloseButton
-                    state={solenoid.active_state}
+                    state={
+                      solenoid.logger_id === -1
+                        ? solenoid.active_state
+                        : solenoid.last_queued_command?.requested_state
+                    }
                     loading={changingSolenoidId === solenoid.id}
                     onStateChange={(requestedState) =>
                       handleSolenoidStateChange(solenoid.id, requestedState)

@@ -175,6 +175,7 @@ def test_archive_open_solenoid_closes_it_first(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="open",
     )
     close_mock = mock_successful_close(monkeypatch)
@@ -200,6 +201,7 @@ def test_archive_closed_solenoid_does_not_close_it_again(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="closed",
     )
     close_mock = AsyncMock()
@@ -234,7 +236,11 @@ def test_archive_solenoid_clears_group(
         test_user.id,
     )
     solenoid = create_solenoid(
-        db_session, test_user.id, active_state="open", group_id=group.uuid
+        db_session,
+        test_user.id,
+        logger_id=-1,
+        active_state="open",
+        group_id=group.uuid,
     )
     mock_successful_close(monkeypatch)
     response = authenticated_client.patch(
@@ -266,6 +272,7 @@ def test_archive_solenoid_aborts_when_close_fails(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="open",
         group_id=group.uuid,
     )
@@ -301,6 +308,7 @@ def test_restore_solenoid_keeps_it_closed_and_ungrouped(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="closed",
         group_id=None,
         archived=True,
@@ -324,6 +332,55 @@ def test_restore_solenoid_keeps_it_closed_and_ungrouped(
     assert stored_solenoid.archived is False
     assert stored_solenoid.active_state == "closed"
     assert stored_solenoid.group_id is None
+
+
+@pytest.mark.parametrize(
+    "initial_archived,active_state,requested_archived",
+    [
+        (False, "open", True),
+        (False, "closed", True),
+        (True, "closed", False),
+    ],
+    ids=["archive-open", "archive-closed", "restore"],
+)
+def test_real_solenoid_archive_changes_are_rejected_without_side_effects(
+    authenticated_client,
+    db_session,
+    test_user,
+    monkeypatch,
+    initial_archived,
+    active_state,
+    requested_archived,
+):
+    group = create_group(db_session, test_user.id)
+    solenoid = create_solenoid(
+        db_session,
+        test_user.id,
+        logger_id=123,
+        active_state=active_state,
+        group_id=group.uuid,
+        archived=initial_archived,
+    )
+    close_mock = AsyncMock()
+    queue_mock = AsyncMock()
+    monkeypatch.setattr("app.routers.solenoid.close_solenoid", close_mock)
+    monkeypatch.setattr(
+        "app.routers.solenoid.submit_logger_solenoid_command", queue_mock
+    )
+
+    response = authenticated_client.patch(
+        f"/api/solenoid/{solenoid.id}/archive",
+        json={"archived": requested_archived},
+    )
+
+    assert response.status_code == 409
+    close_mock.assert_not_awaited()
+    queue_mock.assert_not_awaited()
+    stored_solenoid = reload_solenoid(db_session, solenoid.id)
+    assert stored_solenoid is not None
+    assert stored_solenoid.archived is initial_archived
+    assert stored_solenoid.active_state == active_state
+    assert stored_solenoid.group_id == group.uuid
 
 
 def test_cannot_archive_another_users_solenoid(

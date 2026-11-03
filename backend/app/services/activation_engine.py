@@ -39,6 +39,18 @@ async def evaluate_preference(pref, session: Session):
     group = session.exec(group_statement).first()
     if not group or group.kind != "irrigation" or group.irrigation_mode != "auto":
         return
+    
+    solenoids = session.exec(
+        select(SolenoidTable).where(
+            SolenoidTable.group_id == pref.group_id,
+            SolenoidTable.user_id == pref.user_id,
+            SolenoidTable.logger_id == -1,
+            SolenoidTable.archived.is_(False),
+        )
+    ).all()
+
+    if not solenoids:
+        return
 
     sensor = session.get(SensorTable, pref.sensor_id)
     if not sensor or sensor.group_id != pref.group_id:
@@ -68,12 +80,6 @@ async def evaluate_preference(pref, session: Session):
         )
     else:
         should_close = not should_open
-
-    statement = select(SolenoidTable).where(
-        SolenoidTable.group_id == pref.group_id,
-        SolenoidTable.user_id == pref.user_id,
-    )
-    solenoids = session.exec(statement).all()
 
     for solenoid in solenoids:
         if should_open and solenoid.active_state != "open":

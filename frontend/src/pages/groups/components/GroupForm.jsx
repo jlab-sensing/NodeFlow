@@ -94,6 +94,12 @@ function GroupForm({ mode, initialValues, onSubmit, submitting, error }) {
             {isEditing ? 'Edit Group' : 'Add Group'}
           </Typography>
 
+          {!isEditing && (
+            <Typography variant="body2" color="text.secondary">
+              New groups start in Manual mode.
+            </Typography>
+          )}
+
           <TextField
             fullWidth
             required

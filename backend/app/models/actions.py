@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, field_validator, model_validator
 from sqlmodel import SQLModel
 
 ComparisonOperator = Literal["<", ">"]
@@ -19,12 +19,17 @@ class NotificationPref(SQLModel):
 
 class ActivationPref(SQLModel):
     sensor_id: int
-    measurement: str
+    measurement: str = Field(min_length=1)
     condition_operator: ComparisonOperator
-    condition_value: float
+    condition_value: float = Field(allow_inf_nan=False)
     close_condition_operator: ComparisonOperator | None = None
-    close_condition_value: float | None = None
+    close_condition_value: float | None = Field(default=None, allow_inf_nan=False)
     enabled: bool = True
+
+    @field_validator("measurement", mode="before")
+    @classmethod
+    def strip_measurement(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def validate_close_condition(self):

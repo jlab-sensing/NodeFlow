@@ -1,11 +1,14 @@
 import { Box, CircularProgress, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import useAxiosPrivate from '../../../auth/hooks/useAxiosPrivate'
+import { USER_GROUPS_QUERY_KEY } from '../../../services/group'
 import ManualAutoSwitch from './ManualAutoSwitch'
 import OpenCloseButton from './OpenCloseButton'
 
 function GroupBox({ group }) {
   const axiosPrivate = useAxiosPrivate()
+  const queryClient = useQueryClient()
   const [devices, setDevices] = useState({
     solenoids: [],
     sensors: [],
@@ -15,10 +18,19 @@ function GroupBox({ group }) {
   const [changingSolenoidId, setChangingSolenoidId] = useState(null)
   const [actionError, setActionError] = useState('')
   const [activationPref, setActivationPref] = useState(null)
-  const [irrigationMode, setIrrigationMode] = useState(
-    group.irrigation_mode ?? 'auto',
-  )
+  const [loadingActivationPref, setLoadingActivationPref] = useState(true)
+  const irrigationMode = group.irrigation_mode ?? 'manual'
   const [changingMode, setChangingMode] = useState(false)
+
+  const setIrrigationMode = (mode) => {
+    queryClient.setQueryData(USER_GROUPS_QUERY_KEY, (groups) =>
+      groups?.map((cachedGroup) =>
+        cachedGroup.uuid === group.uuid
+          ? { ...cachedGroup, irrigation_mode: mode }
+          : cachedGroup,
+      ),
+    )
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -72,9 +84,13 @@ function GroupBox({ group }) {
           setActivationPref(response.data)
         }
       } catch (requestError) {
-        console.error('Unable to laod activation preference', requestError)
+        console.error('Unable to load activation preference', requestError)
         if (!cancelled) {
           setActivationPref(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingActivationPref(false)
         }
       }
     }
@@ -82,7 +98,7 @@ function GroupBox({ group }) {
     return () => {
       cancelled = true
     }
-  }, [axiosPrivate, group.uuid])
+  }, [axiosPrivate, group.uuid, irrigationMode])
 
   const handleModeChange = async (requestedMode) => {
     try {
@@ -117,6 +133,7 @@ function GroupBox({ group }) {
       if (response.data.mode) {
         setIrrigationMode(response.data.mode)
       }
+      await queryClient.invalidateQueries({ queryKey: USER_GROUPS_QUERY_KEY })
 
       setDevices((currentDevices) => ({
         ...currentDevices,
@@ -149,6 +166,38 @@ function GroupBox({ group }) {
     activationPref && activationSensor
       ? `${activationSensor.sensor_type} ${activationPref.condition_operator} ${activationPref.condition_value}`
       : 'Not configured'
+  const hasUsableCloseCondition =
+    (activationPref?.close_condition_operator == null &&
+      activationPref?.close_condition_value == null) ||
+    (Number.isFinite(activationPref?.close_condition_value) &&
+      (activationPref.condition_operator === '<'
+        ? activationPref.close_condition_operator === '>' &&
+          activationPref.close_condition_value > activationPref.condition_value
+        : activationPref.close_condition_operator === '<' &&
+          activationPref.close_condition_value <
+            activationPref.condition_value))
+  const hasUsableActivationPref = Boolean(
+    activationPref?.enabled &&
+    activationSensor &&
+    !activationSensor.archived &&
+    activationPref.measurement?.trim() &&
+    ['<', '>'].includes(activationPref.condition_operator) &&
+    Number.isFinite(activationPref.condition_value) &&
+    hasUsableCloseCondition,
+  )
+  const hasRealSolenoid = solenoids.some(
+    (solenoid) => solenoid.logger_id !== -1,
+  )
+  const autoUnavailableReason =
+    loading || loadingActivationPref
+      ? 'Loading automatic control settings…'
+      : error
+        ? 'Automatic control is unavailable while group devices cannot be loaded.'
+        : hasRealSolenoid
+          ? 'Real loggers currently support Manual mode only.'
+          : !hasUsableActivationPref
+            ? 'Save an enabled activation threshold for a sensor in this group to use Auto.'
+            : ''
 
   return (
     <Box
@@ -165,6 +214,7 @@ function GroupBox({ group }) {
           state={irrigationMode}
           onStateChange={handleModeChange}
           loading={changingMode}
+          disabled={irrigationMode !== 'auto' && Boolean(autoUnavailableReason)}
         />
       </Box>
 
@@ -184,6 +234,12 @@ function GroupBox({ group }) {
         </Box>{' '}
         {activationCondition}
       </Typography>
+
+      {autoUnavailableReason && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {autoUnavailableReason}
+        </Typography>
+      )}
 
       {loading ? (
         <CircularProgress size={20} sx={{ mt: 2 }} />

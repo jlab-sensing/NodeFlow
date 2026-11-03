@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate'
 import GroupForm from './components/GroupForm'
+import { USER_GROUPS_QUERY_KEY } from '../../services/group'
 
 const emptyGroupConfig = {
   name: '',
@@ -22,6 +24,7 @@ const emptyGroupConfig = {
 
 function AddGroup() {
   const axiosPrivate = useAxiosPrivate()
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
 
   const [creating, setCreating] = useState(false)
@@ -72,6 +75,7 @@ function AddGroup() {
         })
       }
 
+      await queryClient.invalidateQueries({ queryKey: USER_GROUPS_QUERY_KEY })
       navigate('/profile/groups')
     } catch (requestError) {
       setError(requestError.response?.data?.detail || 'Unable to create group')

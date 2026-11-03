@@ -1,8 +1,10 @@
 import { Box, CircularProgress, Typography } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import useAxiosPrivate from '../../auth/hooks/useAxiosPrivate'
 import GroupForm from './components/GroupForm'
+import { USER_GROUPS_QUERY_KEY } from '../../services/group'
 
 const emptyActivationPreference = {
   sensorId: '',
@@ -18,6 +20,7 @@ function EditGroup() {
   const { groupId } = useParams()
   const navigate = useNavigate()
   const axiosPrivate = useAxiosPrivate()
+  const queryClient = useQueryClient()
   const originalDeviceIds = useRef({ solenoids: [], sensors: [] })
   const [initialValues, setInitialValues] = useState(null)
   const [loadingError, setLoadingError] = useState('')
@@ -143,6 +146,7 @@ function EditGroup() {
         await axiosPrivate.delete(`/api/groups/${groupId}/activationPref/`)
       }
 
+      await queryClient.invalidateQueries({ queryKey: USER_GROUPS_QUERY_KEY })
       navigate('/profile/groups')
     } catch (requestError) {
       setSaveError(

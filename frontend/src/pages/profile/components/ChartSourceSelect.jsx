@@ -29,8 +29,19 @@ export default function ChartSourcesSelect({
     retry: false,
     refetchInterval: 60000,
 
-    queryFn: async ({ signal }) =>
-      (await publicClient.get('/api/public/deployments/', { signal })).data,
+    queryFn: async ({ signal }) => {
+      const { data } = await publicClient.get('/api/public/deployments/', {
+        signal,
+      })
+
+      if (!Array.isArray(data)) {
+        throw new Error(
+          'Expected a demo group list from /api/public/deployments/. Check that VITE_API_BASE_URL points to the backend.',
+        )
+      }
+
+      return data
+    },
   })
 
   const sources = useQuery({

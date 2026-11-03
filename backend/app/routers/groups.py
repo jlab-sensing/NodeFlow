@@ -3,6 +3,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import ValidationError
 from sqlmodel import Session, select
 
 from app.auth.auth import get_current_user
@@ -16,6 +17,7 @@ from app.schemas.sensor import SensorTable
 from app.schemas.solenoid import SolenoidTable
 from app.schemas.user_schema import UserTable
 from app.services.solenoid_control import close_solenoid
+from app.services.solenoid_reads import serialize_solenoids
 
 
 def require_irrigation_route(
@@ -99,11 +101,35 @@ def get_specific_group_info(
 
 
 @router.get("/{group_id}/solenoidData", response_model=List[SolenoidRead])
-def get_group_solenoid_data(group_id: UUID, session: Session = Depends(get_session)):
+def get_group_solenoid_data(
+    group_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: UserTable = Depends(get_current_user),
+):
     """Fetches all solenoids belonging to a specific group."""
-    statement = select(SolenoidTable).where(SolenoidTable.group_id == group_id)
-    solenoids = session.exec(statement).all()
-    return solenoids
+    group = session.exec(
+        select(GroupTable).where(
+            GroupTable.uuid == group_id,
+            GroupTable.user_id == current_user.id,
+            GroupTable.kind == "irrigation",
+        )
+    ).first()
+
+    if group is None:
+        raise HTTPException(status_code=404, detail="group not found")
+
+    solenoids = session.exec(
+        select(SolenoidTable).where(
+            SolenoidTable.group_id == group_id,
+            SolenoidTable.user_id == current_user.id,
+        )
+    ).all()
+
+    return serialize_solenoids(
+        solenoids,
+        session,
+        current_user.id,
+    )
 
 
 @router.put("/{group_id}")
@@ -149,22 +175,32 @@ async def delete_group(
             detail="Group not found",
         )
 
-    preferences = session.exec(
-        select(ActivationPrefTable).where(
-            ActivationPrefTable.group_id == group_id,
-            ActivationPrefTable.user_id == current_user.id,
-        )
-    ).all()
-    for preference in preferences:
-        preference.enabled = False
-        session.add(preference)
-
     solenoids = session.exec(
         select(SolenoidTable).where(
             SolenoidTable.group_id == group_id,
             SolenoidTable.user_id == current_user.id,
         )
     ).all()
+
+    if any(solenoid.logger_id != -1 for solenoid in solenoids):
+        raise HTTPException(
+            status_code=409,
+            detail="Groups containing real solenoids cannot be eleted yet. Unassign solenoid before deleting the group",
+        )
+
+    preferences = session.exec(
+        select(ActivationPrefTable).where(
+            ActivationPrefTable.group_id == group_id,
+            ActivationPrefTable.user_id == current_user.id,
+        )
+    ).all()
+
+    for preference in preferences:
+        preference.enabled = False
+        session.add(preference)
+
+    group.irrigation_mode = "manual"
+    session.add(group)
 
     sensors = session.exec(
         select(SensorTable).where(
@@ -248,6 +284,7 @@ async def set_activation_pref(
         SensorTable.id == pref.sensor_id,
         SensorTable.user_id == current_user.id,
         SensorTable.group_id == group_id,
+        SensorTable.archived.is_(False),
     )
     sensor = session.exec(sensor_statement).first()
     if not sensor:
@@ -284,6 +321,9 @@ async def set_activation_pref(
         db_pref.enabled = pref.enabled
 
     session.add(db_pref)
+    if not pref.enabled:
+        group.irrigation_mode = "manual"
+        session.add(group)
     session.commit()
     session.refresh(db_pref)
     return db_pref
@@ -316,6 +356,15 @@ def delete_activation_pref(
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
+    group = session.exec(
+        select(GroupTable).where(
+            GroupTable.uuid == group_id,
+            GroupTable.user_id == current_user.id,
+        )
+    ).first()
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+
     preference_statement = select(ActivationPrefTable).where(
         ActivationPrefTable.group_id == group_id,
         ActivationPrefTable.user_id == current_user.id,
@@ -324,7 +373,10 @@ def delete_activation_pref(
 
     if preference:
         session.delete(preference)
-        session.commit()
+
+    group.irrigation_mode = "manual"
+    session.add(group)
+    session.commit()
 
     return {"message": "Activation preference removed"}
 
@@ -335,25 +387,31 @@ def get_group_devices(
     session: Session = Depends(get_session),
     current_user: UserTable = Depends(get_current_user),
 ):
-    group_statement = select(GroupTable).where(
-        GroupTable.uuid == group_id, GroupTable.user_id == current_user.id
-    )
-    group = session.exec(group_statement).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
-    solenoid_statement = select(SolenoidTable).where(
-        SolenoidTable.group_id == group_id,
-        SolenoidTable.user_id == current_user.id,
-    )
-    sensor_statement = select(SensorTable).where(
-        SensorTable.group_id == group_id,
-        SensorTable.user_id == current_user.id,
-    )
-    solenoids = session.exec(solenoid_statement).all()
-    sensors = session.exec(sensor_statement).all()
+    group = session.exec(
+        select(GroupTable).where(
+            GroupTable.uuid == group_id,
+            GroupTable.user_id == current_user.id,
+        )
+    ).first()
+
+    if group is None:
+        raise HTTPException(status_code=404, detail="group not found")
+
+    solenoids = session.exec(
+        select(SolenoidTable).where(
+            SolenoidTable.group_id == group_id,
+            SolenoidTable.user_id == current_user.id,
+        )
+    ).all()
+    sensors = session.exec(
+        select(SensorTable).where(
+            SensorTable.group_id == group_id,
+            SensorTable.user_id == current_user.id,
+        )
+    ).all()
 
     return {
-        "solenoids": solenoids,
+        "solenoids": serialize_solenoids(solenoids, session, current_user.id),
         "sensors": sensors,
     }
 
@@ -373,6 +431,55 @@ def update_group_mode(
 
     if not group:
         raise HTTPException(status_code=404, detail="group not found")
+
+    if update.mode == "auto":
+        preference = session.exec(
+            select(ActivationPrefTable).where(
+                ActivationPrefTable.group_id == group_id,
+                ActivationPrefTable.user_id == current_user.id,
+                ActivationPrefTable.enabled.is_(True),
+            )
+        ).first()
+        if preference is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Configure and enable an activation threshold before switching to Auto.",
+            )
+        try:
+            ActivationPref.model_validate(preference.model_dump())
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="Configure a valid activation threshold before switching to Auto.",
+            ) from exc
+
+        sensor = session.exec(
+            select(SensorTable).where(
+                SensorTable.id == preference.sensor_id,
+                SensorTable.user_id == current_user.id,
+                SensorTable.group_id == group_id,
+                SensorTable.archived.is_(False),
+            )
+        ).first()
+        if sensor is None:
+            raise HTTPException(
+                status_code=409,
+                detail="The activation sensor must be active and assigned to this group before switching to Auto.",
+            )
+
+        real_solenoid = session.exec(
+            select(SolenoidTable).where(
+                SolenoidTable.group_id == group_id,
+                SolenoidTable.user_id == current_user.id,
+                SolenoidTable.logger_id != -1,
+            )
+        ).first()
+        if real_solenoid is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="automatic control is not supported for real solenoids yet.",
+            )
+
     group.irrigation_mode = update.mode
     session.add(group)
     session.commit()

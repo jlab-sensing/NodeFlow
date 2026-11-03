@@ -44,6 +44,7 @@ def create_solenoid(
     active_state="closed",
     group_id=None,
     archived=False,
+    physical_pin=None,
 ):
     solenoid = SolenoidTable(
         user_id=user_id,
@@ -52,6 +53,7 @@ def create_solenoid(
         logger_id=logger_id,
         group_id=group_id,
         archived=archived,
+        physical_pin=physical_pin,
     )
     db_session.add(solenoid)
     db_session.commit()
@@ -173,6 +175,7 @@ def test_archive_open_solenoid_closes_it_first(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="open",
     )
     close_mock = mock_successful_close(monkeypatch)
@@ -198,6 +201,7 @@ def test_archive_closed_solenoid_does_not_close_it_again(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="closed",
     )
     close_mock = AsyncMock()
@@ -232,7 +236,11 @@ def test_archive_solenoid_clears_group(
         test_user.id,
     )
     solenoid = create_solenoid(
-        db_session, test_user.id, active_state="open", group_id=group.uuid
+        db_session,
+        test_user.id,
+        logger_id=-1,
+        active_state="open",
+        group_id=group.uuid,
     )
     mock_successful_close(monkeypatch)
     response = authenticated_client.patch(
@@ -264,6 +272,7 @@ def test_archive_solenoid_aborts_when_close_fails(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="open",
         group_id=group.uuid,
     )
@@ -299,6 +308,7 @@ def test_restore_solenoid_keeps_it_closed_and_ungrouped(
     solenoid = create_solenoid(
         db_session,
         test_user.id,
+        logger_id=-1,
         active_state="closed",
         group_id=None,
         archived=True,
@@ -322,6 +332,55 @@ def test_restore_solenoid_keeps_it_closed_and_ungrouped(
     assert stored_solenoid.archived is False
     assert stored_solenoid.active_state == "closed"
     assert stored_solenoid.group_id is None
+
+
+@pytest.mark.parametrize(
+    "initial_archived,active_state,requested_archived",
+    [
+        (False, "open", True),
+        (False, "closed", True),
+        (True, "closed", False),
+    ],
+    ids=["archive-open", "archive-closed", "restore"],
+)
+def test_real_solenoid_archive_changes_are_rejected_without_side_effects(
+    authenticated_client,
+    db_session,
+    test_user,
+    monkeypatch,
+    initial_archived,
+    active_state,
+    requested_archived,
+):
+    group = create_group(db_session, test_user.id)
+    solenoid = create_solenoid(
+        db_session,
+        test_user.id,
+        logger_id=123,
+        active_state=active_state,
+        group_id=group.uuid,
+        archived=initial_archived,
+    )
+    close_mock = AsyncMock()
+    queue_mock = AsyncMock()
+    monkeypatch.setattr("app.routers.solenoid.close_solenoid", close_mock)
+    monkeypatch.setattr(
+        "app.routers.solenoid.submit_logger_solenoid_command", queue_mock
+    )
+
+    response = authenticated_client.patch(
+        f"/api/solenoid/{solenoid.id}/archive",
+        json={"archived": requested_archived},
+    )
+
+    assert response.status_code == 409
+    close_mock.assert_not_awaited()
+    queue_mock.assert_not_awaited()
+    stored_solenoid = reload_solenoid(db_session, solenoid.id)
+    assert stored_solenoid is not None
+    assert stored_solenoid.archived is initial_archived
+    assert stored_solenoid.active_state == active_state
+    assert stored_solenoid.group_id == group.uuid
 
 
 def test_cannot_archive_another_users_solenoid(
@@ -399,6 +458,7 @@ def test_create_solenoid_assigns_owner_and_closed_state(
     assert payload["name"] == "Greenhouse Valve"
     assert payload["active_state"] == "closed"
     assert payload["logger_id"] == 301
+    assert payload["physical_pin"] is None
     assert payload["archived"] is False
     assert "id" in payload
     assert "uuid" in payload
@@ -427,6 +487,101 @@ def test_create_solenoid_requires_shared_logger(
         "detail": "Logger not found",
     }
     shared_logger_mock.assert_awaited_once_with(999)
+
+
+def test_solenoid_pin_persists_through_create_edit_and_reload(
+    authenticated_client,
+    db_session,
+    shared_logger_mock,
+):
+    created = authenticated_client.post(
+        "/api/solenoid/",
+        json={"name": "Pin-selected valve", "logger_id": 123, "physical_pin": 18},
+    )
+    assert created.status_code == 201
+    solenoid_id = created.json()["id"]
+    assert created.json()["physical_pin"] == 18
+    assert reload_solenoid(db_session, solenoid_id).physical_pin == 18
+
+    updated = authenticated_client.put(
+        f"/api/solenoid/{solenoid_id}",
+        json={"name": "Updated valve", "logger_id": 123, "physical_pin": 37},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["physical_pin"] == 37
+    assert reload_solenoid(db_session, solenoid_id).physical_pin == 37
+
+    reloaded = authenticated_client.get(f"/api/solenoid/{solenoid_id}")
+    assert reloaded.json()["physical_pin"] == 37
+    listed = authenticated_client.get("/api/solenoid/")
+    assert listed.json()[0]["physical_pin"] == 37
+
+
+@pytest.mark.parametrize("physical_pin", [4, 40, -1, 18.5, "18", True])
+@pytest.mark.parametrize("operation", ["create", "update"])
+def test_solenoid_rejects_invalid_pins_without_saving(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+    physical_pin,
+    operation,
+):
+    solenoid = create_solenoid(db_session, test_user.id, physical_pin=18)
+    payload = {
+        "name": "Invalid pin",
+        "logger_id": solenoid.logger_id,
+        "physical_pin": physical_pin,
+    }
+    if operation == "create":
+        response = authenticated_client.post("/api/solenoid/", json=payload)
+    else:
+        response = authenticated_client.put(
+            f"/api/solenoid/{solenoid.id}", json=payload
+        )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "physical_pin"]
+    shared_logger_mock.assert_not_awaited()
+    assert reload_solenoid(db_session, solenoid.id).physical_pin == 18
+    assert len(authenticated_client.get("/api/solenoid/").json()) == 1
+
+
+@pytest.mark.parametrize("logger_id, expected_pin", [(123, 18), (456, None)])
+def test_update_without_pin_preserves_it_only_for_the_same_logger(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+    logger_id,
+    expected_pin,
+):
+    solenoid = create_solenoid(db_session, test_user.id, physical_pin=18)
+    response = authenticated_client.put(
+        f"/api/solenoid/{solenoid.id}",
+        json={"name": "Renamed valve", "logger_id": logger_id},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["physical_pin"] == expected_pin
+    assert reload_solenoid(db_session, solenoid.id).physical_pin == expected_pin
+
+
+def test_solenoid_pin_can_be_explicitly_cleared(
+    authenticated_client,
+    db_session,
+    test_user,
+    shared_logger_mock,
+):
+    solenoid = create_solenoid(db_session, test_user.id, physical_pin=18)
+    response = authenticated_client.put(
+        f"/api/solenoid/{solenoid.id}",
+        json={"name": solenoid.name, "logger_id": 123, "physical_pin": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["physical_pin"] is None
+    assert reload_solenoid(db_session, solenoid.id).physical_pin is None
 
 
 def test_update_solenoid_preserves_state_and_owner(

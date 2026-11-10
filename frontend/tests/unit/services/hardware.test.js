@@ -85,18 +85,10 @@ describe('hardware service', () => {
       uuid: 'actuator-uuid',
       userId: 'user-uuid',
       activeState: 'closed',
-      physicalPin: 16,
       dateCreated: '2026-08-24T12:00:00',
       legacyCellId: null,
     })
   })
-
-  it.each([undefined, null])(
-    'keeps an unconfigured actuator pin empty (%s)',
-    (pin) => {
-      expect(normalizeActuator({ physical_pin: pin }).physicalPin).toBeNull()
-    },
-  )
 
   it('fetches and combines sensors and actuators', async () => {
     axiosPrivate.get.mockImplementation((url) => {
@@ -184,7 +176,7 @@ describe('hardware service', () => {
     })
   })
 
-  it('creates an actuator without sending sensor fields', async () => {
+  it('creates an actuator without requiring a pin or sending sensor fields', async () => {
     axiosPrivate.post.mockResolvedValue({
       data: {
         id: 11,
@@ -197,18 +189,16 @@ describe('hardware service', () => {
       loggerId: 456,
       groupId: null,
       sensorType: 'ignored',
-      physicalPin: 16,
     })
 
     expect(axiosPrivate.post).toHaveBeenCalledWith('/api/solenoid/', {
       name: 'Greenhouse Valve',
       logger_id: 456,
       group_id: null,
-      physical_pin: 16,
     })
   })
 
-  it('updates hardware using its backend ID', async () => {
+  it('updates an actuator without a pin using its backend ID', async () => {
     axiosPrivate.put.mockResolvedValue({
       data: {
         id: 9,
@@ -221,14 +211,12 @@ describe('hardware service', () => {
       name: 'Updated Valve',
       loggerId: 456,
       groupId: null,
-      physicalPin: 18,
     })
 
     expect(axiosPrivate.put).toHaveBeenCalledWith('/api/solenoid/9', {
       name: 'Updated Valve',
       logger_id: 456,
       group_id: null,
-      physical_pin: 18,
     })
   })
 
@@ -236,17 +224,17 @@ describe('hardware service', () => {
     ['create', createHardware, 'post'],
     ['update', updateHardware, 'put'],
   ])(
-    'does not turn an empty pin into zero on %s',
+    'does not forward legacy actuator pin values on %s',
     async (_, mutateHardware, method) => {
       axiosPrivate[method].mockResolvedValue({ data: {} })
 
       await mutateHardware(axiosPrivate, {
         hardwareType: HARDWARE_TYPES.ACTUATOR,
         backendId: 9,
-        name: 'Valve without a configured pin',
+        name: 'Valve with legacy pin metadata',
         loggerId: 456,
         groupId: null,
-        physicalPin: '',
+        physicalPin: 16,
       })
 
       expect(axiosPrivate[method].mock.calls[0][1]).not.toHaveProperty(

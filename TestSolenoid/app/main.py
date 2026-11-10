@@ -7,11 +7,14 @@ from pydantic import BaseModel
 
 SolenoidState = Literal["open", "closed"]
 
+
 class StateUpdate(BaseModel):
     state: SolenoidState
 
+
 class StatusResponse(BaseModel):
     state: SolenoidState
+
 
 app = FastAPI(
     title="Test Solenoid",
@@ -33,26 +36,26 @@ solenoid = {
 
 state_lock = asyncio.Lock()
 
+
 @app.get("/health")
 async def health():
     return {
         "status": "healthy",
     }
 
+
 @app.get("/status", response_model=StatusResponse)
 async def get_status():
-    return {
-        "state": solenoid["state"]
-    }
+    return {"state": solenoid["state"]}
+
 
 @app.put("/status", response_model=StatusResponse)
 async def update_status(update: StateUpdate):
     async with state_lock:
         solenoid["state"] = update.state
 
-    return {
-        "state": solenoid["state"]
-    }
+    return {"state": solenoid["state"]}
+
 
 @app.post("/open", response_model=StatusResponse)
 async def open_solenoid():
@@ -61,6 +64,7 @@ async def open_solenoid():
     return {
         "state": solenoid["state"],
     }
+
 
 @app.post("/close", response_model=StatusResponse)
 async def close_solenoid():

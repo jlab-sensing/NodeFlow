@@ -26,7 +26,6 @@ import {
   useSensorTypes,
 } from '../../../services/hardware'
 import { formatSensorType } from '../../../utils/sensorTypes'
-import { SOLENOID_PIN_OPTIONS } from '../../../utils/solenoidPins'
 
 const getErrorMessage = (error) => {
   const detail = error?.response?.data?.detail
@@ -53,15 +52,12 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
   const [groupId, setGroupId] = useState('')
   const [sensorType, setSensorType] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [physicalPin, setPhysicalPin] = useState('')
 
   const isSensor = hardwareType === HARDWARE_TYPES.SENSOR
-  const pinIsValid =
-    physicalPin !== '' && SOLENOID_PIN_OPTIONS.includes(Number(physicalPin))
   const formIsValid =
     name.trim().length > 0 &&
     loggerId !== '' &&
-    (isSensor ? sensorType !== '' : pinIsValid)
+    (!isSensor || sensorType !== '')
 
   const resetForm = () => {
     setHardwareType(HARDWARE_TYPES.SENSOR)
@@ -70,7 +66,7 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
     setGroupId('')
     setSensorType('')
     setSubmitted(false)
-    setPhysicalPin('')
+
     createHardwareMutation.reset()
   }
 
@@ -88,8 +84,6 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
 
     if (nextHardwareType === HARDWARE_TYPES.ACTUATOR) {
       setSensorType('')
-    } else {
-      setPhysicalPin('')
     }
   }
 
@@ -106,7 +100,6 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
         loggerId,
         groupId: groupId || null,
         sensorType: isSensor ? sensorType : undefined,
-        ...(!isSensor && { physicalPin: Number(physicalPin) }),
       })
       resetForm()
       onClose()
@@ -227,7 +220,6 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
                 value={loggerId}
                 onChange={(event) => {
                   setLoggerId(event.target.value)
-                  if (!isSensor) setPhysicalPin('')
                 }}
                 disabled={
                   createHardwareMutation.isPending || loggers.length === 0
@@ -328,32 +320,6 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
               <Alert severity="error">
                 {getErrorMessage(sensorTypesError)}
               </Alert>
-            )}
-
-            {!isSensor && (
-              <FormControl fullWidth required error={submitted && !pinIsValid}>
-                <InputLabel id="add-solenoid-pin-label">
-                  Physical Pin
-                </InputLabel>
-                <Select
-                  labelId="add-solenoid-pin-label"
-                  label="Physical Pin"
-                  value={physicalPin}
-                  onChange={(event) => setPhysicalPin(event.target.value)}
-                  disabled={createHardwareMutation.isPending}
-                >
-                  {SOLENOID_PIN_OPTIONS.map((pin) => (
-                    <MenuItem key={pin} value={pin}>
-                      Pin {pin}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <FormHelperText>
-                  {submitted && !pinIsValid
-                    ? 'Select a physical pin for this solenoid.'
-                    : 'The board header pin connected to this solenoid.'}
-                </FormHelperText>
-              </FormControl>
             )}
 
             {!isSensor && (

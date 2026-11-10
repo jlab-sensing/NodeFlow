@@ -9,7 +9,6 @@ import {
   useSensorTypes,
   useUpdateHardware,
 } from '../../../src/services/hardware'
-import { SOLENOID_PIN_OPTIONS } from '../../../src/utils/solenoidPins'
 
 vi.mock('../../../src/auth/hooks/useAxiosPrivate', () => ({
   default: () => ({}),
@@ -31,7 +30,6 @@ const actuator = {
   hardwareType: 'actuator',
   name: 'Greenhouse Valve',
   loggerId: 123,
-  physicalPin: 16,
 }
 
 async function chooseOption(user, label, option) {
@@ -39,7 +37,7 @@ async function chooseOption(user, label, option) {
   await user.click(await screen.findByRole('option', { name: option }))
 }
 
-describe('hardware modal solenoid pins', () => {
+describe('hardware modals', () => {
   let createMutation
   let updateMutation
 
@@ -64,7 +62,7 @@ describe('hardware modal solenoid pins', () => {
     })
   })
 
-  it('requires an actuator pin, submits it as a number, and resets after adding', async () => {
+  it('creates an actuator without a pin while sensor types load and resets after adding', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
     useSensorTypes.mockReturnValue({
@@ -76,10 +74,10 @@ describe('hardware modal solenoid pins', () => {
       <AddHardwareModal open onClose={onClose} loggers={loggers} groups={[]} />,
     )
 
+    await chooseOption(user, /Category/, 'Actuator')
     expect(
       screen.queryByRole('combobox', { name: /Physical Pin/ }),
     ).not.toBeInTheDocument()
-    await chooseOption(user, /Category/, 'Actuator')
     await user.type(
       screen.getByRole('textbox', { name: /Hardware Name/ }),
       'Valve',
@@ -89,16 +87,6 @@ describe('hardware modal solenoid pins', () => {
     const addButton = screen.getByRole('button', { name: 'Add Hardware' })
     expect(addButton).toBeEnabled()
     await user.click(addButton)
-    expect(createMutation.mutateAsync).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole('combobox', { name: /Physical Pin/ }))
-    expect(
-      screen.getAllByRole('option').map((option) => option.textContent),
-    ).toEqual(SOLENOID_PIN_OPTIONS.map((pin) => `Pin ${pin}`))
-    await user.click(
-      screen.getByRole('option', { name: 'Pin 16', exact: true }),
-    )
-    await user.click(addButton)
 
     expect(createMutation.mutateAsync).toHaveBeenCalledWith({
       hardwareType: 'actuator',
@@ -106,33 +94,59 @@ describe('hardware modal solenoid pins', () => {
       loggerId: 123,
       groupId: null,
       sensorType: undefined,
-      physicalPin: 16,
     })
     expect(onClose).toHaveBeenCalledOnce()
-    await chooseOption(user, /Category/, 'Actuator')
+    expect(screen.getByRole('textbox', { name: /Hardware Name/ })).toHaveValue(
+      '',
+    )
     expect(
-      screen.getByRole('combobox', { name: /Physical Pin/ }),
-    ).not.toHaveTextContent(/Pin \d/)
+      screen.getByRole('combobox', { name: /Category/ }),
+    ).toHaveTextContent('Sensor')
+    expect(
+      screen.getByRole('combobox', { name: /Logger/ }),
+    ).not.toHaveTextContent('Greenhouse Board')
+    expect(createMutation.reset).toHaveBeenCalledOnce()
   })
 
-  it('clears the selected pin when switching categories and omits it from sensors', async () => {
+  it('still requires a name and logger when adding an actuator', async () => {
     const user = userEvent.setup()
     render(
       <AddHardwareModal open onClose={vi.fn()} loggers={loggers} groups={[]} />,
     )
     await chooseOption(user, /Category/, 'Actuator')
-    await chooseOption(user, /Physical Pin/, 'Pin 18')
-    await chooseOption(user, /Category/, 'Sensor')
+    const nameInput = screen.getByRole('textbox', { name: /Hardware Name/ })
+    await user.type(nameInput, 'Valve')
+    await user.click(screen.getByRole('button', { name: 'Add Hardware' }))
+    expect(createMutation.mutateAsync).not.toHaveBeenCalled()
+
+    await chooseOption(user, /Logger/, 'Greenhouse Board')
+    await user.clear(nameInput)
+    await user.type(nameInput, '   ')
+    await user.click(screen.getByRole('button', { name: 'Add Hardware' }))
+    expect(createMutation.mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('requires a sensor type again after switching categories and creates a sensor', async () => {
+    const user = userEvent.setup()
+    render(
+      <AddHardwareModal open onClose={vi.fn()} loggers={loggers} groups={[]} />,
+    )
+    await chooseOption(user, /Sensor Type/, 'Soil Moisture')
     await chooseOption(user, /Category/, 'Actuator')
     expect(
-      screen.getByRole('combobox', { name: /Physical Pin/ }),
-    ).not.toHaveTextContent(/Pin \d/)
+      screen.queryByRole('combobox', { name: /Sensor Type/ }),
+    ).not.toBeInTheDocument()
     await chooseOption(user, /Category/, 'Sensor')
+    expect(
+      screen.getByRole('combobox', { name: /Sensor Type/ }),
+    ).not.toHaveTextContent('Soil Moisture')
     await user.type(
       screen.getByRole('textbox', { name: /Hardware Name/ }),
       'Soil Sensor',
     )
     await chooseOption(user, /Logger/, 'Greenhouse Board')
+    await user.click(screen.getByRole('button', { name: 'Add Hardware' }))
+    expect(createMutation.mutateAsync).not.toHaveBeenCalled()
     await chooseOption(user, /Sensor Type/, 'Soil Moisture')
     await user.click(screen.getByRole('button', { name: 'Add Hardware' }))
 
@@ -145,7 +159,7 @@ describe('hardware modal solenoid pins', () => {
     })
   })
 
-  it('preselects a saved pin and saves a changed pin', async () => {
+  it('edits an actuator without displaying or submitting a pin', async () => {
     const user = userEvent.setup()
     render(
       <EditHardwareModal
@@ -158,23 +172,24 @@ describe('hardware modal solenoid pins', () => {
     )
 
     expect(
-      screen.getByRole('combobox', { name: /Physical Pin/ }),
-    ).toHaveTextContent('Pin 16')
-    await chooseOption(user, /Physical Pin/, 'Pin 22')
+      screen.queryByRole('combobox', { name: /Physical Pin/ }),
+    ).not.toBeInTheDocument()
+    const nameInput = screen.getByRole('textbox', { name: /Hardware Name/ })
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Updated Valve')
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
     expect(updateMutation.mutateAsync).toHaveBeenCalledWith({
       hardwareType: 'actuator',
       backendId: 9,
-      name: 'Greenhouse Valve',
+      name: 'Updated Valve',
       loggerId: 123,
       groupId: null,
       sensorType: undefined,
-      physicalPin: 22,
     })
   })
 
-  it('requires a new pin after changing an actuator logger', async () => {
+  it('changes an actuator logger without requiring a pin', async () => {
     const user = userEvent.setup()
     render(
       <EditHardwareModal
@@ -187,35 +202,15 @@ describe('hardware modal solenoid pins', () => {
     )
 
     await chooseOption(user, /Logger/, 'Garden Board')
-    expect(
-      screen.getByRole('combobox', { name: /Physical Pin/ }),
-    ).not.toHaveTextContent(/Pin \d/)
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
-    expect(updateMutation.mutateAsync).not.toHaveBeenCalled()
-    await chooseOption(user, /Physical Pin/, 'Pin 3')
-    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
-    expect(updateMutation.mutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ loggerId: 456, physicalPin: 3 }),
-    )
-  })
-
-  it('leaves legacy unconfigured pins empty until one is selected', async () => {
-    const user = userEvent.setup()
-    render(
-      <EditHardwareModal
-        open
-        onClose={vi.fn()}
-        hardware={{ ...actuator, physicalPin: null }}
-        loggers={loggers}
-        groups={[]}
-      />,
-    )
-
-    expect(
-      screen.getByRole('combobox', { name: /Physical Pin/ }),
-    ).not.toHaveTextContent(/Pin \d/)
-    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
-    expect(updateMutation.mutateAsync).not.toHaveBeenCalled()
+    expect(updateMutation.mutateAsync).toHaveBeenCalledWith({
+      hardwareType: 'actuator',
+      backendId: 9,
+      name: 'Greenhouse Valve',
+      loggerId: 456,
+      groupId: null,
+      sensorType: undefined,
+    })
   })
 
   it('edits sensors without displaying or submitting a pin', async () => {

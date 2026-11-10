@@ -65,7 +65,6 @@ export const normalizeActuator = (solenoid) => ({
   uuid: solenoid.uuid,
   userId: solenoid.user_id,
   activeState: solenoid.active_state,
-  physicalPin: solenoid.physical_pin ?? null,
   dateCreated: solenoid.date_created,
   legacyCellId: null,
 })
@@ -105,7 +104,7 @@ export const getSensorTypes = (axiosPrivate) =>
 
 export const createHardware = (
   axiosPrivate,
-  { hardwareType, name, loggerId, groupId, sensorType, physicalPin },
+  { hardwareType, name, loggerId, groupId, sensorType },
 ) => {
   const endpoint = getHardwareEndpoint(hardwareType)
   const payload = {
@@ -115,8 +114,6 @@ export const createHardware = (
   }
   if (hardwareType === HARDWARE_TYPES.SENSOR) {
     payload.sensor_type = sensorType
-  } else if (physicalPin !== undefined && physicalPin !== '') {
-    payload.physical_pin = physicalPin === null ? null : Number(physicalPin)
   }
   return axiosPrivate
     .post(`${endpoint}/`, payload)
@@ -125,7 +122,7 @@ export const createHardware = (
 
 export const updateHardware = (
   axiosPrivate,
-  { hardwareType, backendId, name, loggerId, groupId, sensorType, physicalPin },
+  { hardwareType, backendId, name, loggerId, groupId, sensorType },
 ) => {
   const endpoint = getHardwareEndpoint(hardwareType)
   const payload = {
@@ -135,8 +132,6 @@ export const updateHardware = (
   }
   if (hardwareType === HARDWARE_TYPES.SENSOR) {
     payload.sensor_type = sensorType
-  } else if (physicalPin !== undefined && physicalPin !== '') {
-    payload.physical_pin = physicalPin === null ? null : Number(physicalPin)
   }
   return axiosPrivate
     .put(`${endpoint}/${backendId}`, payload)

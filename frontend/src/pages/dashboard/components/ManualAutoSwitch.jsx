@@ -83,7 +83,7 @@ function ManualAutoSwitch({
         disabled={disabled || loading}
         slotProps={{
           input: {
-            'aria-label': `Solenoid is currently ${state}`,
+            'aria-label': `Irrigation mode is currently ${state}`,
           },
         }}
       />

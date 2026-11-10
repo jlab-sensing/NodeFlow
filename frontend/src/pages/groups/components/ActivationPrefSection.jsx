@@ -1,6 +1,8 @@
 import {
   Box,
   FormControl,
+  FormControlLabel,
+  Checkbox,
   IconButton,
   InputLabel,
   MenuItem,
@@ -73,6 +75,11 @@ function ActivationPrefSection({ selectedSensorIds, value, onChange }) {
 
   return (
     <GroupSection title="Activation Preferences">
+      <Typography variant="body2" sx={{ width: '90%', mx: 'auto', mt: 1 }}>
+        Optional. Save an enabled sensor threshold to make Auto available on the
+        dashboard for supported hardware. Without one, the group uses Manual
+        mode.
+      </Typography>
       <Box
         sx={{
           width: '90%',
@@ -175,6 +182,18 @@ function ActivationPrefSection({ selectedSensorIds, value, onChange }) {
           }}
         />
       </Box>
+      <FormControlLabel
+        sx={{ width: '90%', mx: 'auto' }}
+        control={
+          <Checkbox
+            checked={value.enabled}
+            onChange={(event) =>
+              onChange({ ...value, enabled: event.target.checked })
+            }
+          />
+        }
+        label="Enable activation preference"
+      />
       {activationConditionComplete && !showCloseCondition && (
         <Button
           type="button"

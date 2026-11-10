@@ -25,8 +25,8 @@ class GroupTable(SQLModel, table=True):
     user_id: UUID
     date_created: datetime = Field(default_factory=datetime.utcnow)
     irrigation_mode: str = Field(
-        default="auto",
-        sa_column_kwargs={"server_default": "auto"},
+        default="manual",
+        sa_column_kwargs={"server_default": "manual"},
     )
     kind: str = Field(
         default="irrigation",

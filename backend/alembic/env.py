@@ -10,6 +10,7 @@ import app.schemas.sensor  # noqa: F401
 import app.schemas.sensor_reading  # noqa: F401
 import app.schemas.shared_cells  # noqa: F401
 import app.schemas.solenoid  # noqa: F401
+import app.schemas.solenoid_command  # noqa: F401
 import app.schemas.user_schema  # noqa: F401
 from alembic import context
 from app.database import get_database_url

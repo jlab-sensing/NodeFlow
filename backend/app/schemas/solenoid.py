@@ -14,6 +14,7 @@ class SolenoidTable(SQLModel, table=True):
     name: str
     active_state: str
     logger_id: int
+    physical_pin: int | None = Field(default=None)
     group_id: Optional[UUID] = None
     date_created: datetime = Field(default_factory=datetime.utcnow)
     archived: bool = Field(default=False)

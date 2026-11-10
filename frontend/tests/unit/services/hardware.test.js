@@ -63,6 +63,7 @@ describe('hardware service', () => {
       user_id: 'user-uuid',
       name: 'Greenhouse Valve',
       active_state: 'closed',
+      physical_pin: 16,
       logger_id: 456,
       group_id: null,
       date_created: '2026-08-24T12:00:00',
@@ -84,10 +85,18 @@ describe('hardware service', () => {
       uuid: 'actuator-uuid',
       userId: 'user-uuid',
       activeState: 'closed',
+      physicalPin: 16,
       dateCreated: '2026-08-24T12:00:00',
       legacyCellId: null,
     })
   })
+
+  it.each([undefined, null])(
+    'keeps an unconfigured actuator pin empty (%s)',
+    (pin) => {
+      expect(normalizeActuator({ physical_pin: pin }).physicalPin).toBeNull()
+    },
+  )
 
   it('fetches and combines sensors and actuators', async () => {
     axiosPrivate.get.mockImplementation((url) => {
@@ -164,6 +173,7 @@ describe('hardware service', () => {
       loggerId: '123',
       groupId: '',
       sensorType: 'soil_moisture',
+      physicalPin: 16,
     })
 
     expect(axiosPrivate.post).toHaveBeenCalledWith('/api/sensor/', {
@@ -187,12 +197,14 @@ describe('hardware service', () => {
       loggerId: 456,
       groupId: null,
       sensorType: 'ignored',
+      physicalPin: 16,
     })
 
     expect(axiosPrivate.post).toHaveBeenCalledWith('/api/solenoid/', {
       name: 'Greenhouse Valve',
       logger_id: 456,
       group_id: null,
+      physical_pin: 16,
     })
   })
 
@@ -209,12 +221,58 @@ describe('hardware service', () => {
       name: 'Updated Valve',
       loggerId: 456,
       groupId: null,
+      physicalPin: 18,
     })
 
     expect(axiosPrivate.put).toHaveBeenCalledWith('/api/solenoid/9', {
       name: 'Updated Valve',
       logger_id: 456,
       group_id: null,
+      physical_pin: 18,
+    })
+  })
+
+  it.each([
+    ['create', createHardware, 'post'],
+    ['update', updateHardware, 'put'],
+  ])(
+    'does not turn an empty pin into zero on %s',
+    async (_, mutateHardware, method) => {
+      axiosPrivate[method].mockResolvedValue({ data: {} })
+
+      await mutateHardware(axiosPrivate, {
+        hardwareType: HARDWARE_TYPES.ACTUATOR,
+        backendId: 9,
+        name: 'Valve without a configured pin',
+        loggerId: 456,
+        groupId: null,
+        physicalPin: '',
+      })
+
+      expect(axiosPrivate[method].mock.calls[0][1]).not.toHaveProperty(
+        'physical_pin',
+      )
+    },
+  )
+
+  it('updates a sensor without sending actuator fields', async () => {
+    axiosPrivate.put.mockResolvedValue({ data: {} })
+
+    await updateHardware(axiosPrivate, {
+      hardwareType: HARDWARE_TYPES.SENSOR,
+      backendId: 12,
+      name: 'Soil Sensor',
+      loggerId: 123,
+      groupId: null,
+      sensorType: 'soil_moisture',
+      physicalPin: 16,
+    })
+
+    expect(axiosPrivate.put).toHaveBeenCalledWith('/api/sensor/12', {
+      name: 'Soil Sensor',
+      logger_id: 123,
+      group_id: null,
+      sensor_type: 'soil_moisture',
     })
   })
 

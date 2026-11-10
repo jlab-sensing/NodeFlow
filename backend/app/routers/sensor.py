@@ -17,6 +17,7 @@ from app.models.test_sensor import (
     TestSensorSimulationUpdate,
 )
 from app.schemas.groups import GroupTable
+from app.schemas.preferences import ActivationPrefTable
 from app.schemas.sensor import SensorTable
 from app.schemas.sensor_reading import SensorReadingTable
 from app.schemas.user_schema import UserTable
@@ -61,6 +62,39 @@ def validate_owned_group(
     )
     if not session.exec(statement).first():
         raise HTTPException(status_code=404, detail="Group not found")
+
+
+def disable_sensor_activation(sensor: SensorTable, session: Session):
+    """Invalidate the old group's threshold before removing its source sensor."""
+    if sensor.group_id is None:
+        return
+
+    group = session.exec(
+        select(GroupTable).where(
+            GroupTable.uuid == sensor.group_id,
+            GroupTable.user_id == sensor.user_id,
+            GroupTable.kind == "irrigation",
+        )
+    ).first()
+    if not group:
+        return
+
+    preferences = session.exec(
+        select(ActivationPrefTable).where(
+            ActivationPrefTable.sensor_id == sensor.id,
+            ActivationPrefTable.user_id == sensor.user_id,
+            ActivationPrefTable.group_id == sensor.group_id,
+        )
+    ).all()
+    if not preferences:
+        return
+
+    for preference in preferences:
+        preference.enabled = False
+        session.add(preference)
+
+    group.irrigation_mode = "manual"
+    session.add(group)
 
 
 def get_owned_test_sensor(
@@ -247,6 +281,9 @@ async def update_sensor(
     await get_shared_logger(sensor_update.logger_id)
     validate_owned_group(sensor_update.group_id, session, current_user)
 
+    if db_sensor.group_id != sensor_update.group_id:
+        disable_sensor_activation(db_sensor, session)
+
     sensor_data = sensor_update.model_dump()
     for key, value in sensor_data.items():
         setattr(db_sensor, key, value)
@@ -266,6 +303,9 @@ def update_sensor_group(
 ):
     sensor = get_owned_sensor(sensor_id, session, current_user)
     validate_owned_group(update.group_id, session, current_user)
+
+    if sensor.group_id != update.group_id:
+        disable_sensor_activation(sensor, session)
 
     sensor.group_id = update.group_id
     session.add(sensor)
@@ -297,6 +337,7 @@ def set_sensor_archived(
     sensor = get_owned_sensor(sensor_id, session, current_user)
     sensor.archived = update.archived
     if update.archived:
+        disable_sensor_activation(sensor, session)
         sensor.group_id = None
     session.add(sensor)
     session.commit()
@@ -311,6 +352,7 @@ async def delete_sensor(
     current_user: UserTable = Depends(get_current_user),
 ):
     sensor = get_owned_sensor(sensor_id, session, current_user)
+    disable_sensor_activation(sensor, session)
     session.exec(
         delete(SensorReadingTable).where(
             SensorReadingTable.sensor_uuid == sensor.uuid,

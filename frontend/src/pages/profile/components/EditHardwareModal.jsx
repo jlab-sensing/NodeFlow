@@ -26,7 +26,6 @@ import {
   useSensorTypes,
 } from '../../../services/hardware'
 import { formatSensorType } from '../../../utils/sensorTypes'
-import { SOLENOID_PIN_OPTIONS } from '../../../utils/solenoidPins'
 
 const getErrorMessage = (error) => {
   const detail = error?.response?.data?.detail
@@ -57,15 +56,13 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
     isSensor ? (hardware.subtype ?? '') : '',
   )
   const [submitted, setSubmitted] = useState(false)
-  const [physicalPin, setPhysicalPin] = useState(hardware.physicalPin ?? '')
 
-  const pinIsValid =
-    physicalPin !== '' && SOLENOID_PIN_OPTIONS.includes(Number(physicalPin))
+
 
   const formIsValid =
     name.trim().length > 0 &&
     loggerId !== '' &&
-    (isSensor ? sensorType !== '' : pinIsValid)
+    (!isSensor || sensorType !== '')
 
   const handleClose = () => {
     if (updateHardwareMutation.isPending) {
@@ -91,7 +88,6 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
         loggerId,
         groupId: groupId || null,
         sensorType: isSensor ? sensorType : undefined,
-        ...(!isSensor && { physicalPin: Number(physicalPin) }),
       })
       onClose()
     } catch {
@@ -306,31 +302,6 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
               </Alert>
             )}
 
-            {!isSensor && (
-              <FormControl fullWidth required error={submitted && !pinIsValid}>
-                <InputLabel id="edit-solenoid-pin-label">
-                  Physical Pin
-                </InputLabel>
-                <Select
-                  labelId="edit-solenoid-pin-label"
-                  label="Physical Pin"
-                  value={physicalPin}
-                  onChange={(event) => setPhysicalPin(event.target.value)}
-                  disabled={updateHardwareMutation.isPending}
-                >
-                  {SOLENOID_PIN_OPTIONS.map((pin) => (
-                    <MenuItem key={pin} value={pin}>
-                      Pin {pin}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <FormHelperText>
-                  {submitted && !pinIsValid
-                    ? 'Select a physical pin for this solenoid.'
-                    : 'The board header pin connected to this solenoid.'}
-                </FormHelperText>
-              </FormControl>
-            )}
 
             {!isSensor && (
               <TextField
@@ -388,7 +359,6 @@ EditHardwareModal.propTypes = {
     loggerId: PropTypes.number,
     groupId: PropTypes.string,
     subtype: PropTypes.string,
-    physicalPin: PropTypes.number,
   }).isRequired,
   loggers: PropTypes.arrayOf(
     PropTypes.shape({

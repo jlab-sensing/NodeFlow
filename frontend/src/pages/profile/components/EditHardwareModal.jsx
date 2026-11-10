@@ -57,8 +57,6 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
   )
   const [submitted, setSubmitted] = useState(false)
 
-
-
   const formIsValid =
     name.trim().length > 0 &&
     loggerId !== '' &&
@@ -199,7 +197,6 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
                 value={loggerId}
                 onChange={(event) => {
                   setLoggerId(event.target.value)
-                  if (!isSensor) setPhysicalPin('')
                 }}
                 disabled={
                   updateHardwareMutation.isPending || loggers.length === 0
@@ -301,7 +298,6 @@ function EditHardwareModal({ open, onClose, hardware, loggers, groups }) {
                 {getErrorMessage(sensorTypesError)}
               </Alert>
             )}
-
 
             {!isSensor && (
               <TextField

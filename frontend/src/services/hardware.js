@@ -114,7 +114,7 @@ export const createHardware = (
   }
   if (hardwareType === HARDWARE_TYPES.SENSOR) {
     payload.sensor_type = sensorType
-  } 
+  }
   return axiosPrivate
     .post(`${endpoint}/`, payload)
     .then((response) => response.data)

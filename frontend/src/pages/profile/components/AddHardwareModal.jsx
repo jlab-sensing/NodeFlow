@@ -53,7 +53,6 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
   const [sensorType, setSensorType] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-
   const isSensor = hardwareType === HARDWARE_TYPES.SENSOR
   const formIsValid =
     name.trim().length > 0 &&
@@ -85,8 +84,6 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
 
     if (nextHardwareType === HARDWARE_TYPES.ACTUATOR) {
       setSensorType('')
-    } else {
-
     }
   }
 
@@ -223,7 +220,6 @@ function AddHardwareModal({ open, onClose, loggers, groups }) {
                 value={loggerId}
                 onChange={(event) => {
                   setLoggerId(event.target.value)
-
                 }}
                 disabled={
                   createHardwareMutation.isPending || loggers.length === 0

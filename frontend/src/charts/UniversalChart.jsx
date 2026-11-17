@@ -1,4 +1,8 @@
 import 'chartjs-adapter-luxon'
+import {
+  useChartInstanceData,
+  useChartInstanceAxes,
+} from '../pages/charts/aggregation/ChartAggregationContext'
 import PropTypes from 'prop-types'
 import { getAxisBoundsAndStepValues } from './alignAxis'
 import { getChartTimeDomain } from './timeDomain'

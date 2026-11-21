@@ -10,12 +10,19 @@ Low Cost, Real-Time Automated Irrigation
 
 ## Getting Started
 
+### Local Development (with Hot Reloading)
 ```bash
 cp .env.example .env
 docker compose up --build -d
 ```
+The frontend is available at <http://localhost:3001> with live hot module reloading (HMR), and the backend is at <http://localhost:8001>.
 
-For backend setup and API documentation, see the [backend README](backend/README.md).
+### Production (Nginx Reverse Proxy with SSL)
+```bash
+docker compose -f docker-compose.production.yaml up --build -d
+```
+The web server runs behind Nginx with SSL enabled at <https://localhost> (or your configured `SERVER_NAME`), serving optimized static files natively and proxying backend APIs. For SSL certificate configuration and options, see the [Nginx README](nginx/README.md).
+
 
 ## Development
 

@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: development
-      url: http://${{ vars.PROD_HOST }}:3001/
+      url: https://${{ vars.PROD_HOST }}/
 
     steps:
       - name: Setup SSH key
@@ -69,8 +69,8 @@ jobs:
             echo "::endgroup::"
 
             echo "::group::Starting services"
-            docker compose pull --ignore-buildable
-            docker compose up -d --build
+            docker compose -f docker-compose.production.yaml pull --ignore-buildable
+            docker compose -f docker-compose.production.yaml up -d --build
             sleep 5
             echo "::endgroup::"
 
@@ -79,7 +79,7 @@ jobs:
             echo "::endgroup::"
 
             echo "::group::Startup logs"
-            docker compose logs --no-color
+            docker compose -f docker-compose.production.yaml logs --no-color
             echo "::endgroup::"
           EOF
 

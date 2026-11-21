@@ -33,21 +33,6 @@ services:
       postgresql-test:
         condition: service_healthy
 
-  frontend:
-    build: 
-      context: ./frontend
-      dockerfile: Dockerfile
-    image: nodeflow-frontend
-    env_file: 
-      - ${ENV_FILE:-.env}
-    ports:
-      - "3001:81"
-    depends_on: 
-      - backend
-    tty: true
-    volumes:
-      - ./frontend/src:/app/src
-
   postgresql:
     image: postgres:16
     environment:

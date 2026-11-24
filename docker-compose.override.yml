@@ -1,0 +1,24 @@
+services:
+  backend:
+    environment:
+      CONFIG_TYPE: "Development"
+      CLIENT_URL: "http://localhost:3001"
+      OAUTH_REDIRECT_URI: "http://localhost:3001/auth/callback"
+      CORS_ORIGINS: "http://localhost:3001"
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: nodeflow-frontend
+    env_file: 
+      - ${ENV_FILE:-.env}
+    environment:
+      VITE_API_BASE_URL: "http://localhost:8001"
+    ports:
+      - "3001:81"
+    depends_on: 
+      - backend
+    tty: true
+    volumes:
+      - ./frontend/src:/app/src

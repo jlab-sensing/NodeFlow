@@ -1,0 +1,29 @@
+include:
+  - docker-compose.yml
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    image: nodeflow-nginx
+    container_name: nodeflow-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-localhost}
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs
+      - ${SSL_CERT_PATH:-./nginx/certs/.gitkeep}:/etc/nginx/certs/external_cert.pem:ro
+      - ${SSL_KEY_PATH:-./nginx/certs/.gitkeep}:/etc/nginx/certs/external_key.pem:ro
+      - ./nginx/conf.d/nodeflow.conf:/etc/nginx/conf.d/nodeflow.conf:ro
+      - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --no-check-certificate https://localhost/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3

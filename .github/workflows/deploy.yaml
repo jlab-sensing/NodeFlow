@@ -10,56 +10,161 @@ on:
   push:
     branches:
       - main
+  issue_comment:
+    types: [created]
   workflow_dispatch:
 
 concurrency:
-  group: production
+  group: deploy-${{ github.event_name == 'issue_comment' && 'development' || 'production' }}
   cancel-in-progress: true
 
 jobs:
   deploy:
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/deploy') &&
+        (github.event.comment.author_association == 'MEMBER' ||
+         github.event.comment.author_association == 'OWNER' ||
+         github.event.comment.author_association == 'COLLABORATOR')
+      )
 
     runs-on: ubuntu-latest
-    environment:
-      name: development
-      url: https://${{ vars.PROD_HOST }}/
+    environment: ${{ github.event_name == 'issue_comment' && 'development' || 'production' }}
+    timeout-minutes: 15
+
+    env:
+      WG_CONFIG: ${{ secrets.WG_CONFIG }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      ENV_FILE: ${{ secrets.ENV_FILE }}
 
     steps:
+      - name: Get PR info
+        id: pr
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            core.setOutput("sha", pr.data.head.sha);
+            core.setOutput("clone_url", pr.data.head.repo.clone_url);
+            core.setOutput("owner", pr.data.head.repo.owner.login);
+            core.setOutput("repo", pr.data.head.repo.name);
+
+      - name: Set deploy target
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            echo "app_dir=${{ steps.pr.outputs.owner }}/${{ steps.pr.outputs.repo }}" >> "$GITHUB_OUTPUT"
+            echo "repo_url=${{ steps.pr.outputs.clone_url }}" >> "$GITHUB_OUTPUT"
+            echo "sha=${{ steps.pr.outputs.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "app_dir=${{ github.event.repository.name || 'NodeFlow' }}" >> "$GITHUB_OUTPUT"
+            echo "repo_url=${{ github.server_url }}/${{ github.repository }}.git" >> "$GITHUB_OUTPUT"
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up WireGuard
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y resolvconf wireguard
+          sudo apparmor_parser -R /etc/apparmor.d/wg-quick 2>/dev/null || true
+
+          # Allow systemd-resolved to forward single-label hostnames to unicast DNS
+          sudo mkdir -p /etc/systemd/resolved.conf.d
+          printf "[Resolve]\nResolveUnicastSingleLabel=yes\n" | sudo tee /etc/systemd/resolved.conf.d/single-label.conf
+          sudo systemctl restart systemd-resolved
+
+          sudo mkdir -p /etc/wireguard
+          echo "$WG_CONFIG" | sudo tee /etc/wireguard/wg0.conf > /dev/null
+          sudo chmod 600 /etc/wireguard/wg0.conf
+
+          sudo wg-quick up wg0
+
+          # Prevent default cloud search domain on eth0 from overriding VPN DNS lookups
+          sudo resolvectl domain eth0 "" 2>/dev/null || true
+          sudo resolvectl domain wg0 "~." 2>/dev/null || true
+          sudo resolvectl default-route wg0 true 2>/dev/null || true
+
+      - name: Wait for WireGuard and verify host resolution
+        run: |
+          echo "Waiting for WireGuard tunnel and resolving $SSH_HOST..."
+          for i in $(seq 1 15); do
+            if getent hosts "$SSH_HOST" >/dev/null 2>&1; then
+              HANDSHAKE=$(sudo wg show wg0 latest-handshakes | awk '{print $2}')
+              if [ -n "$HANDSHAKE" ] && [ "$HANDSHAKE" -gt 0 ] 2>/dev/null; then
+                echo "WireGuard tunnel is online and $SSH_HOST resolved."
+                break
+              fi
+            fi
+            ping -c 1 -W 1 "$SSH_HOST" >/dev/null 2>&1 || true
+            sleep 1
+          done
+
+          sudo wg show
+          if ! getent hosts "$SSH_HOST"; then
+            echo "Error: Unable to resolve $SSH_HOST"
+            exit 1
+          fi
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ vars.PROD_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Deploy via SSH
         run: |
-          ssh ${{ secrets.PROD_USER }}@${{ vars.PROD_HOST }} << 'EOF'
+          if [ -z "$ENV_FILE" ]; then
+            echo "Error: ENV_FILE secret is empty"
+            exit 1
+          fi
+
+          APP_DIR="${{ steps.target.outputs.app_dir }}"
+          REPO_URL="${{ steps.target.outputs.repo_url }}"
+          TARGET_SHA="${{ steps.target.outputs.sha }}"
+
+          ssh -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" bash -s -- "$APP_DIR" "$REPO_URL" "$TARGET_SHA" << 'EOF'
+            set -e
+
+            APP_DIR="$1"
+            REPO_URL="$2"
+            TARGET_SHA="$3"
+
+            echo "::group::Cloning repository"
+            if [ ! -d "$APP_DIR" ]; then
+              mkdir -p "$(dirname "$APP_DIR")"
+              git clone "$REPO_URL" "$APP_DIR"
+            fi
+            cd "$APP_DIR"
+            git remote set-url origin "$REPO_URL"
+            git fetch --prune origin
+            git reset --hard "$TARGET_SHA"
+            echo "::endgroup::"
+          EOF
+
+          echo "::group::Setting up env file"
+          printf '%s\n' "$ENV_FILE" | ssh -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" "cat > \"$APP_DIR/.env\" && chmod 600 \"$APP_DIR/.env\""
+          echo "::endgroup::"
+
+          ssh -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" bash -s -- "$APP_DIR" << 'EOF'
             set -e
 
             export COMPOSE_PROGRESS=plain
             export NO_COLOR=1
 
-            export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
-            export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-            export AWS_DEFAULT_REGION=us-west-2
-
-            APP_DIR="NodeFlow"
-            REPO_URL="https://github.com/jlab-sensing/NodeFlow.git"
-            BRANCH="${{ github.ref_name }}"
-
-            echo "::group::Cloning repository"
-            sudo rm -rf $APP_DIR
-            git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR"
+            APP_DIR="$1"
             cd "$APP_DIR"
-            git fetch origin
-            git reset --hard ${{ steps.pr.outputs.sha }}
-            echo "::endgroup::"
-
-            echo "::group::Setting up env file"
-            aws s3 cp s3://nodeflow-ucsc/secrets .env
-            sed -i "s/localhost/${{ vars.PROD_HOST }}/g" .env
-            echo "::endgroup::"
 
             echo "::group::Remove previous deployment"
             docker ps -aq | xargs -r docker stop
@@ -83,3 +188,39 @@ jobs:
             echo "::endgroup::"
           EOF
 
+      - name: Teardown WireGuard
+        if: always()
+        run: |
+          sudo wg-quick down wg0 || true
+
+      - name: Comment deployment result
+        if: success() && github.event_name == 'issue_comment'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const body = [
+              "PR deployed to development server",
+              "",
+              `PR: #${context.payload.issue.number}`,
+              `SHA: ${{ steps.pr.outputs.sha }}`,
+              `Triggered by: @${context.actor}`
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+      - name: Comment deployment failure
+        if: failure() && github.event_name == 'issue_comment'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: "Deployment to dev server failed. Check the GitHub Actions logs."
+            });
